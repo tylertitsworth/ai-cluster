@@ -139,7 +139,7 @@ class CustomCollector(object):
             # Fan usage
             #
             g = GaugeMetricFamily("jetson_usage_fan", "Fan usage", labels=["fan"])
-            g.add_metric(["speed"], self._jetson.fan["pwmfan"]["speed"])
+            g.add_metric(["speed"], self._jetson.fan["pwmfan"]["speed"][0])
             g.add_metric(["profile"], self._jetson.fan["pwmfan"]["profile"])
             yield g
 

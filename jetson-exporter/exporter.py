@@ -164,7 +164,7 @@ class CustomCollector(object):
                 g.add_metric(
                     [f"{device}"],
                     (
-                        self._jetson.temperature[f"{device}"]
+                        self._jetson.temperature[f"{device}"]['temp']
                         if device in self._jetson.temperature
                         else 0
                     ),

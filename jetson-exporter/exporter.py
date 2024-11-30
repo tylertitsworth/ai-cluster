@@ -197,4 +197,4 @@ if __name__ == "__main__":
     start_http_server(args.port)
     REGISTRY.register(CustomCollector())
     while True:
-        time.sleep(1)
+        time.sleep(5)

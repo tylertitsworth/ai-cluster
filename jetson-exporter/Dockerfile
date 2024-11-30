@@ -1,4 +1,4 @@
-FROM dustynv/cuda-python:builder-r36.2.0
+FROM rbonghi/jetson_stats:latest
 
 WORKDIR /app
 COPY requirements.txt /tmp/requirements.txt
@@ -8,4 +8,4 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY exporter.py /app/exporter.py
 
-CMD ["python", "exporter.py", "--port", "8000"]
+CMD ["python3", "exporter.py", "--port", "8000"]

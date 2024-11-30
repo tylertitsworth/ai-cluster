@@ -121,7 +121,7 @@ class CustomCollector(object):
             g = GaugeMetricFamily("jetson_usage_ram", "Memory usage", labels=["memory"])
             g.add_metric(["used"], self._jetson.memory["RAM"]["used"])
             g.add_metric(["shared"], self._jetson.memory["RAM"]["shared"])
-            g.add_metric(["shared"], self._jetson.memory["RAM"]["tot"])
+            g.add_metric(["tot"], self._jetson.memory["RAM"]["tot"])
             yield g
 
             #

@@ -11,10 +11,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -25,8 +25,8 @@
 import time
 import atexit
 import argparse
-from jtop import jtop, JtopException
-from prometheus_client.core import InfoMetricFamily, GaugeMetricFamily, REGISTRY, CounterMetricFamily
+from jtop import jtop
+from prometheus_client.core import InfoMetricFamily, GaugeMetricFamily, REGISTRY
 from prometheus_client import start_http_server
 
 
@@ -47,144 +47,150 @@ class CustomCollector(object):
             # print('mts: ', self._jetson.mts)
 
             #
-            # Board info 
+            # Board info
             #
-            i = InfoMetricFamily('jetson_info_board', 'Board sys info', labels=['board_info'])
-            i.add_metric(['info'], {
-                'machine': self._jetson.board['info']['machine'], 
-                'jetpack': self._jetson.board['info']['jetpack'], 
-                'l4t': self._jetson.board['info']['L4T']
-                })
+            i = InfoMetricFamily(
+                "jetson_info_board", "Board platform info", labels=["board_info"]
+            )
+            i.add_metric(
+                ["platform"],
+                {
+                    "Machine": self._jetson.board["platform"]["Machine"],
+                    "System": self._jetson.board["platform"]["System"],
+                    "Distribution": self._jetson.board["platform"]["Distribution"],
+                    "Release": self._jetson.board["platform"]["Release"],
+                    "Python": self._jetson.board["platform"]["Python"],
+                },
+            )
             yield i
 
-            i = InfoMetricFamily('jetson_info_hardware', 'Board hardware info', labels=['board_hw'])                    
-            i.add_metric(['hardware'], {
-                'type': self._jetson.board['hardware']['TYPE'],
-                'codename': self._jetson.board['hardware']['CODENAME'],
-                'soc': self._jetson.board['hardware']['SOC'],
-                'chip_id': self._jetson.board['hardware']['CHIP_ID'],
-                'module': self._jetson.board['hardware']['MODULE'],
-                'board': self._jetson.board['hardware']['BOARD'],
-                'cuda_arch_bin': self._jetson.board['hardware']['CUDA_ARCH_BIN'],
-                'serial_number': self._jetson.board['hardware']['SERIAL_NUMBER']
-                })
+            i = InfoMetricFamily(
+                "jetson_info_hardware", "Board hardware info", labels=["board_hw"]
+            )
+            i.add_metric(
+                ["hardware"],
+                {
+                    "Model": self._jetson.board["hardware"]["Model"],
+                    "Module": self._jetson.board["hardware"]["Module"],
+                    "SoC": self._jetson.board["hardware"]["SoC"],
+                    "CUDA Arch BIN": self._jetson.board["hardware"]["CUDA Arch BIN"],
+                    "L4T": self._jetson.board["hardware"]["L4T"],
+                    "Jetpack": self._jetson.board["hardware"]["Jetpack"],
+                },
+            )
             yield i
 
             #
             # NV power mode
             #
-            i = InfoMetricFamily('jetson_nvpmode', 'NV power mode', labels=['nvpmode'])
-            i.add_metric(['mode'], {'mode': self._jetson.nvpmodel.name})
+            i = InfoMetricFamily("jetson_nvpmode", "NV power mode", labels=["nvpmode"])
+            i.add_metric(["mode"], {"mode": self._jetson.nvpmodel.name})
             yield i
 
             #
-            # System uptime 
+            # System uptime
             #
-            g = GaugeMetricFamily('jetson_uptime', 'System uptime', labels=['uptime'])
+            g = GaugeMetricFamily("jetson_uptime", "System uptime", labels=["uptime"])
             days = self._jetson.uptime.days
             seconds = self._jetson.uptime.seconds
-            hours = seconds//3600
-            minutes = (seconds//60) % 60
-            g.add_metric(['days'], days)
-            g.add_metric(['hours'], hours)
-            g.add_metric(['minutes'], minutes)
+            hours = seconds // 3600
+            minutes = (seconds // 60) % 60
+            g.add_metric(["days"], days)
+            g.add_metric(["hours"], hours)
+            g.add_metric(["minutes"], minutes)
             yield g
 
             #
-            # CPU usage 
+            # CPU usage
             #
-            g = GaugeMetricFamily('jetson_usage_cpu', 'CPU % schedutil', labels=['cpu'])
-            g.add_metric(['cpu_1'], self._jetson.cpu['CPU1']['val'])
-            g.add_metric(['cpu_2'], self._jetson.cpu['CPU2']['val'])
-            g.add_metric(['cpu_3'], self._jetson.cpu['CPU3']['val'])
-            g.add_metric(['cpu_4'], self._jetson.cpu['CPU4']['val'])
-            g.add_metric(['cpu_5'], self._jetson.cpu['CPU5']['val'])
-            g.add_metric(['cpu_6'], self._jetson.cpu['CPU6']['val'])
-            g.add_metric(['cpu_7'], self._jetson.cpu['CPU7']['val'])
-            g.add_metric(['cpu_8'], self._jetson.cpu['CPU8']['val'])
+            g = GaugeMetricFamily("jetson_usage_cpu", "CPU % schedutil", labels=["cpu"])
+            for idx, cpu in enumerate(self._jetson.cpu["cpu"]):
+                g.add_metric([f"cpu_{idx}"], cpu["system"])
             yield g
 
-            # 
+            #
             # GPU usage
             #
-            g = GaugeMetricFamily('jetson_usage_gpu', 'GPU % schedutil', labels=['gpu'])
-            g.add_metric(['val'], self._jetson.gpu['val'])
-            # g.add_metric(['frq'], self._jetson.gpu['frq'])
-            # g.add_metric(['min_freq'], self._jetson.gpu['min_freq'])
-            # g.add_metric(['max_freq'], self._jetson.gpu['max_freq'])
+            g = GaugeMetricFamily("jetson_usage_gpu", "GPU % schedutil", labels=["gpu"])
+            g.add_metric(["val"], self._jetson.gpu["gpu"]["status"]["load"])
             yield g
 
-            # 
+            #
             # RAM usage
             #
-            g = GaugeMetricFamily('jetson_usage_ram', 'Memory usage', labels=['ram'])
-            g.add_metric(['used'], self._jetson.ram['use'])
-            g.add_metric(['shared'], self._jetson.ram['shared'])
-            # g.add_metric(['total'], self._jetson.ram['tot'])
-            # g.add_metric(['unit'], self._jetson.ram['unit'])
+            g = GaugeMetricFamily("jetson_usage_ram", "Memory usage", labels=["memory"])
+            g.add_metric(["used"], self._jetson.memory["RAM"]["used"])
+            g.add_metric(["shared"], self._jetson.memory["RAM"]["shared"])
             yield g
 
-            # 
+            #
             # Disk usage
             #
-            g = GaugeMetricFamily('jetson_usage_disk', 'Disk space usage', labels=['disk'])
-            g.add_metric(['used'], self._jetson.disk['used'])
-            g.add_metric(['total'], self._jetson.disk['total'])
-            g.add_metric(['available'], self._jetson.disk['available'])
-            g.add_metric(['available_no_root'], self._jetson.disk['available_no_root'])
+            g = GaugeMetricFamily(
+                "jetson_usage_disk", "Disk space usage", labels=["disk"]
+            )
+            g.add_metric(["used"], self._jetson.disk["used"])
+            g.add_metric(["total"], self._jetson.disk["total"])
+            g.add_metric(["available"], self._jetson.disk["available"])
+            g.add_metric(["available_no_root"], self._jetson.disk["available_no_root"])
             yield g
 
-            # 
+            #
             # Fan usage
             #
-            g = GaugeMetricFamily('jetson_usage_fan', 'Fan usage', labels=['fan'])
-            g.add_metric(['speed'], self._jetson.fan['speed'])
-            # g.add_metric(['measure'], self._jetson.fan['measure'])
-            # g.add_metric(['auto'], self._jetson.fan['auto'])
-            # g.add_metric(['rpm'], self._jetson.fan['rpm'])
-            # g.add_metric(['mode'], self._jetson.fan['mode'])
+            g = GaugeMetricFamily("jetson_usage_fan", "Fan usage", labels=["fan"])
+            g.add_metric(["speed"], self._jetson.fan["pwmfan"]["speed"])
+            g.add_metric(["profile"], self._jetson.fan["pwmfan"]["profile"])
             yield g
 
-            # 
+            #
             # Swapfile usage
             #
-            g = GaugeMetricFamily('jetson_usage_swap', 'Swapfile usage', labels=['swap'])
-            g.add_metric(['used'], self._jetson.swap['use'])
-            g.add_metric(['total'], self._jetson.swap['tot'])
-            # g.add_metric(['unit'], self._jetson.swap['unit'])
-            # g.add_metric(['cached_size'], self._jetson.swap['cached']['size'])
-            # g.add_metric(['cached_unit'], self._jetson.swap['cached']['unit'])
+            g = GaugeMetricFamily(
+                "jetson_usage_swap", "Swapfile usage", labels=["swap"]
+            )
+            g.add_metric(["used"], self._jetson.memory["SWAP"]["used"])
+            g.add_metric(["total"], self._jetson.memory["SWAP"]["tot"])
             yield g
 
-            # 
+            #
             # Sensor temperatures
             #
-            g = GaugeMetricFamily('jetson_temperatures', 'Sensor temperatures', labels=['temperature'])
-            g.add_metric(['ao'], self._jetson.temperature['AO'] if 'AO' in self._jetson.temperature else 0)
-            g.add_metric(['gpu'], self._jetson.temperature['GPU'] if 'GPU' in self._jetson.temperature else 0)
-            g.add_metric(['tdiode'], self._jetson.temperature['Tdiode'] if 'Tdiode' in self._jetson.temperature else 0)
-            g.add_metric(['aux'], self._jetson.temperature['AUX'] if 'AUX' in self._jetson.temperature else 0)
-            g.add_metric(['cpu'], self._jetson.temperature['CPU'] if 'CPU' in self._jetson.temperature else 0)
-            g.add_metric(['thermal'], self._jetson.temperature['thermal'] if 'thermal' in self._jetson.temperature else 0)
-            g.add_metric(['tboard'], self._jetson.temperature['Tboard'] if 'Tboard' in self._jetson.temperature else 0)
+            g = GaugeMetricFamily(
+                "jetson_temperatures", "Sensor temperatures", labels=["temperature"]
+            )
+            devices = ["cpu", "cv0", "cv1", "cv2", "gpu", "soc0", "soc1", "soc2", "tj"]
+            for device in devices:
+                g.add_metric(
+                    [f"{device}"],
+                    (
+                        self._jetson.temperature[f"{device}"]
+                        if device in self._jetson.temperature
+                        else 0
+                    ),
+                )
             yield g
 
-            # 
+            #
             # Power
             #
-            g = GaugeMetricFamily('jetson_usage_power', 'Power usage', labels=['power'])
-            g.add_metric(['cpu'], self._jetson.power[1]['CPU']['cur'] if 'CPU' in self._jetson.power[1] else 0)
-            g.add_metric(['cv'], self._jetson.power[1]['CV']['cur'] if 'CV' in self._jetson.power[1] else 0)
-            g.add_metric(['gpu'], self._jetson.power[1]['GPU']['cur'] if 'GPU' in self._jetson.power[1] else 0)
-            g.add_metric(['soc'], self._jetson.power[1]['SOC']['cur'] if 'SOC' in self._jetson.power[1] else 0)
-            g.add_metric(['sys5v'], self._jetson.power[1]['SYS5V']['cur'] if 'SYS5V' in self._jetson.power[1] else 0)
-            g.add_metric(['vddrq'], self._jetson.power[1]['VDDRQ']['cur'] if 'VDDRQ' in self._jetson.power[1] else 0)
+            g = GaugeMetricFamily("jetson_usage_power", "Power usage", labels=["power"])
+            g.add_metric(["total_curr"], self._jetson.power["tot"]["curr"])
+            g.add_metric(
+                ["VDD_CPU_GPU_CV_curr"],
+                self._jetson.power["rail"]["VDD_CPU_GPU_CV"]["curr"],
+            )
+            g.add_metric(
+                ["VDD_SOC_curr"], self._jetson.power["rail"]["VDD_SOC"]["curr"]
+            )
             yield g
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=8000, help='Metrics collector port number')
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Metrics collector port number"
+    )
 
     args = parser.parse_args()
 

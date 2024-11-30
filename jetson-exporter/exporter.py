@@ -65,7 +65,7 @@ class CustomCollector(object):
             yield i
 
             i = InfoMetricFamily(
-                "jetson_info_hardware", "Board hardware info", labels=["board_hw"]
+                "jetson_info_hardware", "Board hardware info", labels=["hardware_info"]
             )
             i.add_metric(
                 ["hardware"],
@@ -73,7 +73,7 @@ class CustomCollector(object):
                     "Model": self._jetson.board["hardware"]["Model"],
                     "Module": self._jetson.board["hardware"]["Module"],
                     "SoC": self._jetson.board["hardware"]["SoC"],
-                    "CUDA Arch BIN": self._jetson.board["hardware"]["CUDA Arch BIN"],
+                    "CUDA_Arch_BIN": self._jetson.board["hardware"]["CUDA Arch BIN"],
                     "L4T": self._jetson.board["hardware"]["L4T"],
                     "Jetpack": self._jetson.board["hardware"]["Jetpack"],
                 },

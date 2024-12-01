@@ -49,7 +49,7 @@ With a few notes:
 
 ## Development
 
-On a compatible Jetson device, the metrics can be accessed from the python interpreter with the following:
+On a compatible Jetson device, the metrics can be accessed from the python interpreter.
 
 ```python
 from jtop import jtop
@@ -64,4 +64,18 @@ dir(test)
 # Print all options
 ```
 
-If these values change for whatever reason, it's because the base container `rbonghi/jetson_stats:latest` has changed.
+If these values change for whatever reason, it's because the base container `rbonghi/jetson_stats:latest` has changed. After making changes, build the docker image and push it to the public registry.
+
+```sh
+docker login
+docker tag jetson-exporter totalsundae/ai-cluster:jetson-exporter
+docker push totalsundae/ai-cluster:jetson-exporter
+```
+
+Then, restart the DaemonSet.
+
+```sh
+kubectl rollout -n monitoring restart daemonset/jetson-exporter
+```
+
+Afterwards, verify your results in Prometheus and Grafana.

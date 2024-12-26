@@ -1,0 +1,20 @@
+# https://github.com/traefik/traefik-helm-chart/tree/main/v33.0.0/traefik
+providers:
+  kubernetesCRD:
+    enabled: true
+priorityClassName: "system-cluster-critical"
+tolerations:
+- key: "CriticalAddonsOnly"
+  operator: "Exists"
+- key: "node-role.kubernetes.io/control-plane"
+  operator: "Exists"
+  effect: "NoSchedule"
+- key: "node-role.kubernetes.io/master"
+  operator: "Exists"
+  effect: "NoSchedule"
+# This cert resolver is not working, give it some love
+certificatesResolvers:
+  http:
+    acme:
+      email: titswortht@gmail.com
+      storage: acme.json

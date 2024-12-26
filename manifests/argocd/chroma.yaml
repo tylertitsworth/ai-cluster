@@ -1,0 +1,8 @@
+# https://github.com/amikos-tech/chromadb-chart/tree/chromadb-0.1.20/charts/chromadb-chart
+# ns=ollama
+chromadb:
+  auth:
+    enabled: false
+  dataVolumeSize: 15Gi
+service:
+  type: LoadBalancer

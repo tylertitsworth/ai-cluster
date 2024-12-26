@@ -1,0 +1,10 @@
+# This App has not been fully configured and is not working. Give it some love.
+# https://charts.jetstack.io
+# ns=kube-system
+# cert-manager:v1.16.2
+crds:
+  enabled: true
+namespace: kube-system
+prometheus:
+  servicemonitor:
+    enabled: true

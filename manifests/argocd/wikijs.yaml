@@ -1,0 +1,14 @@
+# https://charts.js.wiki
+# wiki:2.2.22
+postgresql:
+  enabled: false
+  postgresqlHost: 10.43.249.6
+  postgresqlPort: 5432
+  postgresqlPassword: postgres
+  postgresqlDatabase: wiki
+  postgresqlUser: postgres
+service:
+  type: LoadBalancer
+# Turn this on eventually
+ingress:
+  enabled: false

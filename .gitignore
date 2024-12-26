@@ -1,2 +1,4 @@
+.lvenv/
 .venv/
+.vscode/
 **__pycache__**

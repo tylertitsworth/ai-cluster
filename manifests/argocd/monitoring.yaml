@@ -1,0 +1,30 @@
+# https://github.com/prometheus-community/helm-charts/tree/kube-prometheus-stack-66.3.1/charts/kube-prometheus-stack
+grafana:
+  persistence:
+    enabled: true
+    size: 10Gi
+prometheus:
+  prometheusSpec:
+    # For use with Grafana Cloud
+    remoteWrite:
+    - url: "https://prometheus-prod-36-prod-us-west-0.grafana.net/api/prom/push"
+      basicAuth:
+          username:
+            name: kubepromsecret
+            key: username
+          password:
+            name: kubepromsecret
+            key: password
+      writeRelabelConfigs:
+        - sourceLabels: [__name__]
+          regex: 'apiserver_.*'
+          action: drop
+        - sourceLabels: [__name__]
+          regex: 'etcd_.*'
+          action: drop
+        - sourceLabels: [__name__]
+          regex: 'workqueue_.*'
+          action: drop
+        - sourceLabels: [__name__]
+          regex: 'apiextensions_.*'
+          action: drop

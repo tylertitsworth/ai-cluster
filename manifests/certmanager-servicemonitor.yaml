@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: cert-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: cert-manager
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/version: v1.16.2
+    helm.sh/chart: cert-manager-v1.16.2
+    prometheus: monitoring-kube-prometheus-prometheus
+    release: monitoring
+  name: cert-manager
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: false
+    interval: 60s
+    path: /metrics
+    scrapeTimeout: 30s
+    targetPort: 9402
+  jobLabel: cert-manager
+  selector:
+    matchExpressions:
+    - key: app.kubernetes.io/name
+      operator: In
+      values:
+      - cainjector
+      - cert-manager
+      - webhook
+    - key: app.kubernetes.io/instance
+      operator: In
+      values:
+      - cert-manager
+    - key: app.kubernetes.io/component
+      operator: In
+      values:
+      - cainjector
+      - controller
+      - webhook
+  namespaceSelector:
+    matchNames:
+    - kube-system

@@ -72,13 +72,11 @@ By default, nothing is flashed to these compute modules, and so we need to use t
 
 ### RK1
 
-I went with the [BMC UI method](https://docs.turingpi.com/docs/turing-rk1-flashing-os) for flashing both RK1s, I used Ubuntu 22.04 LTS server since I won't have any use for a GUI. The process was reletively uneventful. I was able to move my eMMC OS Installation to my nvme drive using `ubuntu-rockchip-install`.
+I went with the [BMC UI method](https://docs.turingpi.com/docs/turing-rk1-flashing-os) for flashing both RK1s, I used Ubuntu 22.04 LTS server since I won't have any use for a GUI. The process was reletively uneventful. I was able to move my eMMC OS Installation to my NVMe drive using `ubuntu-rockchip-install`.
 
 ### Nvidia Orin NX
 
-Flashing the Orin NX took about a week and a half or so. I'm going to break this down in a separate document.
-
-<!-- Topics: USB Cable, VMWare Player, WSL+usbipd, iscsi_over_tcp, sdkmanager -->
+Flashing the Orin NX took about a week and a half or so. I wrote down my experience with the Jetson in a [separate document](./JETSON.md).
 
 ## K3s Installation
 
@@ -105,6 +103,8 @@ orinnx01.local   Ready    worker                 30d   v1.30.6+k3s1   192.168.1.
 ```
 
 > The RK1's have the label `node-type=npu` and the Jetson `node-type=jetson`. This will be important later.
+
+I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-agent a couple of times to get the naming I wanted just right.
 
 ### Networking
 

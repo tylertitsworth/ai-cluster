@@ -14,15 +14,15 @@ Upon opening and inspecting all of the parts I didn't find any issues. I quickly
 
 ![Plan](https://github.com/user-attachments/assets/78dcc608-8914-43de-851d-dc4f5788fe2f)
 
-Jetsons get more storage because I knew that they would require an entire suite of drivers and software just to run the GPU and the flashing process might require some extra scratch space.
+Jetsons get more storage because I knew that they would require an entire suite of drivers and software just to run the GPU, and the flashing process might require some extra scratch space.
 
-Once I started adding the modules to the board I noticed that a lot of pressure had to be applied to the node slots to actually get something to click in, similar to a RAM stick on a cheap motherboard. Similarily, with the node storage M.2 slots on the back of the board, the process of swapping a node for flashing became very tedious. I'm not sure how Turing could've worked about this given that this is a space optimization.
+Once I started adding the modules to the board, I noticed that a lot of pressure had to be applied to the node slots to actually get something to click in, similar to a RAM stick on a cheap motherboard. Similarly, with the node storage M.2 slots on the back of the board, the process of swapping a node for flashing became very tedious. I'm not sure how Turing could've worked around this given that this is a space optimization.
 
-My 2nd RK1 install had a slight hiccup with the fan cable getting in the way of the fan, meaning I had to play around with how it routed in order to not cause any noise/damage to the cable. In my Photo above you can see how it's routed weirdly to the opposite side of the connector. I'm not sure how I messed that up but I couldn't get it to route nicely.
+My 2nd RK1 install had a slight hiccup with the fan cable getting in the way of the fan, meaning I had to play around with how it routed in order to not cause any noise/damage to the cable. In my photo above, you can see how it's routed weirdly to the opposite side of the connector. I'm not sure how I messed that up, but I couldn't get it to route nicely.
 
 ### Parts
 
-I live in Oregon, which doesn't have sales tax, so considering that, I spent about ~$1300 on all of these parts, with a further upgrade to the new Jetson NX Super for an additional $250 in 2025. Rouding out this cluster to ~$1600 for 4 computers in a form factor that's smaller than ITX.
+I live in Oregon, which doesn't have sales tax, so considering that, I spent about ~$1300 on all of these parts, with a further upgrade to the new Jetson NX Super for an additional $250 in 2025. Rounding out this cluster to ~$1600 for 4 computers in a form factor that's smaller than ITX.
 
 1x [Turing Pi 2.5.2](https://turingpi.com/product/turing-pi-2-5/)
 
@@ -40,13 +40,13 @@ I live in Oregon, which doesn't have sales tax, so considering that, I spent abo
 
 > For the 2 RK1s
 
-1x Crucial P3 Plus 1TB Gen4x4 m.2 SSD
+1x Crucial P3 Plus 1TB Gen4x4 M.2 SSD
 
 > For the Jetson Orin NX
 
 1x Intel 7260.HMW Dual Band Wireless AC Network Adapter 802.11 b/a/g/n/ac (Optional)
 
-> This card may or not work with the board, I may have to return it
+> This card may or may not work with the board, I may have to return it
 
 1x 128GB Micro SD Card (Optional)
 
@@ -54,17 +54,17 @@ I live in Oregon, which doesn't have sales tax, so considering that, I spent abo
 
 1x 12V 12A Power Supply
 
-> Vendor Neural, The one I grabbed goes up to 144W and was slightly cheaper than what is on Turing Pi's site
+> Vendor Neural, the one I grabbed goes up to 144W and was slightly cheaper than what is on Turing Pi's site
 
 1x PC Open Frame Test Bench with Acrylic Stand
 
-> This is placeholder until the [official case](https://turingpi.com/product/turing-mini-itx-case/) arrives
+> This is a placeholder until the [official case](https://turingpi.com/product/turing-mini-itx-case/) arrives
 
 ### BMC
 
-Powering on the board gave a satisfying lightup and before long I was able to access the BMC at `turingpi.local`. With the default credentials being `root/turing` I had a sigh of relief that everything was working as intended and I could power on a node without issue.
+Powering on the board gave a satisfying light-up, and before long, I was able to access the BMC at `turingpi.local`. With the default credentials being `root/turing`, I had a sigh of relief that everything was working as intended and I could power on a node without issue.
 
-I quickly found that switching to an SSH connection was much more convenient, because the BMC doesn't actually refresh the state of the nodes on the board. All it does is send commands via an API. This might seem like a small thing, but what it means in reality is that the webui doesn't actually tell you whether your nodes are on/off. It also lacks a [UART](https://docs.turingpi.com/docs/tpi-uart) log output, which is necessary for any kind of debugging.
+I quickly found that switching to an SSH connection was much more convenient because the BMC doesn't actually refresh the state of the nodes on the board. All it does is send commands via an API. This might seem like a small thing, but what it means in reality is that the web UI doesn't actually tell you whether your nodes are on/off. It also lacks a [UART](https://docs.turingpi.com/docs/tpi-uart) log output, which is necessary for any kind of debugging.
 
 ## Flashing & OS Setup
 

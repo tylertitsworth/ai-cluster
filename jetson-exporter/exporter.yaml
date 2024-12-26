@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: jetson-exporter
+spec:
+  selector:
+    matchLabels:
+      app: jetson-exporter
+  template:
+    metadata:
+      labels:
+        app: jetson-exporter
+    spec:
+      nodeSelector:
+        node-type: jetson
+      containers:
+      - name: jetson-exporter
+        image: totalsundae/ai-cluster:jetson-exporter
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8000
+        volumeMounts:
+          - name: jtop-sock
+            mountPath: /run/jtop.sock
+            readOnly: true
+      volumes:
+        - name: jtop-sock
+          hostPath:
+            path: /run/jtop.sock
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jetson-exporter
+  labels:
+    app: jetson-exporter
+spec:
+  selector:
+    app: jetson-exporter
+  ports:
+    - name: http
+      port: 8000
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    release: monitoring
+    prometheus: monitoring-kube-prometheus-prometheus
+  name: jetson-exporter
+spec:
+  selector:
+    matchLabels:
+      app: jetson-exporter
+  endpoints:
+  - port: http
+    interval: 5s

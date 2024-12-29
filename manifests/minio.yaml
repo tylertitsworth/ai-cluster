@@ -16,16 +16,16 @@ kind: Deployment
 metadata:
   name: minio
   namespace: flyte
-  labels: 
+  labels:
     app.kubernetes.io/name: minio
 spec:
   replicas: 1
   selector:
-    matchLabels: 
+    matchLabels:
       app.kubernetes.io/name: minio
   template:
     metadata:
-      labels: 
+      labels:
         app.kubernetes.io/name: minio
     spec:
       securityContext:
@@ -37,7 +37,7 @@ spec:
         env:
         # https://github.com/bitnami/containers/blob/5ea894be67b97fac6adda4a5bcce5703cbd443c7/bitnami/minio/README.md#customizable-environment-variables
           - name: MINIO_ROOT_USER
-            value: minio 
+            value: minio
           - name: MINIO_ROOT_PASSWORD
             value: miniostorage
           - name: MINIO_DEFAULT_BUCKETS
@@ -49,7 +49,7 @@ spec:
           name: minio
         - containerPort: 9001
           name: minio-console
-        resources: 
+        resources:
           limits:
             cpu: 500m
             memory: 512Mi
@@ -69,7 +69,7 @@ kind: Service
 metadata:
   name: minio
   namespace: flyte
-  labels: 
+  labels:
     app.kubernetes.io/name: minio
 spec:
   type: NodePort
@@ -84,5 +84,5 @@ spec:
     port: 9001
     protocol: TCP
     targetPort: minio-console
-  selector: 
+  selector:
     app.kubernetes.io/name: minio

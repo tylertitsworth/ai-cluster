@@ -15,7 +15,7 @@ kind: Service
 metadata:
   name: postgres
   namespace: flyte
-  labels: 
+  labels:
     app.kubernetes.io/name: postgres
 spec:
   type: NodePort
@@ -25,7 +25,7 @@ spec:
     nodePort: 30089
     protocol: TCP
     targetPort: postgres
-  selector: 
+  selector:
     app.kubernetes.io/name: postgres
 ---
 apiVersion: apps/v1
@@ -33,16 +33,16 @@ kind: Deployment
 metadata:
   name: postgres
   namespace: flyte
-  labels: 
+  labels:
     app.kubernetes.io/name: postgres
 spec:
   replicas: 1
   selector:
-    matchLabels: 
+    matchLabels:
       app.kubernetes.io/name: postgres
   template:
     metadata:
-      labels: 
+      labels:
         app.kubernetes.io/name: postgres
     spec:
       containers:
@@ -59,7 +59,7 @@ spec:
         ports:
         - containerPort: 5432
           name: postgres
-        resources: 
+        resources:
           limits:
             cpu: 1000m
             memory: 512Mi

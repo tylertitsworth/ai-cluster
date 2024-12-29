@@ -42,6 +42,7 @@ This manifest containers 3 resources:
 3. ServiceMonitor - Prometheus Configuration for Service
 
 With a few notes:
+
 - Each container creates a hostpath volume to `/run/jtop.sock`. If the Jetson node doesn't have jtop installed and running this may fail
 - The ServiceMonitor assumes a prometheus resource configuration `prometheus: monitoring-kube-prometheus-prometheus`
 - The Service keeps the same port `8000` value

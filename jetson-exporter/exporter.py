@@ -22,12 +22,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import time
-import atexit
 import argparse
+import atexit
+import time
+
 from jtop import jtop
-from prometheus_client.core import InfoMetricFamily, GaugeMetricFamily, REGISTRY
 from prometheus_client import start_http_server
+from prometheus_client.core import REGISTRY, GaugeMetricFamily, InfoMetricFamily
 
 
 class CustomCollector(object):
@@ -165,7 +166,7 @@ class CustomCollector(object):
                 g.add_metric(
                     [f"{device}"],
                     (
-                        self._jetson.temperature[f"{device}"]['temp']
+                        self._jetson.temperature[f"{device}"]["temp"]
                         if device in self._jetson.temperature
                         else 0
                     ),

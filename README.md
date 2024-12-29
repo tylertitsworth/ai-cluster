@@ -94,7 +94,7 @@ curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.41:6443 K3S_TOKEN=<my-t
 
 Afterwards, you get something like this:
 
-```
+```txt
 $ kubectl get node -o wide
 NAME             STATUS   ROLES                  AGE   VERSION        INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
 npu01.local      Ready    control-plane,master   37d   v1.30.6+k3s1   192.168.1.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
@@ -172,7 +172,7 @@ Because of how Prometheus is deployed, it's managed by a [`Prometheus`](https://
 
 ### Open WebUI
 
-[Open WebUI](https://github.com/open-webui/open-webui) is a playground for Large Language Models and is primarily used in conjunction with [Ollama](https://ollama.com/). I've deployed [Chroma](https://www.trychroma.com/) separately to manage the database separate of Open WebUI as I'm not very impressed with Open WebUI as a cloud native tool. 
+[Open WebUI](https://github.com/open-webui/open-webui) is a playground for Large Language Models and is primarily used in conjunction with [Ollama](https://ollama.com/). I've deployed [Chroma](https://www.trychroma.com/) separately to manage the database separate of Open WebUI as I'm not very impressed with Open WebUI as a cloud native tool.
 
 It was with Open WebUI where I originally found the ISCSI issue with the Nvidia Jetson node because I wanted to add Persistence to Ollama since I was testing out models and if the container failed with an OOM error I wouldn't have to re-download everything all over again.
 

@@ -185,3 +185,17 @@ Open WebUI is a great place to store data for RAG usage and test out new tools/f
 TODO: Nathan
 
 -->
+
+## Troubleshooting
+
+This concerns topics that are more sporatic and random than anything under a topic above.
+
+<details>
+
+<summary>No Space Left on Device</summary>
+
+Images are stored on `/run` in a temporary filesystem rather than on each nvme device. Because of this they have very little space due to memory constraints. If this becomes a bigger issue the directory will have to be moved to another volume, but in the meantime you can increase the size of the directory with `sudo mount -o remount,size=<Size>G /run`.
+
+Before running this command, run a prune command just in case that solves the issue.
+
+</details>

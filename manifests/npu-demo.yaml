@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: npu-test
+spec:
+  template:
+    spec:
+      containers:
+        - command: [ "python3", "test.py" ]
+          image: ghcr.io/daedaluz/rknn-lite-demo # https://github.com/Daedaluz/rknn-docker
+          imagePullPolicy: Always
+          name: npu
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /dev/dri/renderD129
+              name: device
+            - mountPath: /proc/device-tree/compatible
+              name: compatible
+          workingDir: /demo/lite/resnet18 # https://github.com/airockchip/rknn-toolkit2/tree/master/rknn-toolkit-lite2/examples/resnet18
+      nodeSelector:
+        node-type: npu
+      restartPolicy: Never
+      volumes:
+        - hostPath:
+            path: /dev/dri/renderD129
+          name: device
+        - hostPath:
+            path: /proc/device-tree/compatible
+          name: compatible

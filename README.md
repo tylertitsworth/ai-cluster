@@ -124,6 +124,10 @@ There is some additional setup required to make sure that the GPU is accessible.
 
 Afterwards, I wrote the [Jetson Exporter](./jetson-exporter/README.md) which from what I can tell is the only implementation of jetson stats in Kubernetes.
 
+### NPU
+
+Each RK1 Device has an NPU, and while this NPU is sparsely supported in OSS it has basically no support in the cloud native ecosystem. A [basic demo](./manifests/npu-demo.yaml) using the npu on Kubernetes is what I'm using while I work on creating a device plugin and wait for Ollama to add NPU support.
+
 ## Applications
 
 Now that all of the cluster's resources are abstracted, I can get rid of the need to SSH and start deploying applications on Kubernetes.

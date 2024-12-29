@@ -68,7 +68,7 @@ I quickly found that switching to an SSH connection was much more convenient bec
 
 ## Flashing & OS Setup
 
-By default, nothing is flashed to these compute modules, and so we need to use the BMC to flash these boards and install Ubuntu onto them. Furthermore, my router doesn't really recognize these devices so I just want to put a quick note in here that I found their IP by using [UART](https://docs.turingpi.com/docs/tpi-uart) log outputs with a command like `tpi uart -n 1 set --cmd 'ip a'` and `tpi uart -n 1 get`.
+By default, nothing is flashed to these compute modules, and so I need to use the BMC to flash these boards and install Ubuntu onto them. Furthermore, my router doesn't really recognize these devices so I just want to put a quick note in here that I found their IP by using [UART](https://docs.turingpi.com/docs/tpi-uart) log outputs with a command like `tpi uart -n 1 set --cmd 'ip a'` and `tpi uart -n 1 get`.
 
 ### RK1
 
@@ -80,7 +80,7 @@ Flashing the Orin NX took about a week and a half or so. I wrote down my experie
 
 ## K3s Installation
 
-I installed K3s on Node 1 on the Turing Pi and as nodes got up and running I added them to the cluster. I decided not to use Ansible for this project because we're using a trivial amount of nodes that have very different configurations.
+I installed K3s on Node 1 on the Turing Pi and as nodes got up and running I added them to the cluster. I decided not to use Ansible for this project because I'm using a trivial amount of nodes that have very different configurations.
 
 Setting up any Node in K3s is trivial, and I'm super happy that it's this way:
 
@@ -110,7 +110,7 @@ I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-age
 
 After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.1.80-192.168.1.90` and then reserved all of those spaces on my router along with the turing nodes.
 
-Now whenever we have an application that we want to make available on the private network, we can set our service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD. The same is true for Traefik.
+Now whenever I have an application that I want to make available on the private network, I can set our service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD. The same is true for Traefik.
 
 ### Tailscale
 
@@ -120,18 +120,68 @@ Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubern
 
 ### Nvidia Device Plugin
 
-There is some additional setup required to make sure that the GPU is accessible. The Jetson uses the same device plugin daemonset that any other card uses, and the [documentation](https://docs.turingpi.com/docs/turing-pi2-kubernetes-cluster-nvidia-jetson) for this setup has a lot of unecessary steps. All of the networking stuff was not really required. Like I mention in the Nvidia Flashing & OS Setup document, there is a lot of out of date information surrounding the Orin NX, but once `./deviceQuery` runs without fail in a pod we officially had compute.
+There is some additional setup required to make sure that the GPU is accessible. The Jetson uses the same device plugin daemonset that any other card uses, and the [documentation](https://docs.turingpi.com/docs/turing-pi2-kubernetes-cluster-nvidia-jetson) for this setup has a lot of unecessary steps. All of the networking stuff was not really required. Like I mention in the Nvidia Flashing & OS Setup document, there is a lot of out of date information surrounding the Orin NX, but once `./deviceQuery` runs without fail in a pod I officially had compute.
 
 Afterwards, I wrote the [Jetson Exporter](./jetson-exporter/README.md) which from what I can tell is the only implementation of jetson stats in Kubernetes.
 
 ## Applications
 
+Now that all of the cluster's resources are abstracted, I can get rid of the need to SSH and start deploying applications on Kubernetes.
+
+![Architecture Diagram](https://github.com/user-attachments/assets/6667cff7-26f2-4692-8bb9-e81a655697cf)
+
+> An architecture block diagram of the cluster as it exists today
+
+### Networking
+
+After setting up MetalLB to start load balancing on my private network I added [nginx](https://nginx.org/en/) to the ingress list of supported ingress providers since Flyte doesn't work with Traefik. This variety of ingress classes means that when deploying and application I can just choose whichever is the easiest to implement. Since nginx and traefik are load balanced by Metal they route to specific IP addresses.
+
+[Traefik](https://doc.traefik.io/traefik/) has the [`IngressRoute`](https://doc.traefik.io/traefik/v2.2/routing/providers/kubernetes-crd/#kind-ingressroute) CRD which allows multiple application routes to the same ip address, unlike nginx. This means that I prefer using Traefik over nginx when possible.
+
+Because my private network doesn't have a DNS server, all of these routes need to be manually modified on the client's `/etc/hosts` (`C:\Windows\System32\drivers\etc\hosts` on Windows).
+
 ### ArgoCD
+
+One of the first orders of business is to replace the existing longhorn and traefik configurations and add them as [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) [Applications](https://argo-cd.readthedocs.io/en/stable/core_concepts/). ArgoCD is our GitOps application of choice, we can modify and maintain complex deployments from its UI and automatically update applications as new chart versions release.
+
+![ArgoCD Dashboard](https://github.com/user-attachments/assets/865c10a4-f6cb-4ba0-81e2-15bd3c68b5b6)
+
+> The ArgoCD Dashboard
+
+Each values file associated with each application is stored in the [agrocd](./manifests/argocd/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI.
 
 ### Prometheus & Grafana
 
-### Traefik & Nginx
+Metrics and scraped by [Prometheus](https://prometheus.io/) and then Aggregated by [Grafana](https://grafana.com/). There are a few ways to deploy these applications so I went with the [kube-prom-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack). Namely because I wanted both tools to work together out of the box, and I wanted [Prometheus Operator](https://prometheus-operator.dev/) and [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) as well.
+
+Afterwards I wrote some dashboards:
+
+![K3s Dashboard](https://github.com/user-attachments/assets/7ce9594b-d68d-4cd1-8c14-9d4503cbcdd8)
+
+> K3s Cluster [Dashboard](./grafana/k3s_dashboard.json)
+
+![Jetson Dashboard](https://github.com/user-attachments/assets/b8b9978f-0acb-440f-a573-404d32c72ee2)
+
+> Nvidia Jetson [Dashboard](./grafana/jetson_dashboard.json) using the [jetson exporter](./jetson-exporter/README.md)
+
+Because of how Prometheus is deployed, it's managed by a [`Prometheus`](https://github.com/prometheus-operator/prometheus-operator?tab=readme-ov-file#customresourcedefinitions) CRD. A [`ServiceMonitor`](https://prometheus-operator.dev/docs/developer/getting-started/#using-servicemonitors) has to contain the label `prometheus: monitoring-kube-prometheus-prometheus` in order to be picked up by prometheus and exist on the same namespace that prometheus was deployed on.
 
 ### Flyte
 
-### Open-Webui
+[Flyte](https://github.com/flyteorg/flyte) is an ML Orchestration application that I'm trialing at my workplace. It's intended to replace tools like [Argo Workflows](https://argoproj.github.io/workflows/) that aren't very ML-centric and I'm hoping to get some mileage out of it on this cluster. Any kind of workflow that requires multiple steps in different containers can be done in Flyte using Python and `flytectl`.
+
+### Open WebUI
+
+[Open WebUI](https://github.com/open-webui/open-webui) is a playground for Large Language Models and is primarily used in conjunction with [Ollama](https://ollama.com/). I've deployed [Chroma](https://www.trychroma.com/) separately to manage the database separate of Open WebUI as I'm not very impressed with Open WebUI as a cloud native tool. 
+
+It was with Open WebUI where I originally found the ISCSI issue with the Nvidia Jetson node because I wanted to add Persistence to Ollama since I was testing out models and if the container failed with an OOM error I wouldn't have to re-download everything all over again.
+
+Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
+
+<!--
+
+### [WikiJS](https://js.wiki/)
+
+TODO: Nathan
+
+-->

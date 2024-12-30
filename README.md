@@ -126,11 +126,29 @@ Afterwards, I wrote the [Jetson Exporter](./jetson-exporter/README.md) which fro
 
 ### NPU
 
-Each RK1 Device has an NPU, and while this NPU is sparsely supported in OSS it has basically no support in the cloud native ecosystem. A [basic demo](./npu-device-plugin/test.yaml) using the npu on Kubernetes is what I'm using while I work on creating a device plugin and wait for Ollama to add NPU support.
+Each RK1 Device has an NPU, and while this NPU is sparsely supported in OSS it has basically no support in the cloud native ecosystem. Since a device plugin for the NPU doesn't exist, I created one. To use the npu in Kubernetes I created a [basic demo](./npu-device-plugin/test.yaml) that runs inference on a pre-converted resnet18 model. The next step is to [serve](https://github.com/airockchip/rknn-llm/tree/main/examples/rkllm_server_demo) an rknn converted llm and utilize it with Open WebUI.
+
+To use an NPU on the cluster, make these additions to the pod spec:
+
+```yaml
+spec:
+  containers:
+    - ...
+      resources:
+        requests:
+          rockchip.com/npu: 1
+    #   securityContext:
+    #     privileged: true # Required for rknn-toolkit2/rknn-llm
+  tolerations:
+    - key: "npu"
+      operator: "Equal"
+      value: "enabled"
+      effect: "NoSchedule"
+```
 
 ## Applications
 
-Now that all of the cluster's resources are abstracted, I can get rid of the need to SSH and start deploying applications on Kubernetes.
+Now that all of the cluster resources are abstracted, I can get rid of the need to SSH and start deploying applications on Kubernetes.
 
 ![Architecture Diagram](https://github.com/user-attachments/assets/6667cff7-26f2-4692-8bb9-e81a655697cf)
 

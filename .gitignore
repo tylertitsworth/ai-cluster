@@ -3,3 +3,5 @@
 .venv/
 .vscode/
 **__pycache__**
+npu-device-plugin/bin/
+npu-device-plugin/pkg/

@@ -19,7 +19,8 @@ securityContext:
 To build the plugin locally, ensure that Go v1.23 is installed on your system.
 
 ```sh
-# export GOPATH=$PWD
+cd npu-device-plugin
+export GOPATH=$PWD
 go mod init device-plugin
 go mod tidy
 go install
@@ -52,7 +53,7 @@ This will deploy the device plugin on all nodes labeled with `node-type: npu`.
 To verify that the device plugin is working first ensure there are no logs printed in the device-plugin pods, then you can run a test job:
 
 ```sh
-kubectl apply -f test.yaml
+kubectl apply -f npu-device-plugin/test.yaml
 kubectl logs <pod-name>
 # W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
 # --> Load RKNN model

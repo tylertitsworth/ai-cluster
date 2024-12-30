@@ -13,7 +13,8 @@ repos:
       - id: go-imports # sudo apt install golang-golang-x-tools
       - id: no-go-testing
       - id: golangci-lint # sudo snap install golangci-lint --classic
-        args: ['npu-device-plugin/...']
+        entry: bash -c "cd npu-device-plugin && golangci-lint run ./..."
+        language: system
     repo: https://github.com/dnephin/pre-commit-golang
     rev: v0.5.0
   - hooks:

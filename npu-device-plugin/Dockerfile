@@ -1,8 +1,6 @@
 FROM golang:alpine AS builder
 
 WORKDIR /app
-COPY go.sum .
-COPY go.mod .
 COPY npu-device-plugin .
 
 RUN go install

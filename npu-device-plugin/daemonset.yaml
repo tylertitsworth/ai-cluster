@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: npu-device-plugin
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: npu-device-plugin
+  template:
+    metadata:
+      labels:
+        app: npu-device-plugin
+    spec:
+      nodeSelector:
+        node-type: npu
+      containers:
+        - name: rockchip-device-plugin
+          image: totalsundae/ai-cluster:npu-device-plugin
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true # Allows the container full access to host hardware
+          volumeMounts:
+            - name: device-plugin-dir
+              mountPath: /var/lib/kubelet/device-plugins # Required for device plugin Unix domain socket
+            - name: dev
+              mountPath: /dev # Grants access to the NPU device
+            - name: proc
+              mountPath: /proc # Grants access to /proc for hardware platform
+            - name: sys
+              mountPath: /sys # Grants access to /sys for driver version
+      volumes:
+        - name: device-plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+            type: Directory
+        - name: dev
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+      restartPolicy: Always

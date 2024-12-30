@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: npu-test
+spec:
+  template:
+    spec:
+      containers:
+        - command: [ "python3", "test.py" ]
+          image: ghcr.io/daedaluz/rknn-lite-demo # https://github.com/Daedaluz/rknn-docker
+          imagePullPolicy: Always
+          name: npu
+          workingDir: /demo/lite/resnet18 # https://github.com/airockchip/rknn-toolkit2/tree/master/rknn-toolkit-lite2/examples/resnet18
+          resources:
+            limits:
+              rockchip.com/npu: 1
+          securityContext:
+            privileged: true
+      restartPolicy: Never
+      tolerations:
+        - key: "npu"
+          operator: "Equal"
+          value: "enabled"
+          effect: "NoSchedule"

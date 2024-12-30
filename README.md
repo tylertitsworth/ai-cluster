@@ -126,7 +126,7 @@ Afterwards, I wrote the [Jetson Exporter](./jetson-exporter/README.md) which fro
 
 ### NPU
 
-Each RK1 Device has an NPU, and while this NPU is sparsely supported in OSS it has basically no support in the cloud native ecosystem. A [basic demo](./manifests/npu-demo.yaml) using the npu on Kubernetes is what I'm using while I work on creating a device plugin and wait for Ollama to add NPU support.
+Each RK1 Device has an NPU, and while this NPU is sparsely supported in OSS it has basically no support in the cloud native ecosystem. A [basic demo](./npu-device-plugin/test.yaml) using the npu on Kubernetes is what I'm using while I work on creating a device plugin and wait for Ollama to add NPU support.
 
 ## Applications
 

@@ -1,5 +1,5 @@
+.bin/
 .lvenv/
 .venv/
 .vscode/
 **__pycache__**
-.bin/

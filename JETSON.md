@@ -127,8 +127,8 @@ make menuconfig                         # Go to `General Setup -> Local version`
 
 # Step 6: Enable iSCSI support in the kernel configuration
 make menuconfig                         # Open the kernel configuration editor
-                                        # Navigate to `Device Drivers -> SCSI device support -> iSCSI transport attributes`
-                                        # Enable `CONFIG_ISCSI_TCP=m` for iSCSI over TCP as a module
+                                        # Navigate to `Device Drivers -> SCSI device support -> SCSI low-level drivers`
+                                        # Enable `iSCSI Initiator over TCP/IP=m` for iSCSI over TCP as a module
 
 # Step 7: Build the entire kernel (this step is mandatory to properly initialize symbols, headers, etc.)
 make -j$(nproc)                         # Compile the entire kernel

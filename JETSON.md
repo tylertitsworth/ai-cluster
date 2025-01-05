@@ -152,6 +152,7 @@ find . -name iscsi_tcp.ko               # Ensure the `iscsi_tcp.ko` module file 
 sudo cp drivers/scsi/iscsi_tcp.ko /lib/modules/$(uname -r)/kernel/drivers/scsi/
 sudo depmod -a                          # Refresh the module dependencies
 sudo modprobe iscsi_tcp                 # Load the module into the running kernel
+sudo echo "iscsi_tcp" | sudo tee -a /etc/module # load the module on reboot
 
 # Step 12: Verify the module is loaded
 dmesg | tail                            # Check kernel logs for confirmation that the module loaded successfully

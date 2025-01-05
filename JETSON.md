@@ -40,6 +40,10 @@ After connecting the cable, I noticed that a USB device appeared, but it had an 
 - You have to use a USB 3.0 Cable (Blue Tab)
 - Despite what the documentation says, you have to use `flash` mode to put the Jetson module into maskROM mode to expose the M.2 device connected to that node
 
+<img src="https://github.com/user-attachments/assets/34f5c197-5f49-41a0-a3ec-f9c99cf40e06" width="200" />
+
+> Closeup of the Flashing Ports, highlighting the silkscreen text indicating what each port is used for.
+
 ### WSL & USBIPD
 
 The tutorial for this recommends using VMWare Player, and while it can work out of the box on up to date Windows 11 Systems I prefer using WSL for this process. It's faster and easier to use. This didn't end up working, but I have hopes that one day it will. I installed a new Ubuntu 22.04 VM and configured the BSP & Sample Root Filesystem. It took a long time to extract the files and multiple attempts just to get `./apply_binaries.sh` to work. Because the Jetpack version I was using was much higher than the one written on the docs, the bootloader directory is different.

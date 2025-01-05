@@ -35,8 +35,8 @@ tpi power on -n 4
 
 After connecting the cable, I noticed that a USB device appeared, but it had an error `Port Reset Failed`. Furthermore, depending on the order of operations you used to connect the device, it wouldn't even show up most of the time. Sometimes it would take 10+ minutes for the device to show up with the same error. This problem took a long time to solve and eventually I realized a few things:
 
-- There are 3 USB Ports, and the Vertical one is for Flashing
-- USB-C to USB-A just doesn't work at all, on any port
+- There are 3 USB Ports, and the Vertical one is for Flashing ONLY through node 1
+- There are 3 USB-C Ports, and the one next to the Veritcal USB-A Port is for Flashing any Node
 - You have to use a USB 3.0 Cable (Blue Tab)
 - Despite what the documentation says, you have to use `flash` mode to put the Jetson module into maskROM mode to expose the M.2 device connected to that node
 

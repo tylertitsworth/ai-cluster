@@ -1,34 +1,55 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
-# MIT License
-#
-# Copyright (c) 2021 Stefan von Cavallar
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 import argparse
 import atexit
+import os
 import time
+from functools import wraps
 
 from jtop import jtop
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY, GaugeMetricFamily, InfoMetricFamily
+
+
+def add_node_label(metric_class):
+    """
+    Wrapper to add node label to metric classes from prometheus_client
+    """
+    original_init = metric_class.__init__
+
+    @wraps(original_init)
+    def new_init(self, name, documentation, labels=None, value=None, **kwargs):
+        if isinstance(labels, (list, tuple)):
+            # If labels is a list/tuple, add node label
+            labels = list(labels) + ["node"]
+            original_init(self, name, documentation, labels=labels, **kwargs)
+        elif value is not None or isinstance(labels, (int, float)):
+            # If it's a value-based metric, pass through unchanged
+            original_init(
+                self,
+                name,
+                documentation,
+                value=labels if value is None else value,
+                **kwargs,
+            )
+        else:
+            # If labels is None, initialize with just node label
+            original_init(self, name, documentation, labels=["node"], **kwargs)
+
+    original_add_metric = metric_class.add_metric
+
+    @wraps(original_add_metric)
+    def new_add_metric(self, labels, *args, **kwargs):
+        if isinstance(labels, (list, tuple)):
+            labels = list(labels) + [os.getenv("NODE_NAME", "unknown")]
+            return original_add_metric(self, labels, *args, **kwargs)
+        return original_add_metric(self, labels, *args, **kwargs)
+
+    metric_class.__init__ = new_init
+    metric_class.add_metric = new_add_metric
+    return metric_class
+
+
+GaugeMetricFamily = add_node_label(GaugeMetricFamily)
+InfoMetricFamily = add_node_label(InfoMetricFamily)
 
 
 class CustomCollector(object):
@@ -43,10 +64,6 @@ class CustomCollector(object):
 
     def collect(self):
         if self._jetson.ok():
-            # print('emc: ', self._jetson.emc)
-            # print('iram: ', self._jetson.iram)
-            # print('mts: ', self._jetson.mts)
-
             #
             # Board info
             #

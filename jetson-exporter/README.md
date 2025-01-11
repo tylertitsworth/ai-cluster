@@ -11,7 +11,7 @@ Build the docker image on an arm64 device (or use `docker buildx build`)
 ```sh
 # Build
 # -t : tag image with name
-docker build -t jetson-exporter .
+docker buildx build --platform=arm64 -t jetson-exporter .
 # Run
 # -d : detach from terminal (run in background)
 # -p : port-forward using bridge

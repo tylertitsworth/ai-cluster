@@ -27,7 +27,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "11.3.1"
+      "version": "11.4.0"
     },
     {
       "type": "datasource",
@@ -157,9 +157,9 @@
       "id": 16,
       "options": {
         "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "vertical",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
@@ -169,19 +169,19 @@
           "values": false
         },
         "showPercentChange": false,
-        "text": {},
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_uptime",
+          "expr": "jetson_uptime{node=~\"$Node\"}",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -346,15 +346,16 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_info_board_info",
+          "expr": "jetson_info_board_info{node=~\"$Node\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -616,15 +617,16 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_info_hardware_info",
+          "expr": "jetson_info_hardware_info{node=~\"$Node\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -765,15 +767,16 @@
         "text": {},
         "valueMode": "color"
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_usage_cpu",
+          "expr": "jetson_usage_cpu{node=~\"$Node\"}",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -910,7 +913,7 @@
         "text": {},
         "valueMode": "color"
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -919,7 +922,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_usage_ram{memory=\"used\"}",
+          "expr": "jetson_usage_ram{memory=\"used\", node=~\"$Node\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "{{memory}}",
@@ -931,7 +934,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "jetson_usage_ram{memory=\"tot\"}",
+          "expr": "jetson_usage_ram{memory=\"tot\", node=~\"$Node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "{{memory}}",
@@ -1023,7 +1026,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1032,7 +1035,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "jetson_usage_gpu",
+          "expr": "jetson_usage_gpu{node=~\"$Node\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -1103,7 +1106,7 @@
         "sizing": "auto",
         "text": {}
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1112,7 +1115,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_usage_fan{fan=\"speed\"}",
+          "expr": "jetson_usage_fan{fan=\"speed\", node=~\"$Node\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -1181,7 +1184,7 @@
         "sizing": "auto",
         "text": {}
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -1190,7 +1193,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_usage_disk{disk=\"used\"}",
+          "expr": "jetson_usage_disk{disk=\"used\", node=~\"$Node\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "{{disk}}",
@@ -1202,7 +1205,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "jetson_usage_disk{disk=\"total\"}",
+          "expr": "jetson_usage_disk{disk=\"total\", node=~\"$Node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "{{disk}}",
@@ -1305,15 +1308,16 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_usage_power",
+          "expr": "jetson_usage_power{node=~\"$Node\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -1418,15 +1422,16 @@
         "sizing": "auto",
         "text": {}
       },
-      "pluginVersion": "11.3.1",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "jetson_temperatures",
+          "expr": "jetson_temperatures{node=~\"$Node\"}",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -1469,7 +1474,25 @@
   "schemaVersion": 40,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {},
+        "definition": "label_values(node)",
+        "description": "",
+        "includeAll": false,
+        "name": "Node",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(node)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "orin.*",
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-5m",
@@ -1479,6 +1502,6 @@
   "timezone": "",
   "title": "NVIDIA Jetson",
   "uid": "n6FGltjMz",
-  "version": 1,
+  "version": 4,
   "weekStart": ""
 }

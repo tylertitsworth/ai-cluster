@@ -3,6 +3,13 @@ grafana:
   persistence:
     enabled: true
     size: 10Gi
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - grafana.local
+  service:
+    type: LoadBalancer
 prometheus:
   prometheusSpec:
     # For use with Grafana Cloud

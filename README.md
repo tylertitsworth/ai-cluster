@@ -103,13 +103,13 @@ I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-age
 
 After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.1.80-192.168.1.90` and then reserved all of those spaces on my router along with the turing nodes.
 
-Now whenever I have an application that I want to make available on the private network, I can set our service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD. The same is true for Traefik.
+Now whenever I have an application that I want to make available on the private network, I can set the service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD. The same is true for Traefik.
 
 ### Tailscale
 
 After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes.
 
-Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of our machines. This little application saves the pain of having to use `kubectl port-forward`.
+Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of the private network's machines. This little application saves the pain of having to use `kubectl port-forward`.
 
 ### Nvidia Device Plugin
 
@@ -157,7 +157,7 @@ Because my private network doesn't have a DNS server, all of these routes need t
 
 ### ArgoCD
 
-One of the first orders of business is to replace the existing longhorn and traefik configurations and add them as [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) [Applications](https://argo-cd.readthedocs.io/en/stable/core_concepts/). ArgoCD is our GitOps application of choice, we can modify and maintain complex deployments from its UI and automatically update applications as new chart versions release.
+One of the first orders of business is to replace the existing longhorn and traefik configurations and add them as [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) [Applications](https://argo-cd.readthedocs.io/en/stable/core_concepts/). ArgoCD is the GitOps application of choice, we can modify and maintain complex deployments from its UI and automatically update applications as new chart versions release.
 
 ![ArgoCD Dashboard](https://github.com/user-attachments/assets/865c10a4-f6cb-4ba0-81e2-15bd3c68b5b6)
 
@@ -185,7 +185,7 @@ Because of how Prometheus is deployed, it's managed by a [`Prometheus`](https://
 
 Logs are aggregated by [Loki](https://grafana.com/docs/loki/latest/) with the [loki-stack](https://github.com/grafana/helm-charts/tree/main/charts/loki-stack) chart. The stack deploys [Promtail](https://grafana.com/docs/loki/latest/send-data/promtail/). Promtail is the metric aggregator for Loki, which then formats and forwards those logs to Grafana for viewing. To add Loki as a datasource in Grafana, simply add a new Loki datasource and it give it the the connection url `http://loki:3100`.
 
-We need Loki because we can add it as a logging linker in [Flyte](#flyte) to view our task logs without going and searching for them with `kubectl` and `k9s`.
+We need Loki because we can add it as a logging linker in [Flyte](#flyte) to view the task logs without going and searching for them with `kubectl` and `k9s`.
 
 ### Flyte
 
@@ -251,7 +251,7 @@ After doing these steps I noticed that the Jetsons were barely being used by the
 
 Further configuration like metrics and logging came when I was developing the [`train.py`](./flyte/train.py), subsequent workflow iterations were a nightmare to debug, and there's this very convenient `Logs` header in the task view that seemed to indicate that the Pod logs could be aggregated, however, the [documentation](https://docs.flyte.org/en/latest/user_guide/productionizing/configuring_logging_links_in_the_ui.html) for logging both on the workflow side and the deployment side are either not obvious enough, or completely absent. Flyte either can't, or doesn't aggregate kubernetes logs like you can with `kubectl`. Instead, it needs a log aggregator and it has this function where you can configure the deployment to use one like [Cloudwatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html).
 
-If you're not using AWS though, you can use Loki for this, and flyte will generate a URL using some templating for each run. This means that we can link to Grafana, using the Loki datasource, and targeting our specific task pods.
+If you're not using AWS though, you can use Loki for this, and flyte will generate a URL using some templating for each run. This means that we can link to Grafana using the Loki datasource and get the live output of the target task's logs from kubernetes.
 
 ### Open WebUI
 

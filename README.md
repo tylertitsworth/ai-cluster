@@ -62,7 +62,7 @@ I quickly found that switching to an SSH connection was much more convenient bec
 
 By default, nothing is flashed to these compute modules, and so I need to use the BMC to flash these boards and install Ubuntu onto them. Furthermore, my router doesn't really recognize these devices so I just want to put a quick note in here that I found their IP by using [UART](https://docs.turingpi.com/docs/tpi-uart) log outputs with a command like `tpi uart -n 1 set --cmd 'ip a'` and `tpi uart -n 1 get`.
 
-### RK1
+### Turing RK1
 
 I went with the [BMC UI method](https://docs.turingpi.com/docs/turing-rk1-flashing-os) for flashing both RK1s, I used Ubuntu 22.04 LTS server since I won't have any use for a GUI. The process was reletively uneventful. I was able to move my eMMC OS Installation to my NVMe drive using `ubuntu-rockchip-install`.
 

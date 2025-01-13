@@ -115,7 +115,7 @@ Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubern
 
 ### Nvidia Device Plugin
 
-There is some additional setup required to make sure that the GPU is accessible. The Jetson uses the same device plugin daemonset that any other card uses, and the [documentation](https://docs.turingpi.com/docs/turing-pi2-kubernetes-cluster-nvidia-jetson) for this setup has a lot of unecessary steps. All of the networking stuff was not really required. Like I mention in the Nvidia Flashing & OS Setup document, there is a lot of out of date information surrounding the Orin NX, but once `./deviceQuery` runs without fail in a pod I officially had compute.
+There is some additional setup required to make sure that the GPU is accessible. The Jetson uses the same device plugin daemonset that any other card uses, and the [documentation](https://docs.turingpi.com/docs/turing-pi2-kubernetes-cluster-nvidia-jetson) for this setup has a lot of unecessary steps. All of the networking stuff was not really required. Like I mention in the Nvidia Flashing & OS Setup document, there is a lot of out of date information surrounding the Orin + Turing Pi, but once `./deviceQuery` runs without fail in a pod I officially had compute on K3s.
 
 Afterwards, I wrote the [Jetson Exporter](./jetson-exporter/README.md) which from what I can tell is the only implementation of jetson stats in Kubernetes.
 

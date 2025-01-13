@@ -68,7 +68,14 @@ class CIFAR100Model(L.LightningModule):
         # Set torch hub directory to our writable path
         torch.hub.set_dir(weights_dir)
         weights = ResNet50_Weights.DEFAULT
-        if torch.hub.has_file_to_download(weights.url):
+        model_weights_path = os.path.join(
+            torch.hub.get_dir(), "checkpoints", os.path.basename(weights.url)
+        )
+
+        if os.path.exists(model_weights_path):
+            # Weights already exist, just load the model
+            self.model = resnet50(weights=weights)
+        else:
             # Need to download weights
             if (
                 not torch.distributed.is_initialized()
@@ -77,9 +84,7 @@ class CIFAR100Model(L.LightningModule):
                 self.model = resnet50(weights=weights)
             else:
                 self.model = resnet50(weights=None)
-        else:
-            # Weights already exist, just load the model
-            self.model = resnet50(weights=weights)
+
         # Modify for CIFAR-100
         self.model.conv1 = nn.Conv2d(
             3, 64, kernel_size=3, stride=1, padding=1, bias=False

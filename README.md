@@ -66,9 +66,11 @@ By default, nothing is flashed to these compute modules, and so I need to use th
 
 I went with the [BMC UI method](https://docs.turingpi.com/docs/turing-rk1-flashing-os) for flashing both RK1s, I used Ubuntu 22.04 LTS server since I won't have any use for a GUI. The process was reletively uneventful. I was able to move my eMMC OS Installation to my NVMe drive using `ubuntu-rockchip-install`.
 
-### Nvidia Orin NX
+### Nvidia Jetson Orin Nano
 
-Flashing the Orin NX took about a week and a half or so. I wrote down my experience with the Jetson in a [separate document](./JETSON.md).
+I have the SOCM from the Jetson Orin NX Developer Kit and the Jetson Orin Nano Super Developer Kit, both are the same board with a different model name. Both have 8GB of memory shared with both the CPU and GPU.
+
+Flashing the Orin NX took about a week and a half or so. I wrote down my experience with the Jetson in a [separate document](./JETSON.md). The super was the same experience but in about 2 hours.
 
 ## K3s Installation
 

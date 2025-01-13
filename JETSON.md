@@ -1,6 +1,6 @@
-# Nvidia Jetson Orin NX 8GB
+# Nvidia Jetson Orin Nano
 
-Here is my flashing experience with the Jetson Orin SOCM board. Since I lack a waveshare dev board to flash the Orin properly you're going to get to see why there is a white lie in the first lines of the [documentation](https://docs.turingpi.com/docs/nvidia-jetson-orin-nx-intro-specs) for this product.
+Here is my flashing experience with the Jetson Orin Nano SOCM board. Since I lack a waveshare dev board to flash the Orin properly you're going to get to see why there is a white lie in the first lines of the [documentation](https://docs.turingpi.com/docs/nvidia-jetson-orin-nx-intro-specs) for this product.
 
 > *"The whole installation process might not be quick but should be pretty straightforward. In the future, we hope to make it much easier."*
 

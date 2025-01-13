@@ -2,7 +2,7 @@
 
 ## Setup
 
-Install the workflow requirements, create a `config.yaml` file and then verify your connection to `flyte.local`.
+Install the workflow requirements, create a `config.yaml` file at `~/.flyte/config.yaml` and then verify your connection to `flyte.local`.
 
 ```bash
 pip install -r requirements.txt

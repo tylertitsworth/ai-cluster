@@ -32,25 +32,17 @@ I live in Oregon, which doesn't have sales tax, so considering that, I spent abo
 
 > With [Heatsink + Fan](https://turingpi.com/product/rk1-heatsink/)
 
-1x Nvidia Jetson Orin NX 8GB
+2x Nvidia Jetson Nano
 
-> Via Arrow, Waveshare Compatible Heatsink + Fan sold separately
+> Via Arrow
 
-2x Teamgroup MP33 256GB Gen3x4 M.2 SSDs
+2x 256GB M.2 SSDs
 
 > For the 2 RK1s
 
-1x Crucial P3 Plus 1TB Gen4x4 M.2 SSD
+2x 1TB M.2 SSDs
 
-> For the Jetson Orin NX
-
-1x Intel 7260.HMW Dual Band Wireless AC Network Adapter 802.11 b/a/g/n/ac (Optional)
-
-> This card may or may not work with the board, I may have to return it
-
-1x 128GB Micro SD Card (Optional)
-
-> Just in case
+> For the Jetson Orin Nano's
 
 1x 12V 12A Power Supply
 
@@ -96,10 +88,11 @@ Afterwards, you get something like this:
 
 ```txt
 $ kubectl get node -o wide
-NAME             STATUS   ROLES                  AGE   VERSION        INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
-npu01.local      Ready    control-plane,master   37d   v1.30.6+k3s1   192.168.1.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
-npu02.local      Ready    control-plane          37d   v1.30.6+k3s1   192.168.1.44   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
-orinnx01.local   Ready    worker                 30d   v1.30.6+k3s1   192.168.1.14   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
+NAME             STATUS   ROLES                  AGE    VERSION        INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+npu01.local      Ready    control-plane,master   55d    v1.30.6+k3s1   192.168.1.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
+npu02.local      Ready    control-plane          55d    v1.30.6+k3s1   192.168.1.44   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
+orinnx01.local   Ready    worker                 7d4h   v1.30.6+k3s1   192.168.1.15   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
+orinnx02.local   Ready    worker                 7d5h   v1.30.6+k3s1   192.168.1.14   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
 ```
 
 > The RK1's have the label `node-type=npu` and the Jetson `node-type=jetson`. This will be important later.

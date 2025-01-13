@@ -22,7 +22,7 @@ My 2nd RK1 install had a slight hiccup with the fan cable getting in the way of 
 
 ### Parts
 
-I live in Oregon, which doesn't have sales tax, so considering that, I spent about ~$1300 on all of these parts, with a further upgrade to the new Jetson NX Super for an additional $250 in 2025. Rounding out this cluster to ~$1600 for 4 computers in a form factor that's smaller than ITX.
+I spent about ~$1600 for all of the parts to make this cluster, including the case that is going to come at the end of January.
 
 1x [Turing Pi 2.5.2](https://turingpi.com/product/turing-pi-2-5/)
 

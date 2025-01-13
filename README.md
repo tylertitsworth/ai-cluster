@@ -172,7 +172,7 @@ One of the first orders of business is to replace the existing longhorn and trae
 
 Each values file associated with each application is stored in the [agrocd](./manifests/argocd/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI.
 
-### Prometheus & Grafana
+### Monitoring
 
 Metrics and scraped by [Prometheus](https://prometheus.io/) and then Aggregated by [Grafana](https://grafana.com/). There are a few ways to deploy these applications so I went with the [kube-prom-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack). Namely because I wanted both tools to work together out of the box, and I wanted [Prometheus Operator](https://prometheus-operator.dev/) and [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) as well.
 
@@ -188,9 +188,77 @@ Afterwards I wrote some dashboards:
 
 Because of how Prometheus is deployed, it's managed by a [`Prometheus`](https://github.com/prometheus-operator/prometheus-operator?tab=readme-ov-file#customresourcedefinitions) CRD. A [`ServiceMonitor`](https://prometheus-operator.dev/docs/developer/getting-started/#using-servicemonitors) has to contain the label `prometheus: monitoring-kube-prometheus-prometheus` in order to be picked up by prometheus and exist on the same namespace that prometheus was deployed on.
 
+#### Logs
+
+Logs are aggregated by [Loki](https://grafana.com/docs/loki/latest/) with the [loki-stack](https://github.com/grafana/helm-charts/tree/main/charts/loki-stack) chart. The stack deploys [Promtail](https://grafana.com/docs/loki/latest/send-data/promtail/). Promtail is the metric aggregator for Loki, which then formats and forwards those logs to Grafana for viewing. To add Loki as a datasource in Grafana, simply add a new Loki datasource and it give it the the connection url `http://loki:3100`.
+
+We need Loki because we can add it as a logging linker in [Flyte](#flyte) to view our task logs without going and searching for them with `kubectl` and `k9s`.
+
 ### Flyte
 
-[Flyte](https://github.com/flyteorg/flyte) is an ML Orchestration application that I'm trialing at my workplace. It's intended to replace tools like [Argo Workflows](https://argoproj.github.io/workflows/) that aren't very ML-centric and I'm hoping to get some mileage out of it on this cluster. Any kind of workflow that requires multiple steps in different containers can be done in Flyte using Python and `flytectl`.
+[Flyte](https://github.com/flyteorg/flyte) is an ML Orchestration application that I'm trialing at my workplace. It's intended to replace tools like [Argo Workflows](https://argoproj.github.io/workflows/) and uses postgres and s3 to be a completely stateless ML platform.
+
+Deploying Flyte on anything other than AWS is very difficult, and I tried to leverage a community guide called [Flyte the Hard Way](https://github.com/davidmirror-ops/flyte-the-hard-way), but found that much of the instructions were inaccurate. After seeking further help in the community Slack I was eventually able to deploy Flyte.
+
+For those who are trying to deploy Flyte, and have search far and wide for solutions to their issues, here's the K3s solution:
+
+- Use nginx instead of Traefik
+- Check out my [values.yaml](./manifests/argocd/flyte.yaml) file for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
+- Create a config file at `~/.flyte/config` with the following:
+
+```yaml
+admin:
+  endpoint: dns:///flyte.local
+  authType: Pkce
+  insecure: false
+  caCertFilePath: /home/<username>/.flyte/ca.crt
+```
+
+> You will need to create `ca.crt`
+
+#### Distributed Training on NVIDIA Jetsons
+
+The standard use-case for a Jetson, or any Edge AI device is inference. We know this to be true, however, the kinds of devices that are designed for training AI models are prohibitively expensive. If you are a homelabber, and want to train AI models, you aren't going to be using ARM in the present year.
+
+The obvious aside, I'm going to still scale on two Jetsons. And I'm going to do it on Flyte so the process is reproducable. Here's what I did:
+
+1. Create a docker image based on `dustynv/l4t-pytorch:r36.4.0`
+   1. I discovered that we can't use the flyte `ImageSpec` to create containers in python because it uses `uv`, and `uv` refuses to install anything whose dependencies don't come from the same index
+   2. I created a [builder](https://docs.docker.com/build/builders/) in k3s so that my images would be built on ARM by ARM
+   3. I pushed this image to a public dockerhub repository at the tag `totalsundae/ai-cluster:jetson-flyte`
+2. Deploy the [KubeFlow Training Operator](https://github.com/kubeflow/training-operator)
+   1. Despite having pytorch plugin configured in my flyte values file, Flyte doesn't have the permissions to create or modify the `PyTorchJob` CRD that's used to do the distributed training so we need to modify its cluster role:
+
+      ```yaml
+      - apiGroups:
+        - kubeflow.org
+      resources:
+        - pytorchjobs
+      verbs:
+        - create
+        - delete
+        - get
+        - list
+        - patch
+        - update
+        - watch
+      ```
+
+3. Run the existing [PyTorch Lightning Distributed Training Example](https://docs.flyte.org/en/latest/flytesnacks/examples/kfpytorch_plugin/pytorch_lightning_mnist_autoencoder.html).
+   1. This workflow does not work out of the box on a Jetson, namely we get the error `nvmlDeviceGetP2PStatus(0,0,NVML_P2P_CAPS_INDEX_READ) failed: Not Supported`. This means that we can't use the `nccl` backend because nvidia didn't add support for P2P on the Jetson. Instead we'll just use `gloo`.
+   2. When you make a change to your container, the pods deployed don't have `imagePullPolicy: Always`, so we need to create a [`PodTemplate`](./flyte/train.py#L27-49)
+   3. At the same time, these pods are not using the same shared storage, so I created a [`pvc`](./manifests/flyte-pvc.yaml) that is always used in my `PodTemplate`.
+
+After doing these steps I noticed that the Jetsons were barely being used by the benchmark along with a bunch of other small issues I saw. So I intended to remake the benchmark training ResNet50 on CIFAR100. This would ensure that the time between epochs is still small enough to sit down and watch, while still being long enough to hear the Jetson fans spin.
+
+![usage-graphs](https://github.com/user-attachments/assets/a70e8290-3195-46b1-b7db-f25fb116e9f1)
+> K3s Dashboard Output in Grafana showing the utilization of the [Flyte Training Workflow](./flyte/train.py)
+
+#### Logging Workflows
+
+Further configuration like metrics and logging came when I was developing the [`train.py`](./flyte/train.py), subsequent workflow iterations were a nightmare to debug, and there's this very convenient `Logs` header in the task view that seemed to indicate that the Pod logs could be aggregated, however, the [documentation](https://docs.flyte.org/en/latest/user_guide/productionizing/configuring_logging_links_in_the_ui.html) for logging both on the workflow side and the deployment side are either not obvious enough, or completely absent. Flyte either can't, or doesn't aggregate kubernetes logs like you can with `kubectl`.Instead, it needs a log aggregator and it has this function where you can configure the deployment to use one like [Cloudwatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html).
+
+If you're not using AWS though, you can use Loki for this, and flyte will generate a URL using some templating for each run. This means that we can link to Grafana, using the Loki datasource, and targeting our specific task pods.
 
 ### Open WebUI
 

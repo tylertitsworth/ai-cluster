@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flyte-prometheus-servicemonitor
+  namespace: monitoring
+  labels:
+    name: flyte-prometheus-servicemonitor
+    prometheus: monitoring-kube-prometheus-prometheus
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flyte-binary
+  namespaceSelector:
+    matchNames:
+    - flyte
+  endpoints:
+  - port: http-metrics

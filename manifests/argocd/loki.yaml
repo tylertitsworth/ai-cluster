@@ -1,0 +1,4 @@
+# https://github.com/grafana/helm-charts/tree/main/charts/loki-stack
+loki:
+  image:
+    tag: 2.9.3 # typo in current version

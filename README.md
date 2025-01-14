@@ -241,17 +241,17 @@ The obvious aside, I'm going to still scale on two Jetsons. And I'm going to do 
 
 3. Run the existing [PyTorch Lightning Distributed Training Example](https://docs.flyte.org/en/latest/flytesnacks/examples/kfpytorch_plugin/pytorch_lightning_mnist_autoencoder.html).
    1. This workflow does not work out of the box on a Jetson, namely we get the error `nvmlDeviceGetP2PStatus(0,0,NVML_P2P_CAPS_INDEX_READ) failed: Not Supported`. This means that we can't use the `nccl` backend because nvidia didn't add support for P2P on the Jetson. Instead we'll just use `gloo`.
-   2. When you make a change to your container, the pods deployed don't have `imagePullPolicy: Always`, so we need to create a [`PodTemplate`](./flyte/train.py#L27-49)
+   2. When you make a change to your container, the pods deployed don't have `imagePullPolicy: Always`, so we need to create a [`PodTemplate`](./jetson-flyte/train.py#L27-49)
    3. At the same time, these pods are not using the same shared storage, so I created a [`pvc`](./manifests/flyte-pvc.yaml) that is always used in my `PodTemplate`.
 
 After doing these steps I noticed that the Jetsons were barely being used by the benchmark along with a bunch of other small issues I saw. So I intended to remake the benchmark training ResNet50 on CIFAR100. This would ensure that the time between epochs is still small enough to sit down and watch, while still being long enough to hear the Jetson fans spin.
 
 ![usage-graphs](https://github.com/user-attachments/assets/a70e8290-3195-46b1-b7db-f25fb116e9f1)
-> K3s Dashboard Output in Grafana showing the utilization of the [Flyte Training Workflow](./flyte/train.py)
+> K3s Dashboard Output in Grafana showing the utilization of the [Flyte Training Workflow](./jetson-flyte/train.py)
 
 #### Logging Workflows
 
-Further configuration like metrics and logging came when I was developing the [`train.py`](./flyte/train.py), subsequent workflow iterations were a nightmare to debug, and there's this very convenient `Logs` header in the task view that seemed to indicate that the Pod logs could be aggregated, however, the [documentation](https://docs.flyte.org/en/latest/user_guide/productionizing/configuring_logging_links_in_the_ui.html) for logging both on the workflow side and the deployment side are either not obvious enough, or completely absent. Flyte either can't, or doesn't aggregate kubernetes logs like you can with `kubectl`. Instead, it needs a log aggregator and it has this function where you can configure the deployment to use one like [Cloudwatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html).
+Further configuration like metrics and logging came when I was developing the [`train.py`](./jetson-flyte/train.py), subsequent workflow iterations were a nightmare to debug, and there's this very convenient `Logs` header in the task view that seemed to indicate that the Pod logs could be aggregated, however, the [documentation](https://docs.flyte.org/en/latest/user_guide/productionizing/configuring_logging_links_in_the_ui.html) for logging both on the workflow side and the deployment side are either not obvious enough, or completely absent. Flyte either can't, or doesn't aggregate kubernetes logs like you can with `kubectl`. Instead, it needs a log aggregator and it has this function where you can configure the deployment to use one like [Cloudwatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html).
 
 If you're not using AWS though, you can use Loki for this, and flyte will generate a URL using some templating for each run. This means that we can link to Grafana using the Loki datasource and get the live output of the target task's logs from kubernetes.
 

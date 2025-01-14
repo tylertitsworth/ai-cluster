@@ -16,7 +16,7 @@ spec:
         node-type: npu
       containers:
         - name: rockchip-device-plugin
-          image: totalsundae/ai-cluster:npu-device-plugin
+          image: ghcr.io/tylertitsworth/npu-device-plugin:latest
           imagePullPolicy: Always
           securityContext:
             privileged: true # Allows the container full access to host hardware

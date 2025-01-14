@@ -169,7 +169,7 @@ class CIFAR100DataModule(L.LightningDataModule):
     cache=True,
     cache_version="1.0",
     environment={"TORCH_HOME": "/shared/data"},
-    container_image="totalsundae/ai-cluster:jetson-flyte",
+    container_image="ghcr.io/tylertitsworth/jetson-flyte:latest",
     pod_template=pullTemplate,
 )
 def download_dataset() -> FlyteDirectory:
@@ -201,7 +201,7 @@ def download_dataset() -> FlyteDirectory:
     },
     retries=0,
     task_config=PyTorch(worker=Worker(replicas=1)),
-    container_image="totalsundae/ai-cluster:jetson-flyte",
+    container_image="ghcr.io/tylertitsworth/ai-cluster:jetson-flyte",
     limits=Resources(cpu="6", gpu="1", mem="6000Mi"),
     pod_template=pullTemplate,
     requests=Resources(cpu="4", gpu="1", mem="4000Mi"),

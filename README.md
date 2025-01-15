@@ -165,7 +165,23 @@ One of the first orders of business is to replace the existing longhorn and trae
 
 > The ArgoCD Dashboard
 
-Each values file associated with each application is stored in the [agrocd](./manifests/argocd/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI.
+Each values file associated with each application is stored in the [agrocd](./manifests/argocd/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
+
+```yaml
+# from source: to
+sources:
+  - repoURL: ...
+    path: ...
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - $values/manifests/argocd/<application-name>.yaml
+  - repoURL: https://github.com/tylertitsworth/ai-cluster
+    targetRevision: HEAD
+    ref: values
+```
+
+Then we can enable automatic updates, self healing, and pruning.
 
 ### Monitoring
 
@@ -282,5 +298,13 @@ This concerns topics that are more sporatic and random than anything under a top
 Images are stored on `/run` in a temporary filesystem rather than on each nvme device. Because of this they have very little space due to memory constraints. If this becomes a bigger issue the directory will have to be moved to another volume, but in the meantime you can increase the size of the directory with `sudo mount -o remount,size=<Size>G /run`.
 
 Before running this command, run a prune command just in case that solves the issue.
+
+</details>
+
+<details>
+
+<summary>kube-prometheus-stack fails to sync in ArgoCD</summary>
+
+If you are receiving an error like `one or more synchronization tasks completed unsuccessfully, reason: error when patching "/dev/shm/119925187": CustomResourceDefinition.apiextensions.k8s.io "prometheuses.monitoring.coreos.com" is invalid: metadata.annotations: Too long: must have at most 262144 bytes` this means that the annotations of the resource exceed Kubernetes' size limit, to resolve this simply enable server-side apply for all future syncing.
 
 </details>

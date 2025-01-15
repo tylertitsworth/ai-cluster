@@ -72,6 +72,20 @@ service:
   - name: http-metrics
     protocol: TCP
     port: 10254
+rbac:
+  extraRules:
+    - apiGroups:
+        - kubeflow.org
+      resources:
+        - pytorchjobs
+      verbs:
+        - create
+        - delete
+        - get
+        - list
+        - patch
+        - update
+        - watch
 ingress:
   create: true
   host: "{{ .Values.userSettings.hostName }}"

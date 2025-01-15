@@ -13,6 +13,11 @@ spec:
     services:
     - name: monitoring-grafana
       port: 80
+  - match: Host(`grafana.local`)
+    kind: Rule
+    services:
+    - name: monitoring-grafana
+      port: 80
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute

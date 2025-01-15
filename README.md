@@ -111,7 +111,20 @@ Now whenever I have an application that I want to make available on the private 
 
 After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes.
 
-Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of the private network's machines. This little application saves the pain of having to use `kubectl port-forward`.
+Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of the private network's machines. This little application saves the pain of having to use `kubectl port-forward`. Additionally, any hosts that have a configured Ingress can take advantage of k3s [coredns](https://coredns.io/). Simply add that route to the `coredns` `ConfigMap`:
+
+```txt
+.:53 {
+  ...
+  hosts /etc/coredns/NodeHosts {
+    192.168.1.80 open-webui.local
+    ...
+  }
+  ...
+}
+```
+
+Then restart coredns, and add the `kube-dns` service IP as a global nameserver in Tailscale. Make sure to override all local DNS and voila! Your subnet router now routes traffic through coreDNS, which acts as a DNS server for the entire tailscale network.
 
 ### Nvidia Device Plugin
 

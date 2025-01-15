@@ -26,3 +26,9 @@ service:
   type: LoadBalancer
 persistence:
   size: 15Gi
+ingress:
+  enabled: true
+  class: traefik
+  host: open-webui.local
+  tls: true
+  existingSecret: open-webui-tls-secret

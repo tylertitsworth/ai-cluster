@@ -28,3 +28,36 @@ spec:
     services:
     - name: longhorn-frontend
       port: 80
+--- # add server.insecure: "true" to argocd-cmd-params-cm
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  rules:
+  - host: argo.local
+    http:
+      paths:
+      - backend:
+          service:
+            name: argocd-server
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`argo.local`)
+    kind: Rule
+    services:
+    - name: argocd-server
+      port: 80

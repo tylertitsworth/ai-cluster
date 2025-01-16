@@ -4,15 +4,22 @@ kind: IngressRoute
 metadata:
   name: monitoring-grafana
   namespace: monitoring
+  annotations:
+    gethomepage.dev/href: "https://grafana.local"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/description: Cluster Data Analytics and Monitoring
+    gethomepage.dev/icon: grafana.png
+    gethomepage.dev/group: Monitoring
+    gethomepage.dev/app: grafana
+    gethomepage.dev/name: Grafana
+    gethomepage.dev/widget.type: "grafana"
+    gethomepage.dev/widget.url: "https://grafana.local"
+    gethomepage.dev/widget.username: admin
+    gethomepage.dev/widget.password: prom-operator
 spec:
   entryPoints:
     - web
   routes:
-  - match: PathPrefix(`/`)
-    kind: Rule
-    services:
-    - name: monitoring-grafana
-      port: 80
   - match: Host(`grafana.local`)
     kind: Rule
     services:
@@ -24,6 +31,14 @@ kind: IngressRoute
 metadata:
   name: longhorn
   namespace: longhorn
+  annotations:
+    gethomepage.dev/href: "https://longhorn.local"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/description: Distributed Cluster Storage
+    gethomepage.dev/icon: longhorn.png
+    gethomepage.dev/group: Storage
+    gethomepage.dev/app: longhorn
+    gethomepage.dev/name: Longhorn
 spec:
   entryPoints:
     - web
@@ -57,6 +72,17 @@ kind: IngressRoute
 metadata:
   name: argocd
   namespace: argocd
+  annotations:
+    gethomepage.dev/href: "https://argo.local"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/description: Cluster GitOps and Continuous Delivery
+    gethomepage.dev/icon: argocd.png
+    gethomepage.dev/group: GitOps
+    gethomepage.dev/name: ArgoCD
+    gethomepage.dev/app: argocd-server
+    # gethomepage.dev/widget.type: "argocd"
+    # gethomepage.dev/widget.url: "https://argo.local"
+    # gethomepage.dev/widget.key:
 spec:
   entryPoints:
     - web
@@ -65,4 +91,26 @@ spec:
     kind: Rule
     services:
     - name: argocd-server
+      port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: open-webui
+  namespace: ollama
+  annotations:
+    gethomepage.dev/href: "https://open-webui.local"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/app: open-webui
+    gethomepage.dev/description: AI Platform
+    gethomepage.dev/group: AI
+    gethomepage.dev/name: Open-WebUI
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`open-webui.local`)
+    kind: Rule
+    services:
+    - name: open-webui
       port: 80

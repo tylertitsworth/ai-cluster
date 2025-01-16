@@ -26,6 +26,8 @@ service:
   type: LoadBalancer
 persistence:
   size: 15Gi
+podLabels:
+  app.kubernetes.io/name: open-webui
 ingress:
   enabled: true
   class: traefik

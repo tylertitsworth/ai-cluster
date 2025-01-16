@@ -99,5 +99,10 @@ ingress:
     kubernetes.io/ingress.class: public
   httpAnnotations:
     nginx.ingress.kubernetes.io/app-root: /console
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/description: Flyte ML Orchestration
+    gethomepage.dev/group: AI
+    gethomepage.dev/name: Flyte
+    gethomepage.dev/app: flyte-binary
   grpcAnnotations:
     nginx.ingress.kubernetes.io/backend-protocol: GRPC

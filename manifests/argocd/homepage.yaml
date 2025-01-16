@@ -1,0 +1,53 @@
+# https://github.com/jameswynn/helm-charts/tree/main/charts/homepage
+config:
+  bookmarks:
+    - Source:
+        - Github:
+            - abbr: GH
+              href: https://github.com/tylertitsworth/ai-cluster
+    - VPN:
+        - Tailscale:
+            - abbr: TS
+              href: https://login.tailscale.com/admin/machines
+  widgets:
+    - logo:
+        icon: https://avatars.githubusercontent.com/u/43555799?s=400&u=c716259250a186e853a0f26c2d9885f55bc81eff&v=4.png
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - longhorn:
+        expanded: true
+        total: true
+        nodes: true
+  services: {}
+  kubernetes:
+    mode: cluster
+  settings:
+    providers:
+      longhorn:
+        url: "https://longhorn.local"
+service:
+  main:
+    type: LoadBalancer
+serviceAccount:
+  create: true
+  name: homepage
+enableRbac: true
+ingress:
+  main:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - host: homepage.local
+        paths:
+          - path: /
+            pathType: Prefix

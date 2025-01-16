@@ -1,4 +1,6 @@
 # https://github.com/jameswynn/helm-charts/tree/main/charts/homepage
+image:
+  tag: latest
 config:
   bookmarks:
     - Source:
@@ -9,6 +11,34 @@ config:
         - Tailscale:
             - abbr: TS
               href: https://login.tailscale.com/admin/machines
+    - Documentation:
+        - Alertmanager:
+            - abbr: AM
+              href: https://prometheus.io/docs/alerting/latest/alertmanager/
+        - ArgoCD:
+            - abbr: AC
+              href: https://argo-cd.readthedocs.io/en/stable/
+        - Flyte:
+            - abbr: FL
+              href: https://docs.flyte.org/en/latest/
+        - Grafana:
+            - abbr: GF
+              href: https://grafana.com/docs/
+        - Homepage:
+            - abbr: HP
+              href: https://gethomepage.dev/configs/
+        - Longhorn:
+            - abbr: LH
+              href: https://longhorn.io/docs/
+        - Open-WebUI:
+            - abbr: OW
+              href: https://docs.openwebui.com/
+        - Prometheus:
+            - abbr: PR
+              href: https://prometheus.io/docs/introduction/overview/
+        - Tailscale:
+            - abbr: TS
+              href: https://tailscale.com/kb
   widgets:
     - logo:
         icon: https://avatars.githubusercontent.com/u/43555799?s=400&u=c716259250a186e853a0f26c2d9885f55bc81eff&v=4.png

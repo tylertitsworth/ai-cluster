@@ -34,3 +34,5 @@ ingress:
   host: open-webui.local
   tls: true
   existingSecret: open-webui-tls-secret
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"

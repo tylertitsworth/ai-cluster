@@ -1,6 +1,10 @@
 # https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary
 userSettings:
   hostName: flyte.local
+deployment:
+  extraPodSpec:
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
 configuration:
   logging:
     level: 5

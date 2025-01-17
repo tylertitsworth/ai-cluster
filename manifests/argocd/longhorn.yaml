@@ -15,3 +15,9 @@ metrics:
     annotations:
       prometheus: monitoring-kube-prometheus-prometheus
       release: monitoring
+longhornDriver:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+longhornUI:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"

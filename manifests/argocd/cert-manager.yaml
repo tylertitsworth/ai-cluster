@@ -5,6 +5,3 @@
 crds:
   enabled: true
 namespace: kube-system
-prometheus:
-  servicemonitor:
-    enabled: true

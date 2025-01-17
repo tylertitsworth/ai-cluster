@@ -5,3 +5,5 @@ serviceMonitor:
   annotations:
     prometheus: monitoring-kube-prometheus-prometheus
     release: monitoring
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"

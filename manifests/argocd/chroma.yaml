@@ -6,3 +6,5 @@ chromadb:
   dataVolumeSize: 15Gi
 service:
   type: LoadBalancer
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"

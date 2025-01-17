@@ -76,13 +76,12 @@ metadata:
     gethomepage.dev/href: "https://argo.local"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/description: Cluster GitOps and Continuous Delivery
-    gethomepage.dev/icon: argocd.png
     gethomepage.dev/group: GitOps
     gethomepage.dev/name: ArgoCD
     gethomepage.dev/app: argocd-server
-    # gethomepage.dev/widget.type: "argocd"
-    # gethomepage.dev/widget.url: "https://argo.local"
-    # gethomepage.dev/widget.key:
+    gethomepage.dev/widget.type: "argocd"
+    gethomepage.dev/widget.url: "https://argo.local"
+    gethomepage.dev/widget.key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcmdvY2QiLCJzdWIiOiJob21lcGFnZTphcGlLZXkiLCJuYmYiOjE3MzcwNjUwMjEsImlhdCI6MTczNzA2NTAyMSwianRpIjoiMjc0MTVjNGUtNjAwYi00MTRlLWIwMWUtOGE3NWY3MWM3MzliIn0.Zph6kdl7E9tPs_aX-0g3hXi-OxM6jd6G7XBPbjUyXWU"
 spec:
   entryPoints:
     - web
@@ -114,3 +113,27 @@ spec:
     services:
     - name: open-webui
       port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus
+  namespace: monitoring
+  annotations:
+    gethomepage.dev/href: "https://prometheus.local"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/app: prometheus
+    gethomepage.dev/description: Metrics Scraping
+    gethomepage.dev/group: Monitoring
+    gethomepage.dev/name: Prometheus
+    gethomepage.dev/widget.type: "prometheus"
+    gethomepage.dev/widget.url: "https://prometheus.local"
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`prometheus.local`)
+    kind: Rule
+    services:
+    - name: monitoring-kube-prometheus-prometheus
+      port: 9090

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug
+spec:
+  containers:
+    - name: debug
+      image: ghcr.io/tylertitsworth/comfyui
+      command: ["sleep", "infinity"]
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 8000

@@ -30,6 +30,8 @@ spec:
     spec:
       securityContext:
         fsGroup: 1001 # https://github.com/bitnami/containers/tree/5ea894be67b97fac6adda4a5bcce5703cbd443c7/bitnami/minio#persisting-your-database
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
       containers:
       - image: "bitnami/minio:2023.7.18-debian-11-r2"
         imagePullPolicy: "IfNotPresent"

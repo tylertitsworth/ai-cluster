@@ -45,6 +45,8 @@ spec:
       labels:
         app.kubernetes.io/name: postgres
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
       containers:
       - image: postgres
         imagePullPolicy: "IfNotPresent"

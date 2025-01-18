@@ -1,4 +1,7 @@
 # https://github.com/longhorn/longhorn/tree/main/chart
+global:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
 defaultSettings:
   defaultDataPath: /storage
 service:
@@ -15,9 +18,3 @@ metrics:
     annotations:
       prometheus: monitoring-kube-prometheus-prometheus
       release: monitoring
-longhornDriver:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
-longhornUI:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"

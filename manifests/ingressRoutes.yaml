@@ -39,6 +39,8 @@ metadata:
     gethomepage.dev/group: Storage
     gethomepage.dev/app: longhorn
     gethomepage.dev/name: Longhorn
+    gethomepage.dev/namespace: longhorn
+    gethomepage.dev/podSelector: ""
 spec:
   entryPoints:
     - web
@@ -124,6 +126,7 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/app: prometheus
     gethomepage.dev/description: Metrics Scraping
+    gethomepage.dev/icon: prometheus.png
     gethomepage.dev/group: Monitoring
     gethomepage.dev/name: Prometheus
     gethomepage.dev/widget.type: "prometheus"

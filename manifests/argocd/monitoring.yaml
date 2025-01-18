@@ -14,6 +14,10 @@ grafana:
       - grafana.local
   service:
     type: LoadBalancer
+kube-stack-metrics:
+  prometheus:
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
 prometheus:
   ingress:
     enabled: true
@@ -21,6 +25,9 @@ prometheus:
     hosts:
       - prometheus.local
     paths: ['/']
+prometheusOperator:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
 prometheus-node-exporter:
   extraArgs:
     - --collector.disable-defaults

@@ -1,6 +1,8 @@
 # https://github.com/jameswynn/helm-charts/tree/main/charts/homepage
 image:
   tag: latest
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"
 config:
   bookmarks:
     - Source:

@@ -14,10 +14,11 @@ grafana:
       - grafana.local
   service:
     type: LoadBalancer
-kube-stack-metrics:
-  prometheus:
-    nodeSelector:
-      node-role.kubernetes.io/control-plane: "true"
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+kube-state-metrics:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
 prometheus:
   ingress:
     enabled: true

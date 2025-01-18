@@ -2,3 +2,5 @@
 loki:
   image:
     tag: 2.9.3 # typo in current version
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"

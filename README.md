@@ -271,7 +271,7 @@ The obvious aside, I'm going to still scale on two Jetsons. And I'm going to do 
 3. Run the existing [PyTorch Lightning Distributed Training Example](https://docs.flyte.org/en/latest/flytesnacks/examples/kfpytorch_plugin/pytorch_lightning_mnist_autoencoder.html).
    1. This workflow does not work out of the box on a Jetson, namely we get the error `nvmlDeviceGetP2PStatus(0,0,NVML_P2P_CAPS_INDEX_READ) failed: Not Supported`. This means that we can't use the `nccl` backend because nvidia didn't add support for P2P on the Jetson. Instead we'll just use `gloo`.
    2. When you make a change to your container, the pods deployed don't have `imagePullPolicy: Always`, so we need to create a [`PodTemplate`](./jetson-flyte/train.py#L27-49)
-   3. At the same time, these pods are not using the same shared storage, so I created a [`pvc`](./manifests/flyte-pvc.yaml) that is always used in my `PodTemplate`.
+   3. At the same time, these pods are not using the same shared storage, so I created a [`pvc`](./manifests/flyte-extras.yaml) that is always used in my `PodTemplate`.
 
 After doing these steps I noticed that the Jetsons were barely being used by the benchmark along with a bunch of other small issues I saw. So I intended to remake the benchmark training ResNet50 on CIFAR100. This would ensure that the time between epochs is still small enough to sit down and watch, while still being long enough to hear the Jetson fans spin.
 

@@ -16,3 +16,15 @@ spec:
     - flyte
   endpoints:
   - port: http-metrics
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flyte-pvc
+  namespace: flytesnacks-development
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi

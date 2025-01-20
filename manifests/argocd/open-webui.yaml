@@ -1,20 +1,20 @@
 # https://github.com/open-webui/helm-charts/tree/open-webui-4.0.6/charts/open-webui
 # ns=ollama
 ollama:
-   ollama:
-     gpu:
-       enabled: true
-       type: 'nvidia'
-       number: 1
-     models:
-       - llama3.2:1b
-       - llama3.2:3b
-       - moondream:1.8b
-       - qwen2.5-coder:1.5b
-   runtimeClassName: nvidia
-   persistentVolume:
-     enabled: true
-     size: 20Gi
+  ollama:
+    gpu:
+      enabled: true
+      type: 'nvidia'
+      number: 1
+    models:
+      - llama3.2:1b
+      - llama3.2:3b
+      - moondream:1.8b
+      - qwen2.5-coder:1.5b
+  runtimeClassName: nvidia
+  persistentVolume:
+    enabled: true
+    size: 20Gi
 extraEnvVars:
    - name: OLLAMA_DEBUG
      value: "1"

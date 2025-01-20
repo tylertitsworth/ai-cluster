@@ -110,11 +110,15 @@ spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`open-webui.local`)
-    kind: Rule
-    services:
-    - name: open-webui
-      port: 80
+    - match: Host(`open-webui.local`)
+      kind: Rule
+      services:
+        - name: open-webui
+          port: 80
+          sticky:
+            cookie:
+              name: route
+              maxAge: 172800
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute

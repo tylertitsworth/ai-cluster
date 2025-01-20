@@ -1,0 +1,26 @@
+.:53 {
+    errors
+    health
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+      pods insecure
+      fallthrough in-addr.arpa ip6.arpa
+    }
+    hosts /etc/coredns/NodeHosts {
+      # nginx
+      192.168.1.83 flyte.local
+      # traefik
+      192.168.1.80 dashboard.local homepage.local open-webui.local argo.local prometheus.local grafana.local longhorn.local
+      ttl 60
+      reload 15s
+      fallthrough
+    }
+    prometheus :9153
+    forward . /etc/resolv.conf
+    cache 30
+    loop
+    reload
+    loadbalance
+    import /etc/coredns/custom/*.override
+}
+import /etc/coredns/custom/*.server

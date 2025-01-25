@@ -11,7 +11,7 @@ grafana:
     enabled: true
     ingressClassName: traefik
     hosts:
-      - grafana.local
+      - grafana.k3s
   service:
     type: LoadBalancer
   nodeSelector:
@@ -24,7 +24,7 @@ prometheus:
     enabled: true
     ingressClassName: traefik
     hosts:
-      - prometheus.local
+      - prometheus.k3s
     paths: ['/']
 prometheusOperator:
   nodeSelector:

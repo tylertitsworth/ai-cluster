@@ -2,7 +2,7 @@
 
 ## Setup
 
-Install the workflow requirements, create a `config.yaml` file at `~/.flyte/config.yaml` and then verify your connection to `flyte.local`.
+Install the workflow requirements, create a `config.yaml` file at `~/.flyte/config.yaml` and then verify your connection to `flyte.k3s`.
 
 ```bash
 pip install -r requirements.txt
@@ -26,7 +26,7 @@ To run the training workflow, use the following command:
 pyflyte run --remote flyte/train.py train_workflow
 # Running Execution on Remote.
 # 0:00:00 Running execution on remote.
-# [✔] Go to https://flyte.local/console/projects/flytesnacks/domains/development/executions/<workflow-version> to see execution in the console.
+# [✔] Go to https://flyte.k3s/console/projects/flytesnacks/domains/development/executions/<workflow-version> to see execution in the console.
 ```
 
 ## Observe Workflow
@@ -35,7 +35,7 @@ You can observe the workflow execution through the Flyte console. Navigate to th
 
 ![flyte-tasks](https://github.com/user-attachments/assets/61883829-e03f-422d-8c3a-2270e145adeb)
 
-> A snapshot of the tasks created by [`train.py`](train.py) in http://flyte.local
+> A snapshot of the tasks created by [`train.py`](train.py) in http://flyte.k3s
 
 If Loki has been configured, selecting the task view for the `train_model` task should show `Grafanamaster` as a link, which should allow you to get a live preview of the logs for each worker in the distributed run. The log output will look something like this:
 

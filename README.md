@@ -117,7 +117,7 @@ Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubern
 .:53 {
   ...
   hosts /etc/coredns/NodeHosts {
-    192.168.1.80 open-webui.local
+    192.168.1.80 open-webui.k3s
     ...
   }
   ...
@@ -232,7 +232,7 @@ For those who are trying to deploy Flyte, and have search far and wide for solut
 
 ```yaml
 admin:
-  endpoint: dns:///flyte.local
+  endpoint: dns:///flyte.k3s
   authType: Pkce
   insecure: false
   caCertFilePath: /home/<username>/.flyte/ca.crt

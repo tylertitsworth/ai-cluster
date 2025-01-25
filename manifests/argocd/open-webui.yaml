@@ -31,7 +31,7 @@ podLabels:
 ingress:
   enabled: true
   class: traefik
-  host: open-webui.local
+  host: open-webui.k3s
   tls: true
   existingSecret: open-webui-tls-secret
 nodeSelector:

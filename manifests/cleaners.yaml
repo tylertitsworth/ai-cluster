@@ -1,0 +1,252 @@
+apiVersion: apps.projectsveltos.io/v1alpha1
+kind: Cleaner
+metadata:
+  name: deployment-with-zero-replicas
+  namespace: cleaner
+spec:
+  schedule: "* 0 * * *"
+  resourcePolicySet:
+    resourceSelectors:
+    - kind: Deployment
+      group: "apps"
+      version: v1
+      evaluate: |
+        function evaluate()
+          hs = {}
+          hs.matching = false
+          if obj.spec.replicas == 0 then
+            hs.matching = true
+          end
+          return hs
+        end
+  action: Delete
+---
+apiVersion: apps.projectsveltos.io/v1alpha1
+kind: Cleaner
+metadata:
+  name: unused-roles
+  namespace: cleaner
+spec:
+  schedule: "* 0 * * *"
+  action: Delete
+  resourcePolicySet:
+    resourceSelectors:
+    - kind: ClusterRole
+      group: "rbac.authorization.k8s.io"
+      version: v1
+    - kind: ClusterRoleBinding
+      group: "rbac.authorization.k8s.io"
+      version: v1
+    - kind: RoleBinding
+      group: "rbac.authorization.k8s.io"
+      version: v1
+    aggregatedSelection: |
+      function evaluate()
+        local hs = {}
+        hs.message = ""
+
+        -- Contains list of existing ClusterRoles
+        local existingClusterRoles = {}
+        -- Contains list of ClusterRoles currently referenced by
+        -- roleBindings or ClusterRoleBindings
+        local usedClusterRoles = {}
+
+        local unusedClusterRoles = {}
+
+        -- Create list of existingClusterRoles and usedClusterRoles
+        for _, resource in ipairs(resources) do
+          local kind = resource.kind
+          if kind == "ClusterRole" then
+            table.insert(existingClusterRoles, resource)
+          elseif kind == "ClusterRoleBinding" then
+            if resource.roleRef.kind == "ClusterRole" then
+              usedClusterRoles[resource.roleRef.name] = true
+            end
+          elseif kind == "RoleBinding" then
+            if resource.roleRef.kind == "ClusterRole" then
+              usedClusterRoles[resource.roleRef.name] = true
+            end
+          end
+        end
+
+        -- Iterate over existing clusterRoles and find not used anymore
+        for _,clusterRole in ipairs(existingClusterRoles) do
+          if not usedClusterRoles[clusterRole.metadata.name] then
+            table.insert(unusedClusterRoles, {resource = clusterRole})
+          end
+        end
+
+        if #unusedClusterRoles > 0 then
+          hs.resources = unusedClusterRoles
+        end
+        return hs
+      end
+---
+apiVersion: apps.projectsveltos.io/v1alpha1
+kind: Cleaner
+metadata:
+  name: completed-jobs
+  namespace: cleaner
+spec:
+  schedule: "* 0 * * *"
+  resourcePolicySet:
+    resourceSelectors:
+    - kind: Job
+      group: "batch"
+      version: v1
+      evaluate: |
+        function evaluate()
+          hs = {}
+          hs.matching = false
+          if obj.status ~= nil then
+            if obj.status.completionTime ~= nil and obj.status.succeeded > 0 then
+              hs.matching = true
+            end
+          end
+          return hs
+        end
+  action: Delete
+---
+apiVersion: apps.projectsveltos.io/v1alpha1
+kind: Cleaner
+metadata:
+  name: completed-pods
+  namespace: cleaner
+spec:
+  schedule: "* 0 * * *"
+  resourcePolicySet:
+    resourceSelectors:
+    - kind: Pod
+      group: ""
+      version: v1
+      evaluate: |
+        function evaluate()
+          hs = {}
+          hs.matching = false
+          if obj.status.conditions ~= nil then
+            for _, condition in ipairs(obj.status.conditions) do
+              if condition.reason == "PodCompleted" and condition.status == "True" then
+                hs.matching = true
+              end
+            end
+          end
+          return hs
+        end
+  action: Delete
+---
+apiVersion: apps.projectsveltos.io/v1alpha1
+kind: Cleaner
+metadata:
+  name: unused-service-accounts
+  namespace: cleaner
+spec:
+  schedule: "* 0 * * *"
+  action: Delete
+  resourcePolicySet:
+    resourceSelectors:
+    - kind: Pod
+      group: ""
+      version: v1
+    - kind: ServiceAccount
+      group: ""
+      version: v1
+    - kind: RoleBinding
+      group: "rbac.authorization.k8s.io"
+      version: v1
+    - kind: ClusterRoleBinding
+      group: "rbac.authorization.k8s.io"
+      version: v1
+    aggregatedSelection: |
+      function getKey(namespace, name)
+        return namespace .. ":" .. name
+      end
+
+      function addRoleBindingServiceAccounts(roleBinding, usedServiceAccounts)
+        if roleBinding.subjects ~= nil then
+          for _,subject in ipairs(roleBinding.subjects) do
+            if subject.kind == "ServiceAccount" then
+              key = getKey(roleBinding.metadata.namespace, subject.name)
+              usedServiceAccounts[key] = true
+            end
+          end
+        end
+      end
+
+      function addClusterRoleBindingServiceAccounts(clusterRoleBinding, usedServiceAccounts)
+        if clusterRoleBinding.subjects ~= nil then
+          for _,subject in ipairs(clusterRoleBinding.subjects) do
+            if subject.kind == "ServiceAccount" then
+              key = getKey(subject.namespace, subject.name)
+              usedServiceAccounts[key] = true
+            end
+          end
+        end
+      end
+
+      function addPodServiceAccount(pod, usedServiceAccounts)
+        if pod.spec.serviceAccountName ~= nil then
+          serviceAccount = pod.spec.serviceAccountName
+        else
+          serviceAccount = "default"
+        end
+        key = getKey(pod.metadata.namespace, serviceAccount)
+        usedServiceAccounts[key] = true
+      end
+
+      function evaluate()
+        local hs = {}
+        hs.message = ""
+
+        local serviceAccounts = {}
+        local usedServiceAccounts = {}
+        local unusedServiceAccounts = {}
+
+        for _, resource in ipairs(resources) do
+          local kind = resource.kind
+          if kind == "ServiceAccount" then
+            table.insert(serviceAccounts, resource)
+          elseif kind == "Pod" then
+            addPodServiceAccount(resource, usedServiceAccounts)
+          elseif kind == "RoleBinding" then
+            addRoleBindingServiceAccounts(resource, usedServiceAccounts)
+          elseif kind == "ClusterRoleBinding" then
+            addClusterRoleBindingServiceAccounts(resource, usedServiceAccounts)
+          end
+        end
+
+        -- walk all existing serviceAccounts and find the unused ones
+        for _,serviceAccount in ipairs(serviceAccounts) do
+          key = getKey(serviceAccount.metadata.namespace, serviceAccount.metadata.name)
+          if not usedServiceAccounts[key] then
+            table.insert(unusedServiceAccounts, {resource = serviceAccount})
+          end
+        end
+
+        if #unusedServiceAccounts > 0 then
+          hs.resources = unusedServiceAccounts
+        end
+        return hs
+      end
+---
+apiVersion: apps.projectsveltos.io/v1alpha1
+kind: Cleaner
+metadata:
+  name: statefulset-with-zero-replicas
+  namespace: cleaner
+spec:
+  schedule: "* 0 * * *"
+  resourcePolicySet:
+    resourceSelectors:
+    - kind: StatefulSet
+      group: "apps"
+      version: v1
+      evaluate: |
+        function evaluate()
+          hs = {}
+          hs.matching = false
+          if obj.spec.replicas == 0 then
+            hs.matching = true
+          end
+          return hs
+        end
+  action: Delete

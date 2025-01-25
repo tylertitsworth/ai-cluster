@@ -64,7 +64,7 @@ config:
   settings:
     providers:
       longhorn:
-        url: "https://longhorn.local"
+        url: "https://longhorn.k3s"
 service:
   main:
     type: LoadBalancer
@@ -77,7 +77,7 @@ ingress:
     enabled: true
     ingressClassName: traefik
     hosts:
-      - host: homepage.local
+      - host: homepage.k3s
         paths:
           - path: /
             pathType: Prefix

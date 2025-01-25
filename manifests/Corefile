@@ -2,15 +2,15 @@
     errors
     health
     ready
-    kubernetes cluster.local in-addr.arpa ip6.arpa {
+    kubernetes cluster.k3s in-addr.arpa ip6.arpa {
       pods insecure
       fallthrough in-addr.arpa ip6.arpa
     }
     hosts /etc/coredns/NodeHosts {
       # nginx
-      192.168.1.83 flyte.local
+      192.168.1.83 flyte.k3s
       # traefik
-      192.168.1.80 dashboard.local homepage.local open-webui.local argo.local prometheus.local grafana.local longhorn.local
+      192.168.1.80 dashboard.k3s homepage.k3s open-webui.k3s argo.k3s prometheus.k3s grafana.k3s longhorn.k3s
       ttl 60
       reload 15s
       fallthrough

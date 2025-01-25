@@ -11,7 +11,7 @@ service:
 ingress:
   enabled: true
   ingressClassName: traefik
-  host: longhorn.local
+  host: longhorn.k3s
 metrics:
   serviceMonitor:
     enabled: true

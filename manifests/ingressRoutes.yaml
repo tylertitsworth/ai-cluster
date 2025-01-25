@@ -5,7 +5,7 @@ metadata:
   name: monitoring-grafana
   namespace: monitoring
   annotations:
-    gethomepage.dev/href: "https://grafana.local"
+    gethomepage.dev/href: "https://grafana.k3s"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/description: Cluster Data Analytics and Monitoring
     gethomepage.dev/icon: grafana.png
@@ -13,14 +13,14 @@ metadata:
     gethomepage.dev/app: grafana
     gethomepage.dev/name: Grafana
     gethomepage.dev/widget.type: "grafana"
-    gethomepage.dev/widget.url: "https://grafana.local"
+    gethomepage.dev/widget.url: "https://grafana.k3s"
     gethomepage.dev/widget.username: admin
     gethomepage.dev/widget.password: prom-operator
 spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`grafana.local`)
+  - match: Host(`grafana.k3s`)
     kind: Rule
     services:
     - name: monitoring-grafana
@@ -32,7 +32,7 @@ metadata:
   name: longhorn
   namespace: longhorn
   annotations:
-    gethomepage.dev/href: "https://longhorn.local"
+    gethomepage.dev/href: "https://longhorn.k3s"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/description: Distributed Cluster Storage
     gethomepage.dev/icon: longhorn.png
@@ -45,7 +45,7 @@ spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`longhorn.local`)
+  - match: Host(`longhorn.k3s`)
     kind: Rule
     services:
     - name: longhorn-frontend
@@ -58,7 +58,7 @@ metadata:
   namespace: argocd
 spec:
   rules:
-  - host: argo.local
+  - host: argo.k3s
     http:
       paths:
       - backend:
@@ -75,20 +75,20 @@ metadata:
   name: argocd
   namespace: argocd
   annotations:
-    gethomepage.dev/href: "https://argo.local"
+    gethomepage.dev/href: "https://argo.k3s"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/description: Cluster GitOps and Continuous Delivery
     gethomepage.dev/group: GitOps
     gethomepage.dev/name: ArgoCD
     gethomepage.dev/app: argocd-server
     gethomepage.dev/widget.type: "argocd"
-    gethomepage.dev/widget.url: "https://argo.local"
+    gethomepage.dev/widget.url: "https://argo.k3s"
     gethomepage.dev/widget.key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcmdvY2QiLCJzdWIiOiJob21lcGFnZTphcGlLZXkiLCJuYmYiOjE3MzcwNjUwMjEsImlhdCI6MTczNzA2NTAyMSwianRpIjoiMjc0MTVjNGUtNjAwYi00MTRlLWIwMWUtOGE3NWY3MWM3MzliIn0.Zph6kdl7E9tPs_aX-0g3hXi-OxM6jd6G7XBPbjUyXWU"
 spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`argo.local`)
+  - match: Host(`argo.k3s`)
     kind: Rule
     services:
     - name: argocd-server
@@ -100,7 +100,7 @@ metadata:
   name: open-webui
   namespace: ollama
   annotations:
-    gethomepage.dev/href: "https://open-webui.local"
+    gethomepage.dev/href: "https://open-webui.k3s"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/app: open-webui
     gethomepage.dev/description: AI Platform
@@ -110,7 +110,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`open-webui.local`)
+    - match: Host(`open-webui.k3s`)
       kind: Rule
       services:
         - name: open-webui
@@ -126,7 +126,7 @@ metadata:
   name: prometheus
   namespace: monitoring
   annotations:
-    gethomepage.dev/href: "https://prometheus.local"
+    gethomepage.dev/href: "https://prometheus.k3s"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/app: prometheus
     gethomepage.dev/description: Metrics Scraping
@@ -134,12 +134,12 @@ metadata:
     gethomepage.dev/group: Monitoring
     gethomepage.dev/name: Prometheus
     gethomepage.dev/widget.type: "prometheus"
-    gethomepage.dev/widget.url: "https://prometheus.local"
+    gethomepage.dev/widget.url: "https://prometheus.k3s"
 spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`prometheus.local`)
+  - match: Host(`prometheus.k3s`)
     kind: Rule
     services:
     - name: monitoring-kube-prometheus-prometheus

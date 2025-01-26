@@ -14,7 +14,7 @@ ollama:
   runtimeClassName: nvidia
   persistentVolume:
     enabled: true
-    size: 20Gi
+    size: 30Gi
 extraEnvVars:
    - name: OLLAMA_DEBUG
      value: "1"

@@ -292,6 +292,42 @@ It was with Open WebUI where I originally found the ISCSI issue with the Nvidia 
 
 Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
 
+### Cert-Manager
+
+[Cert-Manager](https://cert-manager.io/) is a tool to configure SSL for applications deployed on Kubernetes, and in general do certificate management for Cloud Native environments. I wanted to enable SSL because it enables certain features on the browser that could be worth exploring later, mainly to do with accessing audio devices to do text-to-speech.
+
+Because my applications are only available on a private network I can't take advantage of a tool like [letsencrypt](https://letsencrypt.org/), so instead I have to configure self-signed certificates and then install them manually into my browser. During this process we don't actually have to create any certificates manually on linux, instead cert-manager will do that for us, and re-create/issue certificates if any changes are made or if a certificate would expire.
+
+```mermaid
+flowchart LR
+    subgraph Cert-Manager[" "]
+        direction TB
+        A["Self-Signed<br/>Issuer"] -->|Creates| B["Root CA"]
+        B -->|Signs| C["Wildcard<br/>Certificate"]
+    end
+
+    subgraph Traefik[" "]
+        direction TB
+        D["TLS Store"] -->|Configures| E["Traefik<br/>Proxy"]
+        E -->|Routes| F["IngressRoutes"]
+    end
+
+    C -->|Stored in| D
+
+    style A fill:#2d4f3c,stroke:#50a37d,color:#fff
+    style B fill:#2d4f3c,stroke:#50a37d,color:#fff
+    style C fill:#2d4f3c,stroke:#50a37d,color:#fff
+    style D fill:#2b4465,stroke:#6c8ebf,color:#fff
+    style E fill:#2b4465,stroke:#6c8ebf,color:#fff
+    style F fill:#2b4465,stroke:#6c8ebf,color:#fff
+    style Cert-Manager fill:none,stroke:none
+    style Traefik fill:none,stroke:none
+```
+
+> A Flowchart showing the relationship between all [cert-manager objects](./manifests/k3s-ssl.yaml) and [traefik objects](./manifests/traefik-routes.yaml)
+
+Along the way I learned that wildcards don't really work with the `Certificate` object, and instead I had to list out all of my DNS Names. Additionally, each `IngressRoute` needs to point to a `Middleware` in its namespace that redirects traffic to https to ensure SSL is actually used. If SSL would break for whatever reason, we still have http as an option just in case.
+
 <!--
 
 ### [WikiJS](https://js.wiki/)

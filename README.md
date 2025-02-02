@@ -49,9 +49,7 @@ I spent about ~$1600 for all of the parts to make this cluster, including the ca
 
 > Vendor Neural, the one I grabbed goes up to 144W and was slightly cheaper than what is on Turing Pi's site
 
-1x PC Open Frame Test Bench with Acrylic Stand
-
-> This is a placeholder until the [official case](https://turingpi.com/product/turing-mini-itx-case/) arrives
+1x [Turing Pi Case](https://turingpi.com/product/turing-mini-itx-case/)
 
 ### BMC
 

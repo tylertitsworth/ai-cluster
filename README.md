@@ -2,7 +2,8 @@
 
 This is a repository for all of the information related to my journey with the Turing Pi line of homelab products. I'm an MLOps Engineer by trade so I plan to use this as a Kubernetes cluster for Edge AI Inference and other weird experiments on arm. This build took about 3 weeks to ship, and another 2 weeks to get completely flashed and assembled, with a good portion of those 2 weeks spent on just one step (more on that below).
 
-![Finished Build](https://github.com/user-attachments/assets/a314233f-29f0-43ab-90db-0c06ddc6abf3)
+![Finished Build](https://github.com/user-attachments/assets/2a9bb39f-f53c-4f68-b98d-19f580fa804b)
+![Inside Finished Build](https://github.com/user-attachments/assets/9333f08e-3807-4ad6-8256-c259e3f027c8)
 
 > Finished Turing Pi sitting on the shelf next to my Computer, where it runs 24/7
 

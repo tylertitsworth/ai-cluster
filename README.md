@@ -123,6 +123,8 @@ Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubern
 }
 ```
 
+> In my case, I can just run `kubectl patch configmap coredns -n kube-system --type merge -p "{\"data\":{\"Corefile\":\"$(cat manifests/Corefile | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')\"}}"`
+
 Then restart coredns, and add the `kube-dns` service IP as a global nameserver in Tailscale. Make sure to override all local DNS and voila! Your subnet router now routes traffic through coreDNS, which acts as a DNS server for the entire tailscale network.
 
 ### Nvidia Device Plugin

@@ -2,7 +2,7 @@
     errors
     health
     ready
-    kubernetes cluster.k3s in-addr.arpa ip6.arpa {
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
       pods insecure
       fallthrough in-addr.arpa ip6.arpa
     }

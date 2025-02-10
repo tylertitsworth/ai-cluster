@@ -4,3 +4,11 @@
 crds:
   enabled: true
 namespace: traefik
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"
+cainjector:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+webhook:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"

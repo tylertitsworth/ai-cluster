@@ -12,9 +12,5 @@ tolerations:
 - key: "node-role.kubernetes.io/master"
   operator: "Exists"
   effect: "NoSchedule"
-# This cert resolver is not working, give it some love
-certificatesResolvers:
-  http:
-    acme:
-      email: titswortht@gmail.com
-      storage: acme.json
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"

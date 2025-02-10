@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/flyte"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pip"
+    directory: "/jetson-exporter"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "gomod"
+    directory: "/npu-device-plugin"
+    schedule:
+      interval: "monthly"

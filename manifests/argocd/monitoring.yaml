@@ -4,31 +4,28 @@ alertmanager:
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
 grafana:
+  ingress:
+    enabled: true
+    hosts:
+      - grafana.k3s
+    ingressClassName: traefik
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
   persistence:
     enabled: true
     size: 10Gi
-  ingress:
-    enabled: true
-    ingressClassName: traefik
-    hosts:
-      - grafana.k3s
   service:
     type: LoadBalancer
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
 kube-state-metrics:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"
 prometheus:
   ingress:
     enabled: true
-    ingressClassName: traefik
     hosts:
       - prometheus.k3s
-    paths: ['/']
-prometheusOperator:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
+    ingressClassName: traefik
+    paths: [ '/' ]
 prometheus-node-exporter:
   extraArgs:
     - --collector.disable-defaults
@@ -41,3 +38,6 @@ prometheus-node-exporter:
     - --collector.time
     - --collector.uname
     - --collector.vmstat
+prometheusOperator:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"

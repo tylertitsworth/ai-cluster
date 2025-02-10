@@ -1,14 +1,13 @@
-# This App has not been fully configured and is not working. Give it some love.
 # https://charts.jetstack.io
 # cert-manager:v1.16.3
+cainjector:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
 crds:
   enabled: true
 namespace: traefik
 nodeSelector:
   node-role.kubernetes.io/control-plane: "true"
-cainjector:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
 webhook:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"

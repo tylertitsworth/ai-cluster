@@ -1,8 +1,4 @@
 # https://github.com/jameswynn/helm-charts/tree/main/charts/homepage
-image:
-  tag: latest
-nodeSelector:
-  node-role.kubernetes.io/control-plane: "true"
 config:
   bookmarks:
     - Source:
@@ -38,46 +34,50 @@ config:
         - Tailscale:
             - abbr: TS
               href: https://tailscale.com/kb
+  kubernetes:
+    mode: cluster
+  services: {}
+  settings:
+    providers:
+      longhorn:
+        url: "https://longhorn.k3s"
   widgets:
     - logo:
         icon: https://avatars.githubusercontent.com/u/43555799?s=400&u=c716259250a186e853a0f26c2d9885f55bc81eff&v=4.png
     - kubernetes:
         cluster:
-          show: true
           cpu: true
-          memory: true
-          showLabel: true
           label: "cluster"
-        nodes:
+          memory: true
           show: true
+          showLabel: true
+        nodes:
           cpu: true
           memory: true
+          show: true
           showLabel: true
     - longhorn:
         expanded: true
-        total: true
         labels: true
         nodes: true
-  services: {}
-  kubernetes:
-    mode: cluster
-  settings:
-    providers:
-      longhorn:
-        url: "https://longhorn.k3s"
+        total: true
+enableRbac: true
+image:
+  tag: latest
+ingress:
+  main:
+    enabled: true
+    hosts:
+      - host: homepage.k3s
+        paths:
+          - path: /
+            pathType: Prefix
+    ingressClassName: traefik
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"
 service:
   main:
     type: LoadBalancer
 serviceAccount:
   create: true
   name: homepage
-enableRbac: true
-ingress:
-  main:
-    enabled: true
-    ingressClassName: traefik
-    hosts:
-      - host: homepage.k3s
-        paths:
-          - path: /
-            pathType: Prefix

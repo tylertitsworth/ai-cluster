@@ -1,9 +1,9 @@
 # https://github.com/gianlucam76/k8s-cleaner/blob/main/charts/k8s-cleaner
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"
 serviceMonitor:
-  enabled: true
-  namespace: monitoring
   annotations:
     prometheus: monitoring-kube-prometheus-prometheus
     release: monitoring
-nodeSelector:
-  node-role.kubernetes.io/control-plane: "true"
+  enabled: true
+  namespace: monitoring

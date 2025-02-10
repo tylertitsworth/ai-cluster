@@ -1,11 +1,48 @@
 # https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary
-userSettings:
-  hostName: flyte.k3s
-deployment:
-  extraPodSpec:
-    nodeSelector:
-      node-role.kubernetes.io/control-plane: "true"
 configuration:
+  database:
+    dbname: flyte
+    host: postgres.flyte
+    password: postgres
+    username: postgres
+  inline:
+    flyteadmin:
+      profilePort: 10254
+    plugins:
+      k8s:
+        default-env-vars:
+          - FLYTE_AWS_ENDPOINT: "http://192.168.1.41:30084"
+          - FLYTE_AWS_ACCESS_KEY_ID: "minio"
+          - FLYTE_AWS_SECRET_ACCESS_KEY: "miniostorage"
+        inject-finalizer: true
+    propeller:
+      metrics-prefix: "flyte:"
+      prof-port: 10254
+    scheduler:
+      metricsScope: "flyte:"
+      profiler-port: 10254
+    storage:
+      cache:
+        max_size_mbs: 100
+        target_gc_percent: 100
+    task_resources:
+      defaults:
+        cpu: 4000m
+        memory: 2000Mi
+      limits:
+        cpu: 8000m
+        memory: 8000Mi
+    tasks:
+      task-plugins:
+        default-for-task-types:
+          - container: container
+          - container_array: k8s-array
+          - pytorch: pytorch
+        enabled-plugins:
+          - container
+          - sidecar
+          - k8s-array
+          - pytorch
   logging:
     level: 5
     plugins:
@@ -14,68 +51,44 @@ configuration:
           templateUris:
             - |
               http://grafana.k3s/explore?schemaVersion=1&panes=%7B%22kxw%22%3A%7B%22datasource%22%3A%22de9sm3bb47ta8f%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bpod%3D%5C%22{{ .podName }}%5C%22%7D+%7C%3D+%60%60%22%2C%22queryType%22%3A%22range%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22de9sm3bb47ta8f%22%7D%2C%22editorMode%22%3A%22builder%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-1h%22%2C%22to%22%3A%22now%22%7D%7D%7D&orgId=1
-  database:
-    username: postgres
-    password: postgres
-    host: postgres.flyte
-    dbname: flyte
   storage:
-    type: minio
     metadataContainer: flyte
-    userDataContainer: flyte
     provider: s3
     providerConfig:
       s3:
-        region: "us-east-1" #Irrelevant for local but still needed
-        authType: "accesskey"
-        endpoint: "http://192.168.1.41:30084"
         accessKey: "minio"
-        secretKey: "miniostorage"
+        authType: "accesskey"
         disableSSL: "true"
+        endpoint: "http://192.168.1.41:30084"
+        region: "us-east-1" #Irrelevant for local but still needed
+        secretKey: "miniostorage"
         secure: "false"
-  inline:
-    propeller:
-      prof-port: 10254
-      metrics-prefix: "flyte:"
-    scheduler:
-      profiler-port: 10254
-      metricsScope: "flyte:"
-    flyteadmin:
-      profilePort: 10254
-    tasks:
-      task-plugins:
-        enabled-plugins:
-          - container
-          - sidecar
-          - k8s-array
-          - pytorch
-        default-for-task-types:
-          - container: container
-          - container_array: k8s-array
-          - pytorch: pytorch
-    plugins:
-      k8s:
-        inject-finalizer: true
-        default-env-vars:
-          - FLYTE_AWS_ENDPOINT: "http://192.168.1.41:30084"
-          - FLYTE_AWS_ACCESS_KEY_ID: "minio"
-          - FLYTE_AWS_SECRET_ACCESS_KEY: "miniostorage"
-    task_resources:
-      defaults:
-        cpu: 4000m
-        memory: 2000Mi
-      limits:
-        cpu: 8000m
-        memory: 8000Mi
-    storage:
-      cache:
-        max_size_mbs: 100
-        target_gc_percent: 100
-service:
-  extraPorts:
-  - name: http-metrics
-    protocol: TCP
-    port: 10254
+    type: minio
+    userDataContainer: flyte
+deployment:
+  extraPodSpec:
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+ingress:
+  commonAnnotations:
+    kubernetes.io/ingress.class: public
+  create: true
+  grpcAnnotations:
+    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+  host: "{{ .Values.userSettings.hostName }}"
+  httpAnnotations:
+    gethomepage.dev/app: flyte-binary
+    gethomepage.dev/description: Flyte ML Orchestration
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: AI
+    gethomepage.dev/name: Flyte
+    nginx.ingress.kubernetes.io/app-root: /console
+  ingressClassName: nginx
+  separateGrpcIngress: true
+  tls:
+    - hosts:
+        - "{{ .Values.userSettings.hostName }}"
+      secretName: flytetls
 rbac:
   extraRules:
     - apiGroups:
@@ -90,23 +103,10 @@ rbac:
         - patch
         - update
         - watch
-ingress:
-  create: true
-  host: "{{ .Values.userSettings.hostName }}"
-  separateGrpcIngress: true
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - "{{ .Values.userSettings.hostName }}"
-      secretName: flytetls
-  commonAnnotations:
-    kubernetes.io/ingress.class: public
-  httpAnnotations:
-    nginx.ingress.kubernetes.io/app-root: /console
-    gethomepage.dev/enabled: "true"
-    gethomepage.dev/description: Flyte ML Orchestration
-    gethomepage.dev/group: AI
-    gethomepage.dev/name: Flyte
-    gethomepage.dev/app: flyte-binary
-  grpcAnnotations:
-    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+service:
+  extraPorts:
+    - name: http-metrics
+      port: 10254
+      protocol: TCP
+userSettings:
+  hostName: flyte.k3s

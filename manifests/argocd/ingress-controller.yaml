@@ -1,6 +1,4 @@
 # https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx
-# ns=kube-system
-# default parameters
 controller:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"

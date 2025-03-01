@@ -11,11 +11,11 @@ ingress:
   host: open-webui.k3s
   tls: true
 livenessProbe:
-  failureThreshold: 1
+  failureThreshold: 5
   httpGet:
     path: /health
     port: http
-  periodSeconds: 10
+  periodSeconds: 60
 nodeSelector:
   node-role.kubernetes.io/control-plane: "true"
 ollama:
@@ -39,7 +39,7 @@ readinessProbe:
   httpGet:
     path: /health/db
     port: http
-  periodSeconds: 10
+  periodSeconds: 30
 service:
   type: LoadBalancer
 startupProbe:
@@ -47,7 +47,7 @@ startupProbe:
   httpGet:
     path: /health
     port: http
-  initialDelaySeconds: 30
-  periodSeconds: 5
+  initialDelaySeconds: 60
+  periodSeconds: 10
 websocket:
   enabled: true

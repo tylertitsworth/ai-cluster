@@ -1,9 +1,0 @@
-# https://github.com/amikos-tech/chromadb-chart/tree/chromadb-0.1.20/charts/chromadb-chart
-chromadb:
-  auth:
-    enabled: false
-  dataVolumeSize: 15Gi
-nodeSelector:
-  node-role.kubernetes.io/control-plane: "true"
-service:
-  type: LoadBalancer

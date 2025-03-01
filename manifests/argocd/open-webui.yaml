@@ -4,14 +4,18 @@ extraEnvVars:
     value: "1"
   - name: ENV
     value: "dev"
-  - name: CHROMA_HTTP_HOST
-    value: 10.43.14.46
 ingress:
   class: traefik
   enabled: true
   existingSecret: open-webui-tls-secret
   host: open-webui.k3s
   tls: true
+livenessProbe:
+  failureThreshold: 1
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
 nodeSelector:
   node-role.kubernetes.io/control-plane: "true"
 ollama:
@@ -19,12 +23,9 @@ ollama:
     gpu:
       enabled: true
       number: 1
-      type: 'nvidia'
+      type: "nvidia"
     models:
       - llama3.2:1b
-      - llama3.2:3b
-      - moondream:1.8b
-      - qwen2.5-coder:1.5b
   persistentVolume:
     enabled: true
     size: 30Gi
@@ -33,5 +34,20 @@ persistence:
   size: 15Gi
 podLabels:
   app.kubernetes.io/name: open-webui
+readinessProbe:
+  failureThreshold: 1
+  httpGet:
+    path: /health/db
+    port: http
+  periodSeconds: 10
 service:
   type: LoadBalancer
+startupProbe:
+  failureThreshold: 20
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 5
+websocket:
+  enabled: true

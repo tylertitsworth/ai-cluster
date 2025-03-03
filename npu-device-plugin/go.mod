@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/golang/glog v1.2.4
 	github.com/kubevirt/device-plugin-manager v1.19.5
-	k8s.io/kubelet v0.32.1
+	k8s.io/kubelet v0.32.2
 )
 
 require (

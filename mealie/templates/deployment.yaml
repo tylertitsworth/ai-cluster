@@ -18,6 +18,9 @@ spec:
       - name: mealie
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        volumeMounts:
+        - name: mealie-data
+          mountPath: /app/data
         ports:
           - name: http
             containerPort: {{ .Values.service.port }}
@@ -34,9 +37,8 @@ spec:
         - name: POSTGRES_DB
           value: mealie
         volumeMounts:
-        - name: postgres-storage
+        - name: pg-data
           mountPath: /var/lib/postgresql/data
-          subPath: postgres
         ports:
           - name: http
             containerPort: 5432

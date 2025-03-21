@@ -46,7 +46,7 @@ spec:
       volumes:
         - name: pg-data
           persistentVolumeClaim:
-            claimName: postgresql-pvc
+            claimName: postgresmealie-pvc
         - name: mealie-data
           persistentVolumeClaim:
             claimName: mealie-pvc

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: kernel-gateway
+description: A Helm chart for deploying a Kernel Gateway for Jupyter
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+maintainers:
+  - name: tylertitsworth
+    email: titsworth@gmail.com
+    url: https://github.com/tylertitsworth

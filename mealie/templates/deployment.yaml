@@ -27,8 +27,10 @@ spec:
           value: mealie
         - name: POSTGRES_DB
           value: mealie
-        - name: PGDATA
-          value: /var/lib/postgresql/data/mealiedata
+        - name: POSTGRES_SERVER
+          value: localhost
+        - name: POSTGRES_PORT
+          value: 5432
         volumeMounts:
         - name: pg-data
           mountPath: /var/lib/postgresql/mealiedata 

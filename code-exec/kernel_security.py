@@ -1,7 +1,4 @@
-import sys
 from importlib.util import find_spec
-
-from jupyter_kernel_gateway.gateway.handlers import IPythonHandler
 
 
 class KernelSecurity:

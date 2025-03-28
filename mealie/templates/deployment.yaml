@@ -18,6 +18,20 @@ spec:
       - name: mealie
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: DB_ENGINE
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: mealie
+        - name: POSTGRES_USER
+          value: mealie
+        - name: POSTGRES_DB
+          value: mealie
+        - name: PGDATA
+          value: /var/lib/postgresql/data/mealiedata
+        volumeMounts:
+        - name: pg-data
+          mountPath: /var/lib/postgresql/mealiedata 
         volumeMounts:
         - name: mealie-data
           mountPath: /app/data

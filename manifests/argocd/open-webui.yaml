@@ -4,11 +4,35 @@ extraEnvVars:
     value: "1"
   - name: ENV
     value: "dev"
+  - name: ENABLE_OAUTH_SIGNUP
+    value: "true"
+  - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+    value: "true"
+  - name: OAUTH_CLIENT_ID
+    value: "k3s-open-webui"
+  - name: OAUTH_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: keycloak-secret
+        key: OAUTH_CLIENT_SECRET
+  - name: OAUTH_PROVIDER_NAME
+    value: "Keycloak"
+  - name: OPENID_PROVIDER_URL
+    value: "https://keycloak.tail79a5c8.ts.net/realms/master/.well-known/openid-configuration"
+  - name: SSL_CERT_FILE
+    value: /etc/ssl/certs/k3s/k3s-ca.crt
+volumeMounts:
+  container:
+    - name: ca-cert
+      mountPath: /etc/ssl/certs/k3s
+volumes:
+  - name: ca-cert
+    secret:
+      secretName: tailscale-crt
 ingress:
-  class: traefik
+  class: tailscale
   enabled: true
-  existingSecret: open-webui-tls-secret
-  host: open-webui.k3s
+  host: open-webui
   tls: true
 livenessProbe:
   failureThreshold: 5

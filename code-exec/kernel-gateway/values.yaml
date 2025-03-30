@@ -1,0 +1,25 @@
+replicaCount: 1
+image:
+  repository: totalsundae/dev
+  pullPolicy: Always
+  tag: "kernel-gateway"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+service:
+  type: LoadBalancer
+  port: 8888
+resources:
+  limits:
+    cpu: 6
+    memory: 6Gi
+  requests:
+    cpu: 1
+    memory: 2Gi
+nodeSelector: {}
+tolerations: []
+affinity: {}

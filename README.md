@@ -148,7 +148,8 @@ Now that all of the cluster resources are abstracted, I can get rid of the need 
 
 One of the first orders of business is to replace the existing longhorn configuration and add it as [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) [Applications](https://argo-cd.readthedocs.io/en/stable/core_concepts/). ArgoCD is the GitOps application of choice, we can modify and maintain complex deployments from its UI and automatically update applications as new chart versions release.
 
-![ArgoCD Dashboard](https://github.com/user-attachments/assets/865c10a4-f6cb-4ba0-81e2-15bd3c68b5b6)
+![ArgoCD Dashboard](https://github.com/user-attachments/assets/20945b0c-00af-4e87-b83a-c391df75a6cd)
+
 
 > The ArgoCD Dashboard
 
@@ -176,7 +177,8 @@ Metrics and scraped by [Prometheus](https://prometheus.io/) and then Aggregated 
 
 Afterwards I wrote some dashboards:
 
-![K3s Dashboard](https://github.com/user-attachments/assets/7ce9594b-d68d-4cd1-8c14-9d4503cbcdd8)
+![K3s Dashboard](https://github.com/user-attachments/assets/0b1ac428-6650-4c96-b646-49ea1f4ed127)
+
 
 > K3s Cluster [Dashboard](./grafana/k3s_dashboard.json)
 

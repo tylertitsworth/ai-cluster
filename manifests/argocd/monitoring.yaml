@@ -5,10 +5,15 @@ alertmanager:
       node-role.kubernetes.io/control-plane: "true"
 grafana:
   ingress:
+    labels:
+      tailscale.com/proxy-class: "control-plane"
     enabled: true
     hosts:
-      - grafana.k3s
-    ingressClassName: traefik
+      - grafana
+    ingressClassName: tailscale
+    tls:
+      - hosts:
+          - grafana
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"
   persistence:
@@ -21,11 +26,16 @@ kube-state-metrics:
     node-role.kubernetes.io/control-plane: "true"
 prometheus:
   ingress:
+    labels:
+      tailscale.com/proxy-class: "control-plane"
     enabled: true
     hosts:
-      - prometheus.k3s
-    ingressClassName: traefik
+      - prometheus
+    ingressClassName: tailscale
     paths: [ '/' ]
+    tls:
+      - hosts:
+          - prometheus
 prometheus-node-exporter:
   extraArgs:
     - --collector.disable-defaults

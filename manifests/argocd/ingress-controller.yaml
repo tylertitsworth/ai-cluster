@@ -1,4 +1,0 @@
-# https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx
-controller:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"

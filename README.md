@@ -104,28 +104,13 @@ I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-age
 
 After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.1.80-192.168.1.90` and then reserved all of those spaces on my router along with the turing nodes.
 
-Now whenever I have an application that I want to make available on the private network, I can set the service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD. The same is true for Traefik.
+Now whenever I have an application that I want to make available on the private network, I can set the service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD.
 
 ### Tailscale
 
-After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes.
+After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes. The Tailscale Operator was added to act as an Ingress Controller for the cluster. This only exposes services to the tailnet, so a nameserver was set up with coredns to route specific services back into the cluster to be used by other applications. Namely Keycloak is egressed back into the cluster to allow for setting up SSO over OIDC.
 
-Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of the private network's machines. This little application saves the pain of having to use `kubectl port-forward`. Additionally, any hosts that have a configured Ingress can take advantage of k3s [coredns](https://coredns.io/). Simply add that route to the `coredns` `ConfigMap`:
-
-```txt
-.:53 {
-  ...
-  hosts /etc/coredns/NodeHosts {
-    192.168.1.80 open-webui.k3s
-    ...
-  }
-  ...
-}
-```
-
-> In my case, I can just run `kubectl patch configmap coredns -n kube-system --type merge -p "{\"data\":{\"Corefile\":\"$(cat manifests/Corefile | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')\"}}"`
-
-Then restart coredns, and add the `kube-dns` service IP as a global nameserver in Tailscale. Make sure to override all local DNS and voila! Your subnet router now routes traffic through coreDNS, which acts as a DNS server for the entire tailscale network.
+Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of the private network's machines, removing the need for `kubectl port-forward`.
 
 ### Nvidia Device Plugin
 
@@ -159,21 +144,9 @@ spec:
 
 Now that all of the cluster resources are abstracted, I can get rid of the need to SSH and start deploying applications on Kubernetes.
 
-![Architecture Diagram](https://github.com/user-attachments/assets/6667cff7-26f2-4692-8bb9-e81a655697cf)
-
-> An architecture block diagram of the cluster as it exists today
-
-### Networking
-
-After setting up MetalLB to start load balancing on my private network I added [nginx](https://nginx.org/en/) to the ingress list of supported ingress providers since Flyte doesn't work with Traefik. This variety of ingress classes means that when deploying and application I can just choose whichever is the easiest to implement. Since nginx and traefik are load balanced by Metal they route to specific IP addresses.
-
-[Traefik](https://doc.traefik.io/traefik/) has the [`IngressRoute`](https://doc.traefik.io/traefik/v2.2/routing/providers/kubernetes-crd/#kind-ingressroute) CRD which allows multiple application routes to the same ip address, unlike nginx. This means that I prefer using Traefik over nginx when possible.
-
-Because my private network doesn't have a DNS server, all of these routes need to be manually modified on the client's `/etc/hosts` (`C:\Windows\System32\drivers\etc\hosts` on Windows).
-
 ### ArgoCD
 
-One of the first orders of business is to replace the existing longhorn and traefik configurations and add them as [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) [Applications](https://argo-cd.readthedocs.io/en/stable/core_concepts/). ArgoCD is the GitOps application of choice, we can modify and maintain complex deployments from its UI and automatically update applications as new chart versions release.
+One of the first orders of business is to replace the existing longhorn configuration and add it as [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) [Applications](https://argo-cd.readthedocs.io/en/stable/core_concepts/). ArgoCD is the GitOps application of choice, we can modify and maintain complex deployments from its UI and automatically update applications as new chart versions release.
 
 ![ArgoCD Dashboard](https://github.com/user-attachments/assets/865c10a4-f6cb-4ba0-81e2-15bd3c68b5b6)
 
@@ -227,7 +200,6 @@ Deploying Flyte on anything other than AWS is very difficult, and I tried to lev
 
 For those who are trying to deploy Flyte, and have search far and wide for solutions to their issues, here's the K3s solution:
 
-- Use nginx instead of Traefik
 - Check out my [values.yaml](./manifests/argocd/flyte.yaml) file for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
 - Create a config file at `~/.flyte/config` with the following:
 
@@ -292,42 +264,6 @@ If you're not using AWS though, you can use Loki for this, and flyte will genera
 It was with Open WebUI where I originally found the ISCSI issue with the Nvidia Jetson node because I wanted to add Persistence to Ollama since I was testing out models and if the container failed with an OOM error I wouldn't have to re-download everything all over again.
 
 Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
-
-### Cert-Manager
-
-[Cert-Manager](https://cert-manager.io/) is a tool to configure SSL for applications deployed on Kubernetes, and in general do certificate management for Cloud Native environments. I wanted to enable SSL because it enables certain features on the browser that could be worth exploring later, mainly to do with accessing audio devices to do text-to-speech.
-
-Because my applications are only available on a private network I can't take advantage of a tool like [letsencrypt](https://letsencrypt.org/), so instead I have to configure self-signed certificates and then install them manually into my browser. During this process we don't actually have to create any certificates manually on linux, instead cert-manager will do that for us, and re-create/issue certificates if any changes are made or if a certificate would expire.
-
-```mermaid
-flowchart LR
-    subgraph Cert-Manager[" "]
-        direction TB
-        A["Self-Signed<br/>Issuer"] -->|Creates| B["Root CA"]
-        B -->|Signs| C["Wildcard<br/>Certificate"]
-    end
-
-    subgraph Traefik[" "]
-        direction TB
-        D["TLS Store"] -->|Configures| E["Traefik<br/>Proxy"]
-        E -->|Routes| F["IngressRoutes"]
-    end
-
-    C -->|Stored in| D
-
-    style A fill:#2d4f3c,stroke:#50a37d,color:#fff
-    style B fill:#2d4f3c,stroke:#50a37d,color:#fff
-    style C fill:#2d4f3c,stroke:#50a37d,color:#fff
-    style D fill:#2b4465,stroke:#6c8ebf,color:#fff
-    style E fill:#2b4465,stroke:#6c8ebf,color:#fff
-    style F fill:#2b4465,stroke:#6c8ebf,color:#fff
-    style Cert-Manager fill:none,stroke:none
-    style Traefik fill:none,stroke:none
-```
-
-> A Flowchart showing the relationship between all [cert-manager objects](./manifests/k3s-ssl.yaml) and [traefik objects](./manifests/traefik-routes.yaml)
-
-Along the way I learned that wildcards don't really work with the `Certificate` object, and instead I had to list out all of my DNS Names. Additionally, each `IngressRoute` needs to point to a `Middleware` in its namespace that redirects traffic to https to ensure SSL is actually used. If SSL would break for whatever reason, we still have http as an option just in case.
 
 <!--
 

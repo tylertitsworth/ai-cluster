@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    tailscale.com/proxy-class: control-plane
+  name: argocd
+  namespace: argocd
+spec:
+  ingressClassName: tailscale
+  rules:
+  - host: argo
+    http:
+      paths:
+      - backend:
+          service:
+            name: argocd-server
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - argo

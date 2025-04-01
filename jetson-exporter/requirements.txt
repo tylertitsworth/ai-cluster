@@ -1,2 +1,2 @@
 prometheus-client
-jetson-stats==4.3.1
+jetson-stats==4.3.2

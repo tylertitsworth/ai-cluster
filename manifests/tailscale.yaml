@@ -61,3 +61,63 @@ spec:
     - name: https
       port: 443
       targetPort: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    tailscale.com/tailnet-fqdn: "keycloak.tail79a5c8.ts.net"
+  labels:
+    tailscale.com/proxy-class: "control-plane"
+  name: keycloak-egress
+  namespace: argocd
+spec:
+  externalName: placeholder
+  type: ExternalName
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    tailscale.com/tailnet-fqdn: "keycloak.tail79a5c8.ts.net"
+  labels:
+    tailscale.com/proxy-class: "control-plane"
+  name: keycloak-egress
+  namespace: monitoring
+spec:
+  externalName: placeholder
+  type: ExternalName
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    tailscale.com/tailnet-fqdn: "coder.tail79a5c8.ts.net"
+  labels:
+    tailscale.com/proxy-class: "control-plane"
+  name: coder-egress
+  namespace: coder
+spec:
+  externalName: placeholder
+  type: ExternalName
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443

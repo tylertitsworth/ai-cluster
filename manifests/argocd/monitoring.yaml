@@ -21,6 +21,34 @@ grafana:
     size: 10Gi
   service:
     type: LoadBalancer
+  assertNoLeakedSecrets: false
+  extraSecretMounts:
+    - name: ca-bundle
+      secretName: tailscale-crt
+      mountPath: /etc/ssl/certs
+  grafana.ini:
+    server:
+      root_url: https://grafana.tail79a5c8.ts.net
+    security:
+      allow_embedding: true
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+    auth.generic_oauth:
+      enabled: true
+      name: Keycloak
+      allow_sign_up: true
+      client_id: k3s-grafana
+      client_secret: "yfIa9aEEoEdjVaf0uCrLoYKfOFDNe9pp"
+      scopes: "openid email profile offline_access roles"
+      use_refresh_token: true
+      email_attribute_path: email
+      login_attribute_path: username
+      name_attribute_path: full_name
+      auth_url: https://keycloak.tail79a5c8.ts.net/realms/master/protocol/openid-connect/auth
+      token_url: https://keycloak.tail79a5c8.ts.net/realms/master/protocol/openid-connect/token
+      api_url: https://keycloak.tail79a5c8.ts.net/realms/master/protocol/openid-connect/userinfo
+      role_attribute_path: "contains(roles[*], 'admin') && 'Admin' || contains(roles[*], 'editor') && 'Editor' || 'Viewer'"
 kube-state-metrics:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"

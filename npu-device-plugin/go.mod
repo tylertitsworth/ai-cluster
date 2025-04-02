@@ -2,12 +2,12 @@ module device-plugin
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.24.1
 
 require (
 	github.com/golang/glog v1.2.4
 	github.com/kubevirt/device-plugin-manager v1.19.5
-	k8s.io/kubelet v0.32.2
+	k8s.io/kubelet v0.32.3
 )
 
 require (

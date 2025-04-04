@@ -9,7 +9,7 @@ spec:
   loadBalancerClass: {{ .Values.service.loadBalancerClass}}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: 9000
+      targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       name: http
   selector:
@@ -22,10 +22,10 @@ metadata:
 spec:
   defaultBackend:
     service:
-      name: mealie-service
+      name: mealie-ingress
       port:
         number: {{ .Values.service.port }}
   ingressClassName: tailscale
   tls:
     - hosts:
-        - mealie # The hostname you want to access the service by
+        - mealie.tail79a5c8.ts.net # The hostname you want to access the service by

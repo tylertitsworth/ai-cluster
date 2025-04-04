@@ -34,8 +34,8 @@ service:
   type: LoadBalancer
   loadBalancerClass: tailscale
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 9000
-  targetPort: 9000
+  port: 80
+  targetPort: 80
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
@@ -68,38 +68,11 @@ resources:
 
 
 # Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
-
+volumes:
+  - name: mealie-data
+    persistentVolumeClaim:
+      claimName: mealie-pvc
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts:
   - name: mealie-data
-    mountPath: "mealie-data:/app/data/"
-    readOnly: false
-  - name: pg-data
-    mountPath: mealie-pgdata:/var/lib/postgresql/data
-    readOnly: false
-
-#TODO Add integreation with database built in, or if it needs to spin up an instance
-#
-# postgresql:
-#   createNewInstance: false
-#   postgresUser: mealie
-#   PGUser: mealie
-#   postgresPassword: mealie
-#   postgresServer: postgres_password
-#   postgresPort: 5432
-#   postgresDB: mealie
-#   postgresVersion: 
-
-# postgresql:
-# enabled: true
-# global:
-#   postgresql:
-#     postgresqlDatabase: "mealie"
-#     postgresqlPassword: "mealie"
-#     postgresqlUsername: "mealie"
-#     servicePort: "5432"
+    mountPath: /app/data

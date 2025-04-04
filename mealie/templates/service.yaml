@@ -34,6 +34,6 @@ spec:
               name: app
         path: /
         pathType: Prefix
-  tls:
-  - hosts:
-    - mealie
+  # tls:
+  # - hosts:
+  #   - mealie

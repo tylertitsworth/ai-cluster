@@ -116,14 +116,21 @@ volumeMounts:
 
 #TODO Add integreation with database built in, or if it needs to spin up an instance
 #
-postgresql:
-  createNewInstance: false
-  postgresUser: mealie
-  PGUser: mealie
-  postgresPassword: mealie
-  postgresServer: postgres_password
-  postgresPort: 5432
-  postgresDB: mealie
-  postgresVersion: 
+# postgresql:
+#   createNewInstance: false
+#   postgresUser: mealie
+#   PGUser: mealie
+#   postgresPassword: mealie
+#   postgresServer: postgres_password
+#   postgresPort: 5432
+#   postgresDB: mealie
+#   postgresVersion: 
 
-  
+  postgresql:
+  enabled: true
+  global:
+    postgresql:
+      postgresqlDatabase: "mealie"
+      postgresqlPassword: "mealie"
+      postgresqlUsername: "mealie"
+      servicePort: "5432"

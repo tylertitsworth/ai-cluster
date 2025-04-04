@@ -28,4 +28,4 @@ spec:
   ingressClassName: tailscale
   tls:
     - hosts:
-        - mealie.tail79a5c8.ts.net # The hostname you want to access the service by
+        - mealie # The hostname you want to access the service by

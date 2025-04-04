@@ -32,6 +32,9 @@ spec:
           - name: app
             containerPort: {{ .Values.port }}
             protocol: TCP
+        env:
+          - name: BASE_URL
+            value: https://mealie.tail79a5c8.ts.net/
       volumes:
         - name: mealie-data
           persistentVolumeClaim:

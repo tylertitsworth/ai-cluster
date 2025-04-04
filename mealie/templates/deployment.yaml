@@ -29,7 +29,7 @@ spec:
         - name: mealie-data
           mountPath: /app/data
         ports:
-          - name: http
+          - name: app
             containerPort: {{ .Values.service.port }}
             protocol: TCP
       volumes:

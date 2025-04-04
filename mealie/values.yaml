@@ -57,7 +57,7 @@ service:
   loadBalancerClass: tailscale
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 9000
-  targetPort: 9000
+  targetPort: 80
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
@@ -67,7 +67,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: mealie
+    - host: tail79a5c8.ts.net
       paths:
         - path: /
           pathType: ImplementationSpecific

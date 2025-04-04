@@ -14,3 +14,18 @@ spec:
       name: http
   selector:
     {{- include "mealie.selectorLabels" . | nindent 4 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mealie
+spec:
+  defaultBackend:
+    service:
+      name: mealie
+      port:
+        number: {{ .Values.service.port }}
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - mealie # The hostname you want to access the service by

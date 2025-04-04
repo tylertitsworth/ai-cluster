@@ -30,7 +30,7 @@ spec:
           mountPath: /app/data
         ports:
           - name: app
-            containerPort: {{ .Values.service.port }}
+            containerPort: {{ .Values.service.targetPort }}
             protocol: TCP
       volumes:
         - name: mealie-data

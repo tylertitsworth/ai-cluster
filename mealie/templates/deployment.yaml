@@ -18,19 +18,6 @@ spec:
       - name: mealie
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        env:
-        - name: DB_ENGINE
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          value: {{ .Values.postgresql.global.postgresql.postgresqlPassword | quote }}
-        - name: POSTGRES_USER
-          value: {{ .Values.postgresql.global.postgresql.postgresqlUsername | quote }}
-        - name: POSTGRES_DB
-          value: {{ .Values.postgresql.global.postgresql.postgresqlDatabase | quote }}
-        - name: POSTGRES_SERVER
-          value: "{{ .Release.Name}}-postgresql-headless"
-        - name: POSTGRES_PORT
-          value: {{ .Values.postgresql.global.postgresql.servicePort | quote }}
         volumeMounts:
         - name: mealie-data
           mountPath: /app/data

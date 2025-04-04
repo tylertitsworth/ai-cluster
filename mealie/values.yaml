@@ -126,11 +126,11 @@ volumeMounts:
 #   postgresDB: mealie
 #   postgresVersion: 
 
-postgresql:
-enabled: true
-global:
-  postgresql:
-    postgresqlDatabase: "mealie"
-    postgresqlPassword: "mealie"
-    postgresqlUsername: "mealie"
-    servicePort: "5432"
+# postgresql:
+# enabled: true
+# global:
+#   postgresql:
+#     postgresqlDatabase: "mealie"
+#     postgresqlPassword: "mealie"
+#     postgresqlUsername: "mealie"
+#     servicePort: "5432"

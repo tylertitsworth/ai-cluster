@@ -1,31 +1,23 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: mealie-service
-  labels:
-    {{- include "mealie.labels" . | nindent 4 }}
-spec:
-  type: {{ .Values.service.type }}
-  loadBalancerClass: {{ .Values.service.loadBalancerClass}}
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
-      protocol: TCP
-      name: http
-  selector:
-    {{- include "mealie.selectorLabels" . | nindent 4 }}
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mealie-ingress
+  labels:
+    tailscale.com/proxy-class: control-plane
+  name: mealie
+  namespace: mealie
 spec:
-  defaultBackend:
-    service:
-      name: mealie-service
-      port:
-        number: {{ .Values.service.port }}
   ingressClassName: tailscale
+  rules:
+  - host: mealie
+    http:
+      paths:
+      - backend:
+          service:
+            name: mealie-server
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
   tls:
-    - hosts:
-        - mealie # The hostname you want to access the service by
+  - hosts:
+    - mealie

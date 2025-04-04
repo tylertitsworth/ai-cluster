@@ -34,7 +34,7 @@ spec:
             protocol: TCP
         env:
           - name: BASE_URL
-            value: http://mealie.tail79a5c8.ts.net/
+            value: http://192.168.1.83/
       volumes:
         - name: mealie-data
           persistentVolumeClaim:

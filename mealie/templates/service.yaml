@@ -13,27 +13,3 @@ spec:
       name: app
   selector:
     {{- include "mealie.selectorLabels" . | nindent 4 }}
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  labels:
-    tailscale.com/proxy-class: control-plane
-  name: mealie
-  namespace: mealie
-spec:
-  ingressClassName: tailscale
-  rules:
-  - host: mealie
-    http:
-      paths:
-      - backend:
-          service:
-            name: mealie-server
-            port:
-              name: app
-        path: /
-        pathType: ImplementationSpecific
-  tls:
-  - hosts:
-    - mealie

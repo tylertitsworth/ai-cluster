@@ -22,102 +22,23 @@ spec:
     serviceMonitor:
       enable: true
 ---
-apiVersion: v1
-kind: Service
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
 metadata:
-  annotations:
-    tailscale.com/tailnet-fqdn: "keycloak.tail79a5c8.ts.net"
-  labels:
-    tailscale.com/proxy-class: "control-plane"
-  name: keycloak-egress
-  namespace: ollama
+  name: control-plane
 spec:
-  externalName: placeholder
-  type: ExternalName
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-    - name: https
-      port: 443
-      targetPort: 443
+  proxyClass: control-plane
+  subnetRouter:
+    advertiseRoutes:
+      - "10.42.0.0/15"
+      - "10.43.0.0/16"
+      - "192.168.1.41/32"
+      - "192.168.1.64/27"
 ---
-apiVersion: v1
-kind: Service
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
 metadata:
-  annotations:
-    tailscale.com/tailnet-fqdn: "keycloak.tail79a5c8.ts.net"
-  labels:
-    tailscale.com/proxy-class: "control-plane"
-  name: keycloak-egress
-  namespace: flyte
+  name: egress
 spec:
-  externalName: placeholder
-  type: ExternalName
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-    - name: https
-      port: 443
-      targetPort: 443
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    tailscale.com/tailnet-fqdn: "keycloak.tail79a5c8.ts.net"
-  labels:
-    tailscale.com/proxy-class: "control-plane"
-  name: keycloak-egress
-  namespace: argocd
-spec:
-  externalName: placeholder
-  type: ExternalName
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-    - name: https
-      port: 443
-      targetPort: 443
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    tailscale.com/tailnet-fqdn: "keycloak.tail79a5c8.ts.net"
-  labels:
-    tailscale.com/proxy-class: "control-plane"
-  name: keycloak-egress
-  namespace: monitoring
-spec:
-  externalName: placeholder
-  type: ExternalName
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-    - name: https
-      port: 443
-      targetPort: 443
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    tailscale.com/tailnet-fqdn: "coder.tail79a5c8.ts.net"
-  labels:
-    tailscale.com/proxy-class: "control-plane"
-  name: coder-egress
-  namespace: coder
-spec:
-  externalName: placeholder
-  type: ExternalName
-  ports:
-    - name: http
-      port: 80
-      targetPort: 80
-    - name: https
-      port: 443
-      targetPort: 443
+  type: egress
+  proxyClass: prod

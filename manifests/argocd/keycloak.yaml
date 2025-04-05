@@ -4,8 +4,6 @@ nodeSelector:
 service:
   type: LoadBalancer
 ingress:
-  annotations:
-    tailscale.com/experimental-forward-cluster-traffic-via-ingress: "true"
   enabled: true
   ingressClassName: tailscale
   hostname: keycloak

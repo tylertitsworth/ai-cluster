@@ -15,8 +15,6 @@ coder:
   ingress:
     enable: true
     className: tailscale
-    annotations:
-      tailscale.com/experimental-forward-cluster-traffic-via-ingress: "true"
     host: coder
     tls:
       enable: true

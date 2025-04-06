@@ -1,32 +1,32 @@
 # https://github.com/bitnami/charts/tree/main/bitnami/keycloak
-nodeSelector:
-  node-role.kubernetes.io/control-plane: "true"
-service:
-  type: LoadBalancer
+auth:
+  existingSecret: keycloak-secret
+  passwordSecretKey: password
+extraEnvVars:
+  - name: KEYCLOAK_HOSTNAME
+    value: "https://keycloak.tail79a5c8.ts.net"
 ingress:
   annotations:
     tailscale.com/experimental-forward-cluster-traffic-via-ingress: "true"
   enabled: true
-  ingressClassName: tailscale
-  hostname: keycloak
-  tls: true
   extraTls:
     - hosts:
         - keycloak
+  hostname: keycloak
+  ingressClassName: tailscale
+  tls: true
 metrics:
   enabled: true
-  serviceMonitor:
-    enabled: true
   prometheusRule:
     enabled: true
-auth:
-  existingSecret: keycloak-secret
-  passwordSecretKey: password
+  serviceMonitor:
+    enabled: true
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"
 postgressql:
   auth:
     enabled: true
     existingSecret: keycloak-secret
     postgresPassword: "test"
-extraEnvVars:
-  - name: KEYCLOAK_HOSTNAME
-    value: "https://keycloak.tail79a5c8.ts.net"
+service:
+  type: LoadBalancer

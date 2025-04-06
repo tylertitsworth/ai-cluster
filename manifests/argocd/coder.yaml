@@ -2,21 +2,21 @@
 coder:
   env:
     - name: CODER_PG_CONNECTION_URL
-      valueFrom:
       secretKeyRef:
-        name: coder-db
         key: url
+        name: coder-db
+      valueFrom:
     - name: CODER_OAUTH2_GITHUB_DEFAULT_PROVIDER_ENABLE
       value: "false"
     - name: CODER_ACCESS_URL
       value: "https://coder.tail79a5c8.ts.net"
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
   ingress:
-    enable: true
-    className: tailscale
     annotations:
       tailscale.com/experimental-forward-cluster-traffic-via-ingress: "true"
+    className: tailscale
+    enable: true
     host: coder
     tls:
       enable: true
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"

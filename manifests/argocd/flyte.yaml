@@ -1,11 +1,43 @@
 # https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary
 configuration:
+  auth:
+    authorizedUris:
+      - https://flyte.tail79a5c8.ts.net
+      - https://keycloak.tail79a5c8.ts.net
+    enabled: true
+    internal:
+      clientSecret: "zwp!MJA5brh6gwb7mrb"
+      clientSecretHash: "JDJiJDA2JDIvTHpYSFkyTy9aa25HdzB1UHVkbGU5NzVBLjMzR3VpTkxVZkh5R2dXVldjNE9xUXh3VW5T"
+    oidc:
+      baseUrl: "https://keycloak.tail79a5c8.ts.net/realms/master"
+      clientId: k3s-flyte
+      clientSecret: "eUc1Xn3SBuUYcbo034S6kmqsxyxwfDni"
   database:
     dbname: flyte
     host: postgres.flyte
     password: postgres
     username: postgres
   inline:
+    auth:
+      appAuth:
+        authServerType: External
+        externalAuthServer:
+          baseUrl: "https://keycloak.tail79a5c8.ts.net/realms/master"
+          metadataUrl: .well-known/openid-configuration
+        thirdPartyConfig:
+          flyteClient:
+            clientId: k3s-flyte
+            redirectUri: "https://flyte.tail79a5c8.ts.net/callback"
+            scopes:
+              - offline
+              - all
+      userAuth:
+        openId:
+          baseUrl: "https://keycloak.tail79a5c8.ts.net/realms/master"
+          clientId: k3s-flyte
+          scopes:
+            - profile
+            - openid
     flyteadmin:
       profilePort: 10254
     plugins:
@@ -65,50 +97,28 @@ configuration:
         secure: "false"
     type: minio
     userDataContainer: flyte
-#   auth:
-#     enabled: true
-#     oidc:
-#       baseUrl: "https://keycloak.tail79a5c8.ts.net/realms/master"
-#       clientId: k3s-flyte
-#       clientSecret: "eUc1Xn3SBuUYcbo034S6kmqsxyxwfDni"
-#     internal:
-#       clientSecret: "zwp!MJA5brh6gwb7mrb"
-#       clientSecretHash: "JDJiJDA2JDIvTHpYSFkyTy9aa25HdzB1UHVkbGU5NzVBLjMzR3VpTkxVZkh5R2dXVldjNE9xUXh3VW5T"
-#     authroizedUris:
-#       - https://flyte.tail79a5c8.ts.net
-#       - https://keycloak.tail79a5c8.ts.net/
-#     flyteClient:
-#       redirectUri: "https://flyte.tail79a5c8.ts.net/callback"
-# deployment:
-#   extraEnvVars:
-#     - name: SSL_CERT_FILE
-#       value: /etc/ssl/certs/k3s/k3s-ca.crt
-#   extraVolumeMounts:
-#     - name: ca-cert
-#       mountPath: /etc/ssl/certs/k3s
-#   extraVolumes:
-#     - name: ca-cert
-#       secret:
-#         secretName: k3s-ca-secret
 deployment:
+  extraEnvVars:
+    - name: SSL_CERT_FILE
+      value: /etc/ssl/certs/k3s/k3s-ca.crt
   extraPodSpec:
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
+  extraVolumeMounts:
+    - mountPath: /etc/ssl/certs/k3s
+      name: ca-cert
+  extraVolumes:
+    - name: ca-cert
+      secret:
+        secretName: k3s-ca-secret
 ingress:
   commonAnnotations:
     kubernetes.io/ingress.class: tailscale
-  labels:
-    tailscale.com/proxy-class: control-plane
   create: true
   host: flyte
-  httpAnnotations:
-    gethomepage.dev/app: flyte-binary
-    gethomepage.dev/description: Flyte ML Orchestration
-    gethomepage.dev/enabled: "true"
-    gethomepage.dev/group: AI
-    gethomepage.dev/name: Flyte
-    nginx.ingress.kubernetes.io/app-root: /console
   ingressClassName: tailscale
+  labels:
+    tailscale.com/proxy-class: control-plane
   separateGrpcIngress: false
   tls:
     - hosts:
@@ -133,4 +143,4 @@ service:
       port: 10254
       protocol: TCP
 userSettings:
-  hostName: flyte.k3s
+  hostName: flyte.tail79a5c8.ts.net

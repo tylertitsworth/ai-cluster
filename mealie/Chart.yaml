@@ -1,0 +1,9 @@
+apiVersion: v2
+appVersion: v1.4.0
+description: A Helm chart for deploying Mealie to a Kubernetes cluster.
+maintainers:
+- email: helm@danielhall.me
+  name: smarthall
+name: mealie
+type: application
+version: 0.0.10

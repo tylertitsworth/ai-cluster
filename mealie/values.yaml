@@ -3,7 +3,7 @@ image:
   repository: ghcr.io/mealie-recipes/mealie
 
   # -- The pull policy for mealie images
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
   # -- Override the default app version with another version
   tag: ""
@@ -94,10 +94,10 @@ affinity: {}
 
 storage:
   # -- Enable storage that isn't emphemeral
-  enabled: false
+  enabled: true
   # -- The storage class to use
   className: ""
   # -- The size of the storage to allocate
   size: 8G
   # -- The accessMode that is supported. If using ReadWriteMany multiple pods will be created. If using ReadWriteOnce a single pod will be used.
-  accessMode: ReadWriteMany
+  accessMode: ReadWriteOnce

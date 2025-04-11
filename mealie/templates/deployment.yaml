@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mealie.fullname" . }}
+  labels:
+    {{- include "mealie.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.mealie.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mealie.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mealie.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mealie
+        mealie.danielhall.me/is-api: "true"
+        mealie.danielhall.me/is-frontend: "true"
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mealie.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "mealie.fullname" . }}-data
+      containers:
+        - name: mealie
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: BASE_URL
+            value: "{{ if .Values.ingress.enabled }}https://{{ (index .Values.ingress.hosts 0).host }}{{ else }}http://localhost:8080{{ end }}"
+          {{- range $key, $value := .Values.mealie.env }}
+          - name: "{{ $key }}"
+            value: "{{ $value }}"
+          {{- end }}
+          volumeMounts:
+          - name: data
+            mountPath: /app/data
+          ports:
+          - name: http
+            containerPort: {{ .Values.mealie.service.port }}
+            protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.mealie.initialDelaySeconds }}
+            httpGet:
+              path: /api/app/about
+              port: http
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.mealie.initialDelaySeconds }}
+            httpGet:
+              path: /api/app/about
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

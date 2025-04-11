@@ -100,4 +100,4 @@ storage:
   # -- The size of the storage to allocate
   size: 8G
   # -- The accessMode that is supported. If using ReadWriteMany multiple pods will be created. If using ReadWriteOnce a single pod will be used.
-  accessMode: ReadWriteOnce
+  accessMode: ReadWriteMany

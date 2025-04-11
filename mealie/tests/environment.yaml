@@ -1,0 +1,12 @@
+---
+api:
+  env:
+    TZ: "Australia/Melbourne"
+    NUMBER_TEST: 5
+    BOOL_TEST: false
+
+frontend:
+  env:
+    TZ: "Australia/Melbourne"
+    NUMBER_TEST: 2
+    BOOL_TEST: true

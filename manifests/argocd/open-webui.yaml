@@ -4,24 +4,18 @@ extraEnvVars:
     value: "1"
   - name: ENV
     value: "dev"
-  - name: ENABLE_OAUTH_SIGNUP
-    value: "true"
-  - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
-    value: "true"
-  - name: OAUTH_CLIENT_ID
-    value: "k3s-open-webui"
-  - name: OAUTH_CLIENT_SECRET
-    valueFrom:
-      secretKeyRef:
-        key: OAUTH_CLIENT_SECRET
-        name: keycloak-secret
-  - name: OAUTH_PROVIDER_NAME
-    value: "Keycloak"
-  - name: OPENID_PROVIDER_URL
-    value:
-      "https://keycloak.tail79a5c8.ts.net/realms/master/.well-known/openid-configuration"
   - name: SSL_CERT_FILE
     value: /etc/ssl/certs/k3s/k3s-ca.crt
+sso:
+  enabled: true
+  enableSignup: true
+  mergeAccountsByEmail: true
+  oidc:
+    enabled: true
+    clientId: k3s-open-webui
+    clientSecret: 'tMQOEeQfQtJhEbBZqUSS05Op5gK4Gdsq'
+    providerUrl: https://keycloak.tail79a5c8.ts.net/realms/master/.well-known/openid-configuration
+    providerName: Keycloak
 ingress:
   class: tailscale
   enabled: true

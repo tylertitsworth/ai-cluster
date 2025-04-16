@@ -29,7 +29,7 @@ configuration:
             clientId: k3s-flyte
             redirectUri: "https://flyte.tail79a5c8.ts.net/callback"
             scopes:
-              - offline
+              - offline_access
               - all
       userAuth:
         openId:

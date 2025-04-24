@@ -79,10 +79,12 @@ spec:
             - name: POSTGRES_PASSWORD
               value: mealie
             - name: POSTGRES_DB
-              value: mealie  
+              value: mealie
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumesMounts:
             - name: data
-              mountPath: /app/postgres
+              mountPath: /var/lib/postgresql/data/pgdata
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

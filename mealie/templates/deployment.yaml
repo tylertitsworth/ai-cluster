@@ -34,9 +34,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "mealie.fullname" . }}-data
-        - name: pgdata
-          persistentVolumeClaim:
-            claimName: {{ include "mealie.fullname" . }}-pgdata
       containers:
         - name: mealie
           securityContext:
@@ -86,8 +83,8 @@ spec:
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumesMounts:
-            - name: pgdata
-              mountPath: /var/lib/postgresql
+            - name: data
+              mountPath: /var/lib/postgresql/
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

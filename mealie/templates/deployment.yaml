@@ -66,7 +66,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       initContainers:
-        - name: postgresMealie
+        - name: postgres-mealie
           image: postgres:latest
           restartPolicy: Always
           ports:

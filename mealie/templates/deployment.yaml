@@ -85,9 +85,9 @@ spec:
               value: mealie
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
-          volumesMounts:
-            - name: pgdata
-              mountPath: /var/lib/postgresql
+        volumesMounts:
+          - name: pgdata
+            mountPath: /var/lib/postgresql
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

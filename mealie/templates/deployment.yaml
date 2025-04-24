@@ -65,6 +65,24 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      initContainers:
+        - name: postgresMealie
+          image: postgres:latest
+          restartPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: mealie
+            - name: POSTGRES_PASSWORD
+              value: mealie
+            - name: POSTGRES_DB
+              value: mealie  
+          volumesMounts:
+            - name: data
+              mountPath: /app/postgres
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

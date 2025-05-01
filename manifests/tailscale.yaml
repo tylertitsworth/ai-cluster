@@ -17,6 +17,13 @@ spec:
     pod:
       nodeSelector:
         node-role.kubernetes.io/control-plane: "true"
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true
+      labels:
+        prometheus: monitoring-kube-prometheus-prometheus
+        release: monitoring
 ---
 apiVersion: tailscale.com/v1alpha1
 kind: Connector

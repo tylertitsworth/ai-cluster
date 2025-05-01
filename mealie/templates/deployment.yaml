@@ -65,26 +65,6 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      initContainers:
-        - name: postgres-mealie
-          image: postgres:latest
-          restartPolicy: Always
-          ports:
-            - name: http
-              containerPort: 5432
-              protocol: TCP
-          env:
-            - name: POSTGRES_USER
-              value: mealie
-            - name: POSTGRES_PASSWORD
-              value: mealie
-            - name: POSTGRES_DB
-              value: mealie
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-          volumesMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -97,3 +77,40 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-mealie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-mealie
+  template:
+    metadata:
+      labels:
+        app: postgres-mealie
+        mealie.danielhall.me/is-backend: "true"
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: mealie
+            - name: POSTGRES_PASSWORD
+              value: mealie
+            - name: POSTGRES_DB
+              value: mealie
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: {{ include "mealie.fullname" . }}-pgdata

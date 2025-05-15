@@ -111,7 +111,7 @@ spec:
               command: 
                 - /bin/sh
                 - -c
-                - pg_isready -U $POSTGRES_USER -h $POSTGRES_HOST -d $POSTGRES_DB
+                - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
             initialDelaySeconds: {{ .Values.postgres.initialDelaySeconds }}
             timeoutSeconds: 20
           livenessProbe:
@@ -119,7 +119,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - pg_isready -U $POSTGRES_USER -h $POSTGRES_HOST -d $POSTGRES_DB
+                - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
             initialDelaySeconds: {{ .Values.postgres.initialDelaySeconds }}
             timeoutSeconds: 20
       volumes:

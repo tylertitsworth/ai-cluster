@@ -108,12 +108,12 @@ spec:
               mountPath: /var/lib/postgresql/data
           readinessProbe:
             exec:
-              command: ["pg_isready",]
+              command: ["pg_isready", "-d", "$${POSTGRES_DB}", "-U", "$${POSTGRES_USER}"]
             initialDelaySeconds: {{ .Values.postgres.initialDelaySeconds }}
             timeoutSeconds: 20
           livenessProbe:
             exec:
-              command: ["pg_isready"]
+              command: ["pg_isready", "-d", "$${POSTGRES_DB}", "-U", "$${POSTGRES_USER}"]
             initialDelaySeconds: {{ .Values.postgres.initialDelaySeconds }}
             timeoutSeconds: 20
       volumes:

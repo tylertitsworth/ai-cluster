@@ -8,6 +8,7 @@ image:
 
   # -- Override the default app version with another version
   tag: ""
+  # -- Which version of postgres to use if enabled
   pgtag: "15"
 
 imagePullSecrets: []
@@ -45,48 +46,46 @@ mealie:
     type: ClusterIP
     port: 9000
 
-  
-  # -- The initial delay for the liveness and readiness probes
+  # -- The initial delay for the liveness and readiness probes for mealie
   initialDelaySeconds: 10
 
-  #More environment variables can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/
-  env: {}
+  env: 
+      # -- Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/
+    - name: ALLOW_SIGNUP
+      value: false
+    - name: DEFAULT_GROUP
+      value: HOME
+    - name: DEFAULT_HOUSEHOLD
+      value: FAMILY
+    - name: SECURITY_MAX_LOGIN_ATTEMPTS
+      value: 5
+    - name: SECURITY_USER_LOCKOUT_TIME
+      value: 24
 
-    # - name: ALLOW_SIGNUP
-    #   value: false
-    # - name: DEFAULT_GROUP
-    #   value: HOME
-    # - name: DEFAULT_HOUSEHOLD
-    #   value: FAMILY
-    # - name: SECURITY_MAX_LOGIN_ATTEMPTS
-    #   value: 5
-    # - name: SECURITY_USER_LOCKOUT_TIME
-    #   value: 24
+    # -- Postgres Variables, to use postgres, change DB_ENGINE to postgres. The other variables are set to use the included postgres database by default.
+    - name: DB_ENGINE
+      value: sqlite
+    - name: POSTGRES_USER
+      value: mealie
+    - name: POSTGRES_PASSWORD
+      value: mealie
+    - name: POSTGRES_SERVER
+      value: postgres-mealie
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: mealie
 
-    ##Postgres Variables, Mealie will run with SQLite by default unless these variables are set.
-    # - name: DB_ENGINE
-    #   value: postgres
-    # - name: POSTGRES_USER
-    #   value: mealie
-    # - name: POSTGRES_PASSWORD
-    #   value: mealie
-    # - name: POSTGRES_SERVER
-    #   value: postgres-mealie
-    # - name: POSTGRES_PORT
-    #   value: "5432"
-    # - name: POSTGRES_DB
-    #   value: mealie
-
-    ##OpenAI API configuration
-    # - name: OPENAI_BASE_URL
-    #   value: INSERT_YOUR_OPENAI_BASE_URL_HERE
-    # - name: OPENAI_API_KEY
-    #   value: INSERT_YOUR_OPENAI_API_KEY_HERE
-    # - name: OPENAI_MODEL
-    #   value: gpt-4.1
+    # -- OpenAI API configuration
+    - name: OPENAI_BASE_URL
+      value: INSERT_YOUR_OPENAI_BASE_URL_HERE
+    - name: OPENAI_API_KEY
+      value: INSERT_YOUR_OPENAI_API_KEY_HERE
+    - name: OPENAI_MODEL
+      value: gpt-4.1
 
 
-#Enable this if you want mealie to run its own postgres server. Mealie must have the database variables configured in the environment section above.
+# -- Set postgres to true if you want to use the included postgres database.
 postgres:
   enabled: false
   service:
@@ -96,6 +95,7 @@ postgres:
     # -- The initial delay for the liveness and readiness probes
   initialDelaySeconds: 10
 
+# -- # Postgres environment variables, leave PGDATA unchanged unless you know what you are doing.
   env: 
   - name: PGDATA
     value: /var/lib/postgresql/data/pgdata
@@ -161,6 +161,6 @@ storage:
   # -- The size of the storage to allocate
   mealieSize: 4G
   postgresSize: 8G
-  # -- The accessMode that is supported. If using ReadWriteMany multiple pods will be created. If using ReadWriteOnce a single pod will be used.
+  # -- The accessMode that is supported.
   accessModeMealie: ReadWriteMany
   accessModePostgres: ReadWriteMany

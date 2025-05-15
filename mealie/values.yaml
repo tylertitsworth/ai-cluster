@@ -98,6 +98,9 @@ postgres:
       value: mealie
     - name: POSTGRES_DB
       value: mealie
+    - name: PG_USER
+      value: mealie
+      
 
 
   # -- The initial delay for the liveness and readiness probes

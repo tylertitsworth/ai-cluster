@@ -45,6 +45,10 @@ mealie:
     type: ClusterIP
     port: 9000
 
+  
+  # -- The initial delay for the liveness and readiness probes
+  initialDelaySeconds: 10
+
   #More environment variables can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/
   env: {}
 
@@ -84,10 +88,13 @@ mealie:
 
 #Enable this if you want mealie to run its own postgres server. Mealie must have the database variables configured in the environment section above.
 postgres:
-  enabled: true
+  enabled: false
   service:
     type: ClusterIP
     port: 5432
+  
+    # -- The initial delay for the liveness and readiness probes
+  initialDelaySeconds: 10
 
   env: 
   - name: PGDATA
@@ -101,10 +108,6 @@ postgres:
   - name: PG_USER
     value: mealie
       
-
-
-  # -- The initial delay for the liveness and readiness probes
-  initialDelaySeconds: 10
 
 ingress:
   enabled: false

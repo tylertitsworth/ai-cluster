@@ -5,25 +5,25 @@ metadata:
   name: {{ include "mealie.fullname" . }}-data
 spec:
   accessModes:
-    - {{ .Values.storage.accessMode }}
+    - {{ .Values.storage.accessModeMealie }}
   volumeMode: Filesystem
   resources:
     requests:
-      storage: {{ .Values.storage.size }}
+      storage: {{ .Values.storage.mealieSize }}
   storageClassName: {{ .Values.storage.className }}
 {{- end }}
 ---
-{{- if .Values.storage.enabled -}}
+{{- if .Values.storage.enabled and .Values.postgres.enabled -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "mealie.fullname" . }}-pgdata
 spec:
   accessModes:
-    - {{ .Values.storage.accessMode }}
+    - {{ .Values.storage.accessModePostgres }}
   volumeMode: Filesystem
   resources:
     requests:
-      storage: {{ .Values.storage.size }}
+      storage: {{ .Values.storage.postgresSize }}
   storageClassName: {{ .Values.storage.className }}
 {{- end }}

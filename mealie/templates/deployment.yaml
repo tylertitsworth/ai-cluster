@@ -106,6 +106,16 @@ spec:
           volumeMounts:
             - name: pgdata
               mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready",]
+            initialDelaySeconds: {{ .Values.postgres.initialDelaySeconds }}
+            timeoutSeconds: 20
+          livenessProbe:
+            exec:
+              command: ["pg_isready"]
+            initialDelaySeconds: {{ .Values.postgres.initialDelaySeconds }}
+            timeoutSeconds: 20
       volumes:
         - name: pgdata
           persistentVolumeClaim:

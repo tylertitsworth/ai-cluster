@@ -13,7 +13,7 @@ spec:
   storageClassName: {{ .Values.storage.className }}
 {{- end }}
 ---
-{{- if .Values.storage.enabled and .Values.postgres.enabled -}}
+{{- if and (.Values.storage.enabled) (.Values.postgres.enabled) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

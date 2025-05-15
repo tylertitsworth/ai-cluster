@@ -84,22 +84,22 @@ mealie:
 
 #Enable this if you want mealie to run its own postgres server. Mealie must have the database variables configured in the environment section above.
 postgres:
-  enabled: false
+  enabled: true
   service:
     type: ClusterIP
     port: 9000
 
-    env: 
-    - name: PGDATA
-      value: /var/lib/postgresql/data/pgdata
-    - name: POSTGRES_USER
-      value: mealie
-    - name: POSTGRES_PASSWORD
-      value: mealie
-    - name: POSTGRES_DB
-      value: mealie
-    - name: PG_USER
-      value: mealie
+  env: 
+  - name: PGDATA
+    value: /var/lib/postgresql/data/pgdata
+  - name: POSTGRES_USER
+    value: mealie
+  - name: POSTGRES_PASSWORD
+    value: mealie
+  - name: POSTGRES_DB
+    value: mealie
+  - name: PG_USER
+    value: mealie
       
 
 

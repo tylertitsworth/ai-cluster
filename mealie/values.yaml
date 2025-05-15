@@ -87,7 +87,7 @@ postgres:
   enabled: true
   service:
     type: ClusterIP
-    port: 9000
+    port: 5432
 
   env: 
   - name: PGDATA

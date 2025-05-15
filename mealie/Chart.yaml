@@ -1,9 +1,9 @@
 apiVersion: v2
 appVersion: v2.8.0
-description: A Helm chart for deploying Mealie to a Kubernetes cluster.
+description: A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres support. The original chart can be found at https://artifacthub.io/packages/helm/smarthall/mealie.
 maintainers:
-- email: helm@danielhall.me
-  name: smarthall
+- email: eleventhour58@gmail.com
+  name: SkyHook
 name: mealie
 type: application
-version: 0.0.10
+version: 0.0.20

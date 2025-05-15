@@ -78,6 +78,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 ---
+{{- if .Values.postgres.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -95,22 +96,28 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15
+          image: "{{ .Values.image.postgresRepo }}:{{ .Values.image.pgtag }}"
           ports:
-            - containerPort: 5432
+            - containerPort: {{ .Values.postgres.service.port}}
           env:
-            - name: POSTGRES_USER
-              value: mealie
-            - name: POSTGRES_PASSWORD
-              value: mealie
-            - name: POSTGRES_DB
-              value: mealie
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
+          {{- with .Values.postgres.env }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
           volumeMounts:
             - name: pgdata
               mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["CMD", "pg_isready"]
+            initialDelaySeconds: 30
+            timeoutSeconds: 20
+          livenessProbe:
+            exec:
+              command: ["CMD", "pg_isready"]
+            initialDelaySeconds: 60
+            timeoutSeconds: 20
       volumes:
         - name: pgdata
           persistentVolumeClaim:
             claimName: {{ include "mealie.fullname" . }}-pgdata
+{{- end }}

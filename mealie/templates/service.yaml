@@ -15,14 +15,16 @@ spec:
     {{- include "mealie.selectorLabels" . | nindent 4 }}
     mealie.danielhall.me/is-api: "true"
 ---
+{{- if .Values.postgres.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres-mealie
 spec:
-  type: ClusterIP
+  type: {{ .Values.postgres.service.type}}
   ports:
-    - port: 5432
-      targetPort: 5432
+    - port:  {{ .Values.postgres.service.port}}
+      targetPort:  {{ .Values.postgres.service.port}}
   selector:
     app: postgres-mealie
+{{- end }}

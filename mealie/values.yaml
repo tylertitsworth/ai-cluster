@@ -1,12 +1,14 @@
 image:
   # -- The repository for docker images to use
   repository: ghcr.io/mealie-recipes/mealie
+  postgresRepo: postgres
 
   # -- The pull policy for mealie images
   pullPolicy: Always
 
   # -- Override the default app version with another version
   tag: ""
+  pgtag: "15"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -43,10 +45,60 @@ mealie:
     type: ClusterIP
     port: 9000
 
+  #More environment variables can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/
   env: {}
 
+    # - name: ALLOW_SIGNUP
+    #   value: false
+    # - name: DEFAULT_GROUP
+    #   value: HOME
+    # - name: DEFAULT_HOUSEHOLD
+    #   value: FAMILY
+    # - name: SECURITY_MAX_LOGIN_ATTEMPTS
+    #   value: 5
+    # - name: SECURITY_USER_LOCKOUT_TIME
+    #   value: 24
+
+    ##Postgres Variables, Mealie will run with SQLite by default unless these variables are set.
+    # - name: DB_ENGINE
+    #   value: postgres
+    # - name: POSTGRES_USER
+    #   value: mealie
+    # - name: POSTGRES_PASSWORD
+    #   value: mealie
+    # - name: POSTGRES_SERVER
+    #   value: postgres-mealie
+    # - name: POSTGRES_PORT
+    #   value: "5432"
+    # - name: POSTGRES_DB
+    #   value: mealie
+
+    ##OpenAI API configuration
+    # - name: OPENAI_BASE_URL
+    #   value: INSERT_YOUR_OPENAI_BASE_URL_HERE
+    # - name: OPENAI_API_KEY
+    #   value: INSERT_YOUR_OPENAI_API_KEY_HERE
+    # - name: OPENAI_MODEL
+    #   value: gpt-4.1
+
+
+#Enable this if you want mealie to run its own postgres server. Mealie must have the database variables configured in the environment section above.
 postgres:
-  env: {}
+  enabled: false
+  service:
+    type: ClusterIP
+    port: 9000
+
+    env: 
+    - name: PGDATA
+      value: /var/lib/postgresql/data/pgdata
+    - name: POSTGRES_USER
+      value: mealie
+    - name: POSTGRES_PASSWORD
+      value: mealie
+    - name: POSTGRES_DB
+      value: mealie
+
 
   # -- The initial delay for the liveness and readiness probes
   initialDelaySeconds: 10
@@ -101,6 +153,8 @@ storage:
   # -- The storage class to use
   className: ""
   # -- The size of the storage to allocate
-  size: 8G
+  mealieSize: 4G
+  postgresSize: 8G
   # -- The accessMode that is supported. If using ReadWriteMany multiple pods will be created. If using ReadWriteOnce a single pod will be used.
-  accessMode: ReadWriteMany
+  accessModeMealie: ReadWriteMany
+  accessModePostgres: ReadWriteMany

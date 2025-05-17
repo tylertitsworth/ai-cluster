@@ -35,7 +35,6 @@ spec:
     advertiseRoutes:
       - "10.42.0.0/15"
       - "10.43.0.0/16"
-      - "192.168.1.41/32"
       - "192.168.1.64/27"
 ---
 apiVersion: tailscale.com/v1alpha1

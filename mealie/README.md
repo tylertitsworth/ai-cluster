@@ -8,7 +8,7 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| SkyHook | <eleventhour58@gmail.com> |  |
+| Wilsondo |  |  |
 
 ## Values
 

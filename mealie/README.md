@@ -33,7 +33,7 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 | ingress.hosts[0].paths[0].path | string | `"/"` |  |
 | ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` |  |
-| mealie.env[0] | object | `{"name":"ALLOW_SIGNUP","value":false}` | Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/ |
+| mealie.env[0] | object | `{"name":"ALLOW_SIGNUP","value":false}` | Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/. |
 | mealie.env[10].name | string | `"POSTGRES_DB"` |  |
 | mealie.env[10].value | string | `"mealie"` |  |
 | mealie.env[11] | object | `{"name":"OPENAI_BASE_URL","value":"INSERT_YOUR_OPENAI_BASE_URL_HERE"}` | OpenAI API configuration |

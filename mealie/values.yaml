@@ -50,7 +50,7 @@ mealie:
   initialDelaySeconds: 10
 
   env: 
-      # -- Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/
+      # -- Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/.
     - name: ALLOW_SIGNUP
       value: false
     - name: DEFAULT_GROUP
@@ -92,7 +92,7 @@ postgres:
     type: ClusterIP
     port: 5432
   
-    # -- The initial delay for the liveness and readiness probes
+    # -- The initial delay for the liveness and readiness probes for postgres.
   initialDelaySeconds: 10
 
 # -- # Postgres environment variables, leave PGDATA unchanged unless you know what you are doing.

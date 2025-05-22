@@ -36,7 +36,7 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 | mealie.env[0] | object | `{"name":"ALLOW_SIGNUP","value":false}` | Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/. |
 | mealie.env[10].name | string | `"POSTGRES_DB"` |  |
 | mealie.env[10].value | string | `"mealie"` |  |
-| mealie.env[11] | object | `{"name":"OPENAI_BASE_URL","value":"INSERT_YOUR_OPENAI_BASE_URL_HERE"}` | OpenAI API configuration |
+| mealie.env[11] | object | `{"name":"OPENAI_BASE_URL","value":"https://api.openai.com/v1"}` | OpenAI API configuration |
 | mealie.env[12].name | string | `"OPENAI_API_KEY"` |  |
 | mealie.env[12].value | string | `"INSERT_YOUR_OPENAI_API_KEY_HERE"` |  |
 | mealie.env[13].name | string | `"OPENAI_MODEL"` |  |
@@ -67,7 +67,7 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 | podAnnotations | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
 | postgres | object | `{"enabled":false,"env":[{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"PG_USER","value":"mealie"}],"initialDelaySeconds":10,"service":{"port":5432,"type":"ClusterIP"}}` | Set postgres to true if you want to use the included postgres database. |
-| postgres.env | list | `[{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"PG_USER","value":"mealie"}]` | # Postgres environment variables, leave PGDATA unchanged unless you know what you are doing. |
+| postgres.env | list | `[{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"PG_USER","value":"mealie"}]` | Postgres environment variables, leave PGDATA unchanged unless you know what you are doing. |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
 | serviceAccount.annotations | object | `{}` |  |

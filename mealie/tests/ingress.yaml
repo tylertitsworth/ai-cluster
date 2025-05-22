@@ -1,0 +1,17 @@
+---
+ingress:
+  enabled: true
+  className: nginx
+
+  annotations:
+    this-is-a-test-annotation: "testing"
+
+  hosts:
+    - host: mealie.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+   - secretName: mealie-tls
+     hosts:
+       - mealie.example.com

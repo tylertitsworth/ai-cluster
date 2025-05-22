@@ -78,7 +78,7 @@ mealie:
 
     # -- OpenAI API configuration
     - name: OPENAI_BASE_URL
-      value: INSERT_YOUR_OPENAI_BASE_URL_HERE
+      value: https://api.openai.com/v1
     - name: OPENAI_API_KEY
       value: INSERT_YOUR_OPENAI_API_KEY_HERE
     - name: OPENAI_MODEL
@@ -95,7 +95,7 @@ postgres:
     # -- The initial delay for the liveness and readiness probes for postgres.
   initialDelaySeconds: 10
 
-# -- # Postgres environment variables, leave PGDATA unchanged unless you know what you are doing.
+# -- Postgres environment variables, leave PGDATA unchanged unless you know what you are doing.
   env: 
   - name: PGDATA
     value: /var/lib/postgresql/data/pgdata

@@ -1,0 +1,7 @@
+---
+
+storage:
+  enabled: true
+  className: nfs
+  accessMode: ReadWriteMany
+  size: 500Mi

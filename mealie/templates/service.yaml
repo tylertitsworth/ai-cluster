@@ -10,10 +10,10 @@ spec:
     - port: {{ .Values.mealie.service.port }}
       targetPort: http
       protocol: TCP
-      name: 
+      name:
   selector:
     {{- include "mealie.selectorLabels" . | nindent 4 }}
-    mealie.danielhall.me/is-api: "true"
+    mealie.is-api: "true"
 ---
 {{- if .Values.postgres.enabled }}
 apiVersion: v1

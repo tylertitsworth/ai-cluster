@@ -70,9 +70,6 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 | postgres.env | list | `[{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"PG_USER","value":"mealie"}]` | Postgres environment variables, leave PGDATA unchanged unless you know what you are doing. |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
-| serviceAccount.annotations | object | `{}` |  |
-| serviceAccount.create | bool | `true` |  |
-| serviceAccount.name | string | `""` |  |
 | storage.accessModeMealie | string | `"ReadWriteMany"` | The accessMode that is supported. |
 | storage.accessModePostgres | string | `"ReadWriteMany"` |  |
 | storage.className | string | `""` | The storage class to use |

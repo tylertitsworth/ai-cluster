@@ -20,14 +20,12 @@ spec:
       labels:
         {{- include "mealie.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: mealie
-        mealie.danielhall.me/is-api: "true"
-        mealie.danielhall.me/is-frontend: "true"
+        mealie.is-api: "true"
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}q
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "mealie.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
@@ -92,7 +90,6 @@ spec:
     metadata:
       labels:
         app: postgres-mealie
-        mealie.danielhall.me/is-backend: "true"
     spec:
       containers:
         - name: postgres
@@ -108,7 +105,7 @@ spec:
               mountPath: /var/lib/postgresql/data
           readinessProbe:
             exec:
-              command: 
+              command:
                 - /bin/sh
                 - -c
                 - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB

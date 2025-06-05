@@ -15,15 +15,6 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
 podAnnotations: {}
 
 podSecurityContext:
@@ -49,7 +40,7 @@ mealie:
   # -- The initial delay for the liveness and readiness probes for mealie
   initialDelaySeconds: 10
 
-  env: 
+  env:
       # -- Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/.
     - name: ALLOW_SIGNUP
       value: false
@@ -91,12 +82,12 @@ postgres:
   service:
     type: ClusterIP
     port: 5432
-  
+
     # -- The initial delay for the liveness and readiness probes for postgres.
   initialDelaySeconds: 10
 
 # -- Postgres environment variables, leave PGDATA unchanged unless you know what you are doing.
-  env: 
+  env:
   - name: PGDATA
     value: /var/lib/postgresql/data/pgdata
   - name: POSTGRES_USER
@@ -107,7 +98,7 @@ postgres:
     value: mealie
   - name: PG_USER
     value: mealie
-      
+
 
 ingress:
   enabled: false

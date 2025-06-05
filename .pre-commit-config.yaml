@@ -40,9 +40,16 @@ repos:
       - id: black
     repo: https://github.com/ambv/black
     rev: 24.10.0
+
   - hooks:
       - args:
           - --profile=black
         id: isort
     repo: https://github.com/pycqa/isort
     rev: 5.13.2
+  - hooks:
+      - args:
+          - --chart-search-root=mealie
+        id: helm-docs
+    repo: https://github.com/norwoodj/helm-docs
+    rev: v1.11.0

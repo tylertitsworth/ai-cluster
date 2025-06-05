@@ -14,69 +14,28 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| affinity | object | `{}` |  |
-| autoscaling.enabled | bool | `false` |  |
-| autoscaling.maxReplicas | int | `100` |  |
-| autoscaling.minReplicas | int | `1` |  |
-| autoscaling.targetCPUUtilizationPercentage | int | `80` |  |
-| fullnameOverride | string | `""` |  |
-| image.pgtag | string | `"15"` | Which version of postgres to use if enabled |
-| image.postgresRepo | string | `"postgres"` |  |
-| image.pullPolicy | string | `"Always"` | The pull policy for mealie images |
-| image.repository | string | `"ghcr.io/mealie-recipes/mealie"` | The repository for docker images to use |
-| image.tag | string | `""` | Override the default app version with another version |
+| autoscaling | object | `{"enabled":false,"maxReplicas":100,"minReplicas":1,"targetCPUUtilizationPercentage":80}` | Autoscaling Variables. Actual number of replicas is set in Mealie.replicas. This will not spin up additional Postgres pods if Postgres is enabled. |
+| image.pgtag | string | `"15"` | Which version of postgres to use if enabled. |
+| image.postgresRepo | string | `"postgres"` | The repository for postgres. |
+| image.pullPolicy | string | `"Always"` | The pull policy for mealie images. |
+| image.repository | string | `"ghcr.io/mealie-recipes/mealie"` | The repository for mealie. |
+| image.tag | string | `""` | Override the default mealie version with another version, the default version is found in Chart.yaml. |
 | imagePullSecrets | list | `[]` |  |
-| ingress.annotations | object | `{}` |  |
-| ingress.className | string | `""` |  |
-| ingress.enabled | bool | `false` |  |
-| ingress.hosts[0].host | string | `"chart-example.local"` |  |
-| ingress.hosts[0].paths[0].path | string | `"/"` |  |
-| ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
-| ingress.tls | list | `[]` |  |
-| mealie.env[0] | object | `{"name":"ALLOW_SIGNUP","value":false}` | Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/. |
-| mealie.env[10].name | string | `"POSTGRES_DB"` |  |
-| mealie.env[10].value | string | `"mealie"` |  |
-| mealie.env[11] | object | `{"name":"OPENAI_BASE_URL","value":"https://api.openai.com/v1"}` | OpenAI API configuration |
-| mealie.env[12].name | string | `"OPENAI_API_KEY"` |  |
-| mealie.env[12].value | string | `"INSERT_YOUR_OPENAI_API_KEY_HERE"` |  |
-| mealie.env[13].name | string | `"OPENAI_MODEL"` |  |
-| mealie.env[13].value | string | `"gpt-4.1"` |  |
-| mealie.env[1].name | string | `"DEFAULT_GROUP"` |  |
-| mealie.env[1].value | string | `"HOME"` |  |
-| mealie.env[2].name | string | `"DEFAULT_HOUSEHOLD"` |  |
-| mealie.env[2].value | string | `"FAMILY"` |  |
-| mealie.env[3].name | string | `"SECURITY_MAX_LOGIN_ATTEMPTS"` |  |
-| mealie.env[3].value | int | `5` |  |
-| mealie.env[4].name | string | `"SECURITY_USER_LOCKOUT_TIME"` |  |
-| mealie.env[4].value | int | `24` |  |
+| mealie.env | list | `[{"name":"ALLOW_SIGNUP","value":false},{"name":"DEFAULT_GROUP","value":"HOME"},{"name":"DEFAULT_HOUSEHOLD","value":"FAMILY"},{"name":"SECURITY_MAX_LOGIN_ATTEMPTS","value":5},{"name":"SECURITY_USER_LOCKOUT_TIME","value":24},{"name":"DB_ENGINE","value":"sqlite"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_SERVER","value":"postgres-mealie"},{"name":"POSTGRES_PORT","value":"5432"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"OPENAI_BASE_URL","value":"https://api.openai.com/v1"},{"name":"OPENAI_API_KEY","value":"INSERT_YOUR_OPENAI_API_KEY_HERE"},{"name":"OPENAI_MODEL","value":"gpt-4.1"}]` | Mealie environment variables. Additional environment variables for mealie can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/. |
+| mealie.env[11] | object | `{"name":"OPENAI_BASE_URL","value":"https://api.openai.com/v1"}` | Optional OpenAI API configuration. |
 | mealie.env[5] | object | `{"name":"DB_ENGINE","value":"sqlite"}` | Postgres Variables, to use postgres, change DB_ENGINE to postgres. The other variables are set to use the included postgres database by default. |
-| mealie.env[6].name | string | `"POSTGRES_USER"` |  |
-| mealie.env[6].value | string | `"mealie"` |  |
-| mealie.env[7].name | string | `"POSTGRES_PASSWORD"` |  |
-| mealie.env[7].value | string | `"mealie"` |  |
-| mealie.env[8].name | string | `"POSTGRES_SERVER"` |  |
-| mealie.env[8].value | string | `"postgres-mealie"` |  |
-| mealie.env[9].name | string | `"POSTGRES_PORT"` |  |
-| mealie.env[9].value | string | `"5432"` |  |
-| mealie.initialDelaySeconds | int | `10` | The initial delay for the liveness and readiness probes for mealie |
-| mealie.replicas | int | `1` | The number of api replicas to run. Only set above 1 if using postgres |
-| mealie.service.port | int | `9000` |  |
-| mealie.service.type | string | `"ClusterIP"` |  |
-| nameOverride | string | `""` |  |
-| nodeSelector | object | `{}` |  |
-| podAnnotations | object | `{}` |  |
-| podSecurityContext | object | `{}` |  |
-| postgres | object | `{"enabled":false,"env":[{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"PG_USER","value":"mealie"}],"initialDelaySeconds":10,"service":{"port":5432,"type":"ClusterIP"}}` | Set postgres to true if you want to use the included postgres database. |
+| mealie.initialDelaySeconds | int | `10` | The initial delay for the liveness and readiness probes for mealie. |
+| mealie.replicas | int | `1` | The number of api replicas to run. Only set above 1 if using postgres. |
+| mealie.service | object | `{"port":9000,"type":"ClusterIP"}` | Service Configuration for the mealie API service. Do not change without changing mealie environment variables. |
+| postgres.enabled | bool | `false` | Set enabled to true if you want to use the included Postgres Database. |
 | postgres.env | list | `[{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"},{"name":"POSTGRES_USER","value":"mealie"},{"name":"POSTGRES_PASSWORD","value":"mealie"},{"name":"POSTGRES_DB","value":"mealie"},{"name":"PG_USER","value":"mealie"}]` | Postgres environment variables, leave PGDATA unchanged unless you know what you are doing. |
-| resources | object | `{}` |  |
-| securityContext | object | `{}` |  |
-| storage.accessModeMealie | string | `"ReadWriteMany"` | The accessMode that is supported. |
-| storage.accessModePostgres | string | `"ReadWriteMany"` |  |
-| storage.className | string | `""` | The storage class to use |
-| storage.enabled | bool | `true` | Enable storage that isn't emphemeral |
-| storage.mealieSize | string | `"4G"` | The size of the storage to allocate |
-| storage.postgresSize | string | `"8G"` |  |
-| tolerations | list | `[]` |  |
+| postgres.initialDelaySeconds | int | `10` | The initial delay for the liveness and readiness probes for postgres. |
+| storage.accessModeMealie | string | `"ReadWriteMany"` | The access mode that is supported for Mealie. |
+| storage.accessModePostgres | string | `"ReadWriteMany"` | The access mode that is supported for Postgres. |
+| storage.className | string | `""` | The storage class to use. |
+| storage.enabled | bool | `true` | Enable storage that isn't emphemeral. |
+| storage.mealieSize | string | `"4G"` | Size of storage to allocate for mealie. |
+| storage.postgresSize | string | `"8G"` | Size of storage to allocate for postgres. |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

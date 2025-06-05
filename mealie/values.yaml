@@ -1,26 +1,29 @@
 image:
-  # -- The repository for docker images to use
+  # -- The repository for mealie.
   repository: ghcr.io/mealie-recipes/mealie
+    # -- The repository for postgres.
   postgresRepo: postgres
-
-  # -- The pull policy for mealie images
+  # -- The pull policy for mealie images.
   pullPolicy: Always
-
-  # -- Override the default app version with another version
+  # -- Override the default mealie version with another version, the default version is found in Chart.yaml.
   tag: ""
-  # -- Which version of postgres to use if enabled
+  # -- Which version of postgres to use if enabled.
   pgtag: "15"
 
+# @ ignore
 imagePullSecrets: []
+# @ignore
 nameOverride: ""
+# @ignore
 fullnameOverride: ""
-
+# @ignore
 podAnnotations: {}
-
+# @ignore
 podSecurityContext:
   {}
   # fsGroup: 2000
 
+# @ignore
 securityContext:
   {}
   # capabilities:
@@ -30,18 +33,20 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
+
 mealie:
-  # -- The number of api replicas to run. Only set above 1 if using postgres
+  # -- The number of api replicas to run. Only set above 1 if using postgres.
   replicas: 1
+  # -- Service Configuration for the mealie API service. Do not change without changing mealie environment variables.
   service:
     type: ClusterIP
     port: 9000
 
-  # -- The initial delay for the liveness and readiness probes for mealie
+  # -- The initial delay for the liveness and readiness probes for mealie.
   initialDelaySeconds: 10
 
+  # -- Mealie environment variables. Additional environment variables for mealie can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/.
   env:
-      # -- Basic environment variables for mealie, more can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/.
     - name: ALLOW_SIGNUP
       value: false
     - name: DEFAULT_GROUP
@@ -67,7 +72,7 @@ mealie:
     - name: POSTGRES_DB
       value: mealie
 
-    # -- OpenAI API configuration
+    # -- Optional OpenAI API configuration.
     - name: OPENAI_BASE_URL
       value: https://api.openai.com/v1
     - name: OPENAI_API_KEY
@@ -76,14 +81,15 @@ mealie:
       value: gpt-4.1
 
 
-# -- Set postgres to true if you want to use the included postgres database.
 postgres:
+  # -- Set enabled to true if you want to use the included Postgres Database.
   enabled: false
+  # @ignore
   service:
     type: ClusterIP
     port: 5432
 
-    # -- The initial delay for the liveness and readiness probes for postgres.
+  # -- The initial delay for the liveness and readiness probes for postgres.
   initialDelaySeconds: 10
 
 # -- Postgres environment variables, leave PGDATA unchanged unless you know what you are doing.
@@ -99,7 +105,7 @@ postgres:
   - name: PG_USER
     value: mealie
 
-
+# @ignore
 ingress:
   enabled: false
   className: ""
@@ -117,6 +123,7 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
+# @ignore
 resources:
   {}
 
@@ -131,6 +138,7 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
+# -- Autoscaling Variables. Actual number of replicas is set in Mealie.replicas. This will not spin up additional Postgres pods if Postgres is enabled.
 autoscaling:
   enabled: false
   minReplicas: 1
@@ -138,20 +146,22 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
+# @ignore
 nodeSelector: {}
-
+# @ignore
 tolerations: []
-
+# @ignore
 affinity: {}
-
 storage:
-  # -- Enable storage that isn't emphemeral
+  # -- Enable storage that isn't emphemeral.
   enabled: true
-  # -- The storage class to use
+  # -- The storage class to use.
   className: ""
-  # -- The size of the storage to allocate
+  # -- Size of storage to allocate for mealie.
   mealieSize: 4G
+  # -- Size of storage to allocate for postgres.
   postgresSize: 8G
-  # -- The accessMode that is supported.
+  # -- The access mode that is supported for Mealie.
   accessModeMealie: ReadWriteMany
+  # -- The access mode that is supported for Postgres.
   accessModePostgres: ReadWriteMany

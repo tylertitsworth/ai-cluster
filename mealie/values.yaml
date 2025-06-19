@@ -33,6 +33,7 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# -- Make sure to leave at least one label for mealie and postgres so the services connect properly.
 customLabels:
   mealie:
     mealie.is-api: "true"

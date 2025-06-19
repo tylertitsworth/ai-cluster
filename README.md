@@ -108,9 +108,7 @@ Now whenever I have an application that I want to make available on the private 
 
 ### Tailscale
 
-After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes. The Tailscale Operator was added to act as an Ingress Controller for the cluster. This only exposes services to the tailnet, so a nameserver was set up with coredns to route specific services back into the cluster to be used by other applications. Namely Keycloak is egressed back into the cluster to allow for setting up SSO over OIDC.
-
-Additionally, I installed a [subnet router](https://tailscale.com/kb/1185/kubernetes#subnet-router) so that way all of the cluster addresses could be reached on any of the private network's machines, removing the need for `kubectl port-forward`.
+After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes. The Tailscale Operator was added to act as an Ingress Controller for the cluster. Additionally, the operator acts as an API proxy, subnet router,and  control plane egress.
 
 ### Nvidia Device Plugin
 

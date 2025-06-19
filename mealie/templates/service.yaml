@@ -13,8 +13,9 @@ spec:
       name:
   selector:
     {{- include "mealie.selectorLabels" . | nindent 4 }}
-    mealie.is-api: "true"
----
+    {{- with .Values.customLabels.mealie }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- if .Values.postgres.enabled }}
 apiVersion: v1
 kind: Service
@@ -26,5 +27,7 @@ spec:
     - port:  {{ .Values.postgres.service.port}}
       targetPort:  {{ .Values.postgres.service.port}}
   selector:
-    app: postgres-mealie
+    {{- with .Values.customLabels.postgres }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}

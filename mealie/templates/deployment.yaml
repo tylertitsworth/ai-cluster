@@ -5,9 +5,7 @@ metadata:
   labels:
     {{- include "mealie.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.mealie.replicas }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "mealie.selectorLabels" . | nindent 6 }}
@@ -19,10 +17,11 @@ spec:
       {{- end }}
       labels:
         {{- include "mealie.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: mealie
-        mealie.is-api: "true"
+        {{- with .Values.customLabels.mealie }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}q
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -36,7 +35,7 @@ spec:
         - name: mealie
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
           - name: BASE_URL
@@ -85,11 +84,15 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres-mealie
+      {{- with .Values.customLabels.postgres }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
   template:
     metadata:
       labels:
-        app: postgres-mealie
+        {{- with .Values.customLabels.postgres }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       containers:
         - name: postgres

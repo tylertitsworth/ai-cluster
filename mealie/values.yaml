@@ -3,10 +3,10 @@ image:
   repository: ghcr.io/mealie-recipes/mealie
     # -- The repository for postgres.
   postgresRepo: postgres
-  # -- The pull policy for mealie images.
+  # -- The pull policy for mealie and postgres images.
   pullPolicy: Always
-  # -- Override the default mealie version with another version, the default version is found in Chart.yaml.
-  tag: ""
+  # -- The tag for the mealie
+  tag: "v2.8.0"
   # -- Which version of postgres to use if enabled.
   pgtag: "15"
 
@@ -33,6 +33,13 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
+customLabels:
+  mealie:
+    mealie.is-api: "true"
+    app.kubernetes.io/component: mealie
+  postgres:
+      mealie.postgres: "true"
+      app: postgres-mealie
 
 mealie:
   # -- The number of api replicas to run. Only set above 1 if using postgres.
@@ -68,7 +75,7 @@ mealie:
     - name: POSTGRES_SERVER
       value: postgres-mealie
     - name: POSTGRES_PORT
-      value: "5432"
+      value: 5432
     - name: POSTGRES_DB
       value: mealie
 
@@ -138,14 +145,6 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
-# -- Autoscaling Variables. Actual number of replicas is set in Mealie.replicas. This will not spin up additional Postgres pods if Postgres is enabled.
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
 # @ignore
 nodeSelector: {}
 # @ignore
@@ -158,9 +157,9 @@ storage:
   # -- The storage class to use.
   className: ""
   # -- Size of storage to allocate for mealie.
-  mealieSize: 4G
+  mealieSize: 4Gi
   # -- Size of storage to allocate for postgres.
-  postgresSize: 8G
+  postgresSize: 8Gi
   # -- The access mode that is supported for Mealie.
   accessModeMealie: ReadWriteMany
   # -- The access mode that is supported for Postgres.

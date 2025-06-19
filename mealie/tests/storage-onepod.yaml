@@ -1,6 +1,0 @@
----
-storage:
-  enabled: true
-  className: example-class
-  accessMode: ReadWriteOnce
-  size: 500Mi

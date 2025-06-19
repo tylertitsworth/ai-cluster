@@ -17,6 +17,7 @@ spec:
       {{- toYaml . | nindent 4 }}
     {{- end }}
 {{- if .Values.postgres.enabled }}
+---
 apiVersion: v1
 kind: Service
 metadata:

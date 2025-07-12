@@ -14,7 +14,13 @@ A Helm chart for Kubernetes
 | image.repository | string | `"ghcr.io/notpunchnox/rkllama"` |  |
 | image.tag | string | `"main"` |  |
 | imagePullSecrets | list | `[]` |  |
+| ingress.annotations | object | `{}` |  |
+| ingress.className | string | `""` |  |
 | ingress.enabled | bool | `false` |  |
+| ingress.hosts[0].host | string | `"chart-example.local"` |  |
+| ingress.hosts[0].paths[0].path | string | `"/"` |  |
+| ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
+| ingress.tls | list | `[]` |  |
 | livenessProbe | object | `{}` |  |
 | nameOverride | string | `""` |  |
 | nodeSelector.node-type | string | `"npu"` |  |

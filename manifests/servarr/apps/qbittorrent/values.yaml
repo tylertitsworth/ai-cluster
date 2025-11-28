@@ -23,8 +23,9 @@ app-template:
             FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,192.168.0.0/16,172.16.0.0/12"  # Allow local network access
             FIREWALL_INPUT_PORTS: "8080,6881"  # qBittorrent WebUI and BitTorrent port
 
-            # Force IPv4 for WireGuard connection
-            WIREGUARD_IPV6: "off"
+            # Force specific endpoint from working config
+            WIREGUARD_ENDPOINT_IP: "104.193.135.196"
+            WIREGUARD_ENDPOINT_PORT: "51820"
 
             # Kill switch - CRITICAL for VPN
             FIREWALL: "on"

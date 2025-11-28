@@ -52,19 +52,7 @@ app-template:
 
   ingress:
     main:
-      enabled: true
-      className: tailscale
-      hosts:
-        - host: sonarr
-          paths:
-            - path: /
-              pathType: Prefix
-              service:
-                identifier: main
-                port: http
-      tls:
-        - hosts:
-            - sonarr
+      enabled: false
 
   persistence:
     config:

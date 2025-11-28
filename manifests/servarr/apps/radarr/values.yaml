@@ -52,19 +52,7 @@ app-template:
 
   ingress:
     main:
-      enabled: true
-      className: tailscale
-      hosts:
-        - host: radarr
-          paths:
-            - path: /
-              pathType: Prefix
-              service:
-                identifier: main
-                port: http
-      tls:
-        - hosts:
-            - radarr
+      enabled: false
 
   persistence:
     config:

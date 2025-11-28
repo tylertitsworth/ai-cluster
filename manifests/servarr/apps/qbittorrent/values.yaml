@@ -9,7 +9,7 @@ app-template:
         gluetun:
           image:
             repository: qmcgaw/gluetun
-            tag: latest
+            tag: v3.39.1
             pullPolicy: IfNotPresent
 
           env:
@@ -97,6 +97,14 @@ app-template:
               cpu: 2000m
 
       pod:
+        # Security context for VPN networking
+        securityContext:
+          sysctls:
+            - name: net.ipv4.conf.all.src_valid_mark
+              value: "1"
+            - name: net.ipv6.conf.all.disable_ipv6
+              value: "1"
+
         # DNS configuration for VPN
         dnsPolicy: "None"
         dnsConfig:

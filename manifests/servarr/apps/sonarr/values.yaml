@@ -55,10 +55,6 @@ app-template:
         http:
           port: 8989
 
-  ingress:
-    main:
-      enabled: false
-
   persistence:
     config:
       enabled: true

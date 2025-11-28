@@ -9,18 +9,82 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ttitsworth/ai-cluster
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/plex
+    repoURL: https://raw.githubusercontent.com/plexinc/pms-docker/gh-pages
+    targetRevision: 0.4.0  # Latest version
+    chart: plex-media-server
     helm:
-      valueFiles:
-        - values.yaml
+      valuesObject:
+        # Override the name to just "plex"
+        fullnameOverride: plex
+
+        image:
+          tag: latest
+
+        # Claim token for server initialization
+        # Get from https://www.plex.tv/claim/
+        extraEnv:
+          PLEX_CLAIM: ""  # Get from https://www.plex.tv/claim/ - format: claim-XXXXXXXXXXXXXXXXXXXX
+          ADVERTISE_IP: "https://plex.tail79a5c8.ts.net:32400/"
+          TZ: "America/Los_Angeles"
+
+        # Node selection for Framework Desktop (AMD GPU)
+        nodeSelector:
+          kubernetes.io/hostname: framework-desktop
+
+        # Service configuration
+        service:
+          type: LoadBalancer
+          port: 32400
+
+        # Ingress configuration
+        ingress:
+          enabled: true
+          ingressClassName: tailscale
+          url: plex
+          annotations:
+            tailscale.com/proxy-class: "control-plane"
+          tls:
+            - hosts:
+                - plex
+
+        # Persistent storage
+        persistence:
+          config:
+            enabled: true
+            existingClaim: plex-config
+          transcode:
+            enabled: true
+            existingClaim: plex-transcode
+          data:
+            enabled: true
+            existingClaim: media-library
+            mountPath: /media
+
+        # Resources
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            memory: 8Gi
+            amd.com/gpu: 1
+
+        # Extra volume mounts for AMD GPU
+        extraVolumes:
+          - name: dri
+            hostPath:
+              path: /dev/dri
+
+        extraVolumeMounts:
+          - name: dri
+            mountPath: /dev/dri
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # Disabled auto-sync to allow manual claim token configuration
+    # automated:
+    #   prune: true
+    #   selfHeal: true
     syncOptions:
     - CreateNamespace=true

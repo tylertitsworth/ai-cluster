@@ -28,10 +28,6 @@ app-template:
             DOT: "off"
             DNS_KEEP_NAMESERVER: "off"
 
-            # Bypass route checks
-            FIREWALL_VPN_INPUT_PORTS: "51820"  # WireGuard port
-            VPN_ENDPOINT_IP: "193.32.127.70"  # Mullvad Vancouver endpoint
-
           # Load VPN credentials from secret
           envFrom:
             - secretRef:
@@ -58,7 +54,7 @@ app-template:
             tag: 4.6.2
             pullPolicy: IfNotPresent
 
-          # Route all traffic through Gluetun
+          # Route all traffic through Gluetun - shares network namespace
           dependsOn:
             - gluetun
 
@@ -101,6 +97,9 @@ app-template:
               cpu: 2000m
 
       pod:
+        # Use host network for VPN to work properly
+        hostNetwork: false
+
         # DNS configuration for VPN
         dnsPolicy: "None"
         dnsConfig:

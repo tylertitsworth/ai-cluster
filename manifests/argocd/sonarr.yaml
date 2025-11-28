@@ -1,0 +1,23 @@
+# Sonarr - TV Show Management
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sonarr
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: servarr-stack
+    path: manifests/servarr/apps/sonarr
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: servarr
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

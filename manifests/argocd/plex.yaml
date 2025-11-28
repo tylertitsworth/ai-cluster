@@ -4,6 +4,8 @@ kind: Application
 metadata:
   name: plex
   namespace: argocd
+  labels:
+    stack: servarr
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

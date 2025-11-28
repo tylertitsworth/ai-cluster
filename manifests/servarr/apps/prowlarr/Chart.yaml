@@ -1,0 +1,10 @@
+apiVersion: v2
+name: prowlarr
+description: Indexer manager/proxy for Sonarr, Radarr, Lidarr, and Readarr
+type: application
+version: 1.0.0
+appVersion: 1.28.2.4885
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

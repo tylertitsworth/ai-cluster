@@ -1,0 +1,60 @@
+app-template:
+  controllers:
+    prowlarr:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: lscr.io/linuxserver/prowlarr
+            tag: 1.28.2
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ping
+                  port: 9696
+                initialDelaySeconds: 30
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ping
+                  port: 9696
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+
+  service:
+    main:
+      controller: prowlarr
+      ports:
+        http:
+          port: 9696
+
+  # No ingress - only internal access needed for API communication
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: prowlarr-config
+      globalMounts:
+        - path: /config

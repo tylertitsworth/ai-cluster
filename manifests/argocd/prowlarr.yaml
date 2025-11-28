@@ -1,8 +1,8 @@
-# Radarr - Movie Management
+# Prowlarr - Indexer Manager
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: radarr
+  name: prowlarr
   namespace: argocd
   labels:
     stack: servarr
@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: servarr-stack
-    path: manifests/servarr/apps/radarr
+    path: manifests/servarr/apps/prowlarr
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: overseerr
+description: Request management and media discovery tool for Plex ecosystem
+type: application
+version: 1.0.0
+appVersion: 1.33.2
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

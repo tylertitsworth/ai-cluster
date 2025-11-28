@@ -5,20 +5,68 @@ app-template:
       strategy: Recreate
 
       containers:
-        main:
+        # Gluetun VPN container
+        gluetun:
+          image:
+            repository: qmcgaw/gluetun
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            # VPN Provider Configuration
+            # These will be overridden by the vpn-config secret
+            VPN_SERVICE_PROVIDER: "mullvad"  # Default, override in secret
+            VPN_TYPE: "wireguard"  # Default, override in secret
+
+            # General settings
+            TZ: "America/Los_Angeles"
+            FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,192.168.0.0/16"  # Allow local network access
+            FIREWALL_INPUT_PORTS: "8080,6881"  # qBittorrent WebUI and BitTorrent port
+
+            # Kill switch - CRITICAL for VPN
+            FIREWALL: "on"
+            DOT: "off"
+            DNS_KEEP_NAMESERVER: "off"
+
+          # Load VPN credentials from secret
+          envFrom:
+            - secretRef:
+                name: vpn-config
+                optional: false
+
+          # Run as privileged for VPN networking
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
+
+          probes:
+            liveness:
+              enabled: false  # Gluetun handles this internally
+            readiness:
+              enabled: false
+
+        # qBittorrent container
+        qbittorrent:
           image:
             repository: lscr.io/linuxserver/qbittorrent
             tag: 4.6.2
             pullPolicy: IfNotPresent
+
+          # Route all traffic through Gluetun
+          dependsOn:
+            - gluetun
 
           env:
             TZ: America/Los_Angeles
             PUID: "1000"
             PGID: "1000"
             WEBUI_PORT: "8080"
-            # Disable authentication for internal use (optional)
-            # Set to true if you want to require login
             DOCKER_MODS: "ghcr.io/gabe565/linuxserver-mod-vuetorrent"
+
+          # Use Gluetun's network stack
+          # This is done via pod settings below
 
           probes:
             liveness:
@@ -28,7 +76,7 @@ app-template:
                 httpGet:
                   path: /
                   port: 8080
-                initialDelaySeconds: 30
+                initialDelaySeconds: 60  # Give VPN time to connect
                 periodSeconds: 30
             readiness:
               enabled: true
@@ -37,7 +85,7 @@ app-template:
                 httpGet:
                   path: /
                   port: 8080
-                initialDelaySeconds: 30
+                initialDelaySeconds: 60
                 periodSeconds: 10
 
           resources:
@@ -48,6 +96,16 @@ app-template:
               memory: 4Gi
               cpu: 2000m
 
+      pod:
+        # Share network namespace between containers
+        shareProcessNamespace: true
+        # DNS configuration for VPN
+        dnsPolicy: "None"
+        dnsConfig:
+          nameservers:
+            - 1.1.1.1
+            - 1.0.0.1
+
   service:
     main:
       controller: qbittorrent
@@ -55,22 +113,24 @@ app-template:
         http:
           port: 8080
 
-    # BitTorrent ports
+    # BitTorrent port through VPN
     bittorrent:
       controller: qbittorrent
       type: LoadBalancer
-      loadBalancerIP: 192.168.1.90  # Assign a specific IP from MetalLB pool
+      loadBalancerIP: 192.168.1.90
       ports:
         tcp:
           enabled: true
           port: 6881
           protocol: TCP
+          targetPort: 6881
         udp:
           enabled: true
           port: 6881
           protocol: UDP
+          targetPort: 6881
 
-  # Optional ingress for web UI
+  # Ingress for web UI (still accessible locally)
   ingress:
     main:
       enabled: true
@@ -107,3 +167,16 @@ app-template:
       existingClaim: media-library
       globalMounts:
         - path: /media
+
+    # Gluetun config (optional, for persistent VPN config)
+    gluetun-config:
+      enabled: false
+      type: emptyDir
+      globalMounts:
+        - path: /gluetun
+
+  # Create a secret for VPN credentials
+  # kubectl create secret generic vpn-config -n servarr \
+  #   --from-literal=WIREGUARD_PRIVATE_KEY=your_key \
+  #   --from-literal=VPN_USERNAME=your_username \
+  #   --from-literal=VPN_PASSWORD=your_password

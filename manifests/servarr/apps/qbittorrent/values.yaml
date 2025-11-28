@@ -40,6 +40,7 @@ app-template:
               add:
                 - NET_ADMIN
                 - SYS_MODULE
+                - NET_RAW
             privileged: true
 
           probes:

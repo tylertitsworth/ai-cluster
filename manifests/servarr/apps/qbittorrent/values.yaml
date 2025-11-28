@@ -1,0 +1,109 @@
+app-template:
+  controllers:
+    qbittorrent:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: lscr.io/linuxserver/qbittorrent
+            tag: 4.6.2
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+            WEBUI_PORT: "8080"
+            # Disable authentication for internal use (optional)
+            # Set to true if you want to require login
+            DOCKER_MODS: "ghcr.io/gabe565/linuxserver-mod-vuetorrent"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 8080
+                initialDelaySeconds: 30
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 8080
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 4Gi
+              cpu: 2000m
+
+  service:
+    main:
+      controller: qbittorrent
+      ports:
+        http:
+          port: 8080
+
+    # BitTorrent ports
+    bittorrent:
+      controller: qbittorrent
+      type: LoadBalancer
+      loadBalancerIP: 192.168.1.90  # Assign a specific IP from MetalLB pool
+      ports:
+        tcp:
+          enabled: true
+          port: 6881
+          protocol: TCP
+        udp:
+          enabled: true
+          port: 6881
+          protocol: UDP
+
+  # Optional ingress for web UI
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: qbittorrent
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - qbittorrent
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: qbittorrent-config
+      globalMounts:
+        - path: /config
+
+    downloads:
+      enabled: true
+      existingClaim: downloads
+      globalMounts:
+        - path: /downloads
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media

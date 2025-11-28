@@ -39,6 +39,7 @@ app-template:
             capabilities:
               add:
                 - NET_ADMIN
+                - SYS_MODULE
             privileged: true
 
           probes:

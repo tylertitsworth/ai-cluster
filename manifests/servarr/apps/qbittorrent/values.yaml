@@ -20,13 +20,17 @@ app-template:
 
             # General settings
             TZ: "America/Los_Angeles"
-            FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,192.168.0.0/16"  # Allow local network access
+            FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,192.168.0.0/16,172.16.0.0/12"  # Allow local network access
             FIREWALL_INPUT_PORTS: "8080,6881"  # qBittorrent WebUI and BitTorrent port
 
             # Kill switch - CRITICAL for VPN
             FIREWALL: "on"
             DOT: "off"
             DNS_KEEP_NAMESERVER: "off"
+
+            # Bypass route checks
+            FIREWALL_VPN_INPUT_PORTS: "51820"  # WireGuard port
+            VPN_ENDPOINT_IP: "193.32.127.70"  # Mullvad Vancouver endpoint
 
           # Load VPN credentials from secret
           envFrom:
@@ -97,14 +101,6 @@ app-template:
               cpu: 2000m
 
       pod:
-        # Security context for VPN networking
-        securityContext:
-          sysctls:
-            - name: net.ipv4.conf.all.src_valid_mark
-              value: "1"
-            - name: net.ipv6.conf.all.disable_ipv6
-              value: "1"
-
         # DNS configuration for VPN
         dnsPolicy: "None"
         dnsConfig:

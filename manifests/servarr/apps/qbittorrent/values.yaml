@@ -99,8 +99,9 @@ app-template:
               cpu: 2000m
 
       pod:
-        # Use host network for VPN to work properly
-        hostNetwork: false
+        # Node selection - avoid Tegra kernel issues
+        nodeSelector:
+          kubernetes.io/hostname: npu02.local
 
         # DNS configuration for VPN
         dnsPolicy: "None"

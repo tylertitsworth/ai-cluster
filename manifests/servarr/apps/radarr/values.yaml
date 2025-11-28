@@ -43,6 +43,10 @@ app-template:
             limits:
               memory: 2Gi
 
+      # Must run on framework-desktop to access media-library volume
+      nodeSelector:
+        kubernetes.io/hostname: framework-desktop
+
   service:
     main:
       controller: radarr

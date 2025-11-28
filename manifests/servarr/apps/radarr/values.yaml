@@ -43,10 +43,6 @@ app-template:
             limits:
               memory: 2Gi
 
-      # Pod spec configuration
-      pod:
-        nodeSelector:
-          kubernetes.io/hostname: framework-desktop
 
   service:
     main:

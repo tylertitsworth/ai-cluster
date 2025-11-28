@@ -50,7 +50,23 @@ app-template:
         http:
           port: 9696
 
-  # No ingress - only internal access needed for API communication
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: prowlarr
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - prowlarr
 
   persistence:
     config:

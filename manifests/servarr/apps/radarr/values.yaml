@@ -51,6 +51,24 @@ app-template:
         http:
           port: 7878
 
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: radarr
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - radarr
+
   persistence:
     config:
       enabled: true

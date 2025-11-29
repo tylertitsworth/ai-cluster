@@ -14,18 +14,15 @@ app-template:
 
           env:
             # VPN Provider Configuration
-            # These will be overridden by the vpn-config secret
-            VPN_SERVICE_PROVIDER: "mullvad"  # Default, override in secret
-            VPN_TYPE: "wireguard"  # Default, override in secret
+            # Using AirVPN provider mode with Mullvad credentials (workaround)
+            VPN_SERVICE_PROVIDER: "airvpn"
+            VPN_TYPE: "wireguard"
 
             # General settings
             TZ: "America/Los_Angeles"
             FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,192.168.0.0/16,172.16.0.0/12"  # Allow local network access
             FIREWALL_INPUT_PORTS: "8080,6881"  # qBittorrent WebUI and BitTorrent port
 
-            # Force specific endpoint from working config
-            WIREGUARD_ENDPOINT_IP: "104.193.135.196"
-            WIREGUARD_ENDPOINT_PORT: "51820"
 
             # Kill switch - CRITICAL for VPN
             FIREWALL: "on"

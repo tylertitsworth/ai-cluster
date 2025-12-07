@@ -1,0 +1,129 @@
+app-template:
+  controllers:
+    plex:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: plexinc/pms-docker
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/New_York
+            # PLEX_CLAIM: "claim-xxxxx"  # Get from https://www.plex.tv/claim/
+            ADVERTISE_IP: "https://plex.tail79a5c8.ts.net:32400/"
+            PLEX_UID: "1000"
+            PLEX_GID: "1000"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /identity
+                  port: 32400
+                initialDelaySeconds: 30
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /identity
+                  port: 32400
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 1000m
+            limits:
+              memory: 8Gi
+              amd.com/gpu: 1  # AMD GPU for transcoding
+
+      # Pin to Framework Desktop node
+      nodeSelector:
+        kubernetes.io/hostname: framework-desktop
+
+  service:
+    main:
+      controller: plex
+      type: LoadBalancer
+      ports:
+        http:
+          port: 32400
+          protocol: TCP
+        # Additional Plex ports
+        dlna-tcp:
+          port: 32469
+          protocol: TCP
+        dlna-udp:
+          port: 1900
+          protocol: UDP
+        discovery:
+          port: 5353
+          protocol: UDP
+        roku:
+          port: 8324
+          protocol: TCP
+        gdm1:
+          port: 32410
+          protocol: UDP
+        gdm2:
+          port: 32412
+          protocol: UDP
+        gdm3:
+          port: 32413
+          protocol: UDP
+        gdm4:
+          port: 32414
+          protocol: UDP
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: plex
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      tls:
+        - hosts:
+            - plex
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: plex-config
+      globalMounts:
+        - path: /config
+
+    transcode:
+      enabled: true
+      existingClaim: plex-transcode
+      globalMounts:
+        - path: /transcode
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media
+          readOnly: false
+
+    # For AMD GPU transcoding
+    dri:
+      enabled: true
+      type: hostPath
+      hostPath: /dev/dri
+      globalMounts:
+        - path: /dev/dri

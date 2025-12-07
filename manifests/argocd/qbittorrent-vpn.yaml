@@ -1,0 +1,184 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: qbittorrent-vpn
+  namespace: argocd
+  labels:
+    stack: servarr
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://bjw-s-labs.github.io/helm-charts/
+    chart: app-template
+    targetRevision: 3.5.1
+    helm:
+      valuesObject:
+        controllers:
+          qbittorrent-vpn:
+            replicas: 1
+            strategy: Recreate
+
+            pod:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: node-type
+                        operator: NotIn
+                        values:
+                        - jetson
+
+            containers:
+              gluetun:
+                image:
+                  repository: qmcgaw/gluetun
+                  tag: v3.39.1
+                  pullPolicy: IfNotPresent
+
+                securityContext:
+                  capabilities:
+                    add:
+                    - NET_ADMIN
+                    - NET_RAW
+                    - SYS_MODULE
+                  privileged: true
+
+                env:
+                  VPN_SERVICE_PROVIDER: airvpn
+                  VPN_TYPE: wireguard
+                  FIREWALL: "on"
+                  FIREWALL_VPN_INPUT_PORTS: "34590"
+                  FIREWALL_INPUT_PORTS: "8080"
+                  DOT: "off"
+                  DNS_ADDRESS: "1.1.1.1"
+                  HEALTH_VPN_DURATION_INITIAL: 30s
+
+                envFrom:
+                - secretRef:
+                    name: vpn-config
+
+                probes:
+                  liveness:
+                    enabled: true
+                    custom: true
+                    spec:
+                      httpGet:
+                        path: /v1/publicip/ip
+                        port: 8000
+                      initialDelaySeconds: 60
+                      periodSeconds: 60
+                  readiness:
+                    enabled: true
+                    custom: true
+                    spec:
+                      httpGet:
+                        path: /v1/publicip/ip
+                        port: 8000
+                      initialDelaySeconds: 30
+                      periodSeconds: 10
+
+                resources:
+                  requests:
+                    memory: 128Mi
+                    cpu: 50m
+                  limits:
+                    memory: 512Mi
+
+              qbittorrent:
+                image:
+                  repository: lscr.io/linuxserver/qbittorrent
+                  tag: 4.6.7
+                  pullPolicy: IfNotPresent
+
+                dependsOn:
+                - gluetun
+
+                env:
+                  TZ: America/Los_Angeles
+                  PUID: "1000"
+                  PGID: "1000"
+                  WEBUI_PORT: "8080"
+
+                probes:
+                  liveness:
+                    enabled: true
+                    custom: true
+                    spec:
+                      httpGet:
+                        path: /
+                        port: 8080
+                      initialDelaySeconds: 60
+                      periodSeconds: 30
+                  readiness:
+                    enabled: true
+                    custom: true
+                    spec:
+                      httpGet:
+                        path: /
+                        port: 8080
+                      initialDelaySeconds: 30
+                      periodSeconds: 10
+
+                resources:
+                  requests:
+                    memory: 512Mi
+                    cpu: 100m
+                  limits:
+                    memory: 2Gi
+
+        service:
+          main:
+            controller: qbittorrent-vpn
+            ports:
+              http:
+                port: 8080
+
+        ingress:
+          main:
+            enabled: true
+            className: tailscale
+            hosts:
+              - host: qbittorrent
+                paths:
+                  - path: /
+                    pathType: Prefix
+                    service:
+                      identifier: main
+                      port: http
+            annotations:
+              tailscale.com/proxy-class: "control-plane"
+            tls:
+              - hosts:
+                  - qbittorrent
+
+        persistence:
+          config:
+            enabled: true
+            existingClaim: qbittorrent-config
+            globalMounts:
+              - path: /config
+
+          downloads:
+            enabled: true
+            existingClaim: downloads
+            globalMounts:
+              - path: /downloads
+                readOnly: false
+
+          media:
+            enabled: true
+            existingClaim: media-library
+            globalMounts:
+              - path: /media
+                readOnly: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: servarr
+
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

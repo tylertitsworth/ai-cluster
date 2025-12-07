@@ -12,31 +12,52 @@ spec:
   project: default
   source:
     repoURL: https://raw.githubusercontent.com/plexinc/pms-docker/gh-pages
-    targetRevision: 0.4.0  # Latest version
+    targetRevision: 1.4.0  # Latest version
     chart: plex-media-server
     helm:
       valuesObject:
-        # Override the name to just "plex"
+        # Name override
         fullnameOverride: plex
 
+        # Image configuration
         image:
           tag: latest
 
-        # Claim token for server initialization
-        # Get from https://www.plex.tv/claim/
+        # Network configuration
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+
+        # PMS (Plex Media Server) specific settings
+        pms:
+          # Persistent storage configuration - let it create its own claim
+          configStorage: 2Gi
+
+          # GPU configuration for hardware acceleration
+          gpu:
+            nvidia:
+              enabled: false  # Using AMD GPU via extraVolumes instead
+
+          # Resource limits and requests
+          resources:
+            requests:
+              memory: 4Gi
+            limits:
+              memory: 12Gi
+              amd.com/gpu: 1
+
+        # Environment variables
         extraEnv:
           PLEX_CLAIM: ""  # Get from https://www.plex.tv/claim/ - format: claim-XXXXXXXXXXXXXXXXXXXX
-          ADVERTISE_IP: "https://plex.tail79a5c8.ts.net:32400/"
           TZ: "America/Los_Angeles"
-
-        # Node selection for Framework Desktop (AMD GPU)
-        nodeSelector:
-          kubernetes.io/hostname: framework-desktop
+          ALLOWED_NETWORKS: "192.168.1.0/24,10.0.0.0/8"
 
         # Service configuration
         service:
           type: LoadBalancer
           port: 32400
+          nodePort: 32400
+          externalTrafficPolicy: Local
+          loadBalancerIP: 192.168.1.89
 
         # Ingress configuration
         ingress:
@@ -49,37 +70,35 @@ spec:
             - hosts:
                 - plex
 
-        # Persistent storage
-        persistence:
-          config:
-            enabled: true
-            existingClaim: plex-config
-          transcode:
-            enabled: true
-            existingClaim: plex-transcode
-          data:
-            enabled: true
-            existingClaim: media-library
-            mountPath: /media
+        # Node selection for Framework Desktop (AMD GPU)
+        nodeSelector:
+          kubernetes.io/hostname: framework-desktop
 
-        # Resources
-        resources:
-          requests:
-            cpu: 1000m
-            memory: 2Gi
-          limits:
-            memory: 8Gi
-            amd.com/gpu: 1
-
-        # Extra volume mounts for AMD GPU
+        # Extra volumes for GPU, transcode, and media storage
         extraVolumes:
           - name: dri
             hostPath:
               path: /dev/dri
+          - name: transcode
+            persistentVolumeClaim:
+              claimName: plex-transcode
+          - name: media-library
+            persistentVolumeClaim:
+              claimName: media-library
+          - name: downloads
+            persistentVolumeClaim:
+              claimName: downloads
 
+        # Extra volume mounts
         extraVolumeMounts:
           - name: dri
             mountPath: /dev/dri
+          - name: transcode
+            mountPath: /transcode
+          - name: media-library
+            mountPath: /media
+          - name: downloads
+            mountPath: /downloads
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr

@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: lscr.io/linuxserver/tautulli
-            tag: 2.14.6
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:

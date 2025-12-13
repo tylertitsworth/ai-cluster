@@ -1,0 +1,10 @@
+apiVersion: v2
+name: flaresolverr
+description: Proxy server to bypass Cloudflare protection for Prowlarr
+type: application
+version: 1.0.0
+appVersion: 3.3.21
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

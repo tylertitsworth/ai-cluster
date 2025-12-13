@@ -1,0 +1,55 @@
+app-template:
+  controllers:
+    flaresolverr:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/flaresolverr/flaresolverr
+            tag: v3.3.21  # v3.3.24 has ARM64 issues
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            LOG_LEVEL: info
+            LOG_HTML: "false"
+            CAPTCHA_SOLVER: none
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 8191
+                initialDelaySeconds: 60
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 8191
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi  # Browser instances need memory
+
+  service:
+    main:
+      controller: flaresolverr
+      ports:
+        http:
+          port: 8191
+
+  # No ingress needed - internal service only
+  # Prowlarr connects via: http://flaresolverr.servarr.svc.cluster.local:8191

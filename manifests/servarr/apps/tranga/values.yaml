@@ -16,6 +16,7 @@ app-template:
             POSTGRES_USER: tranga
             POSTGRES_PASSWORD: tranga
             POSTGRES_DB: tranga
+            PGDATA: /var/lib/postgresql/data/pgdata
 
           probes:
             liveness:
@@ -56,7 +57,7 @@ app-template:
       containers:
         main:
           image:
-            repository: ghcr.io/c9glax/tranga-api
+            repository: glax/tranga-api
             tag: latest
             pullPolicy: IfNotPresent
 
@@ -103,7 +104,7 @@ app-template:
       containers:
         main:
           image:
-            repository: ghcr.io/c9glax/tranga-website
+            repository: glax/tranga-website
             tag: latest
             pullPolicy: IfNotPresent
 

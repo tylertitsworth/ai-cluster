@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: lscr.io/linuxserver/radarr
-            tag: 5.16.3
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:

@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: lscr.io/linuxserver/prowlarr
-            tag: 1.28.2
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:

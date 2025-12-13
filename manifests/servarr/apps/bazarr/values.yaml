@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: lscr.io/linuxserver/bazarr
-            tag: 1.4.5
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:

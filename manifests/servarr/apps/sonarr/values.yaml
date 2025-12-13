@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: lscr.io/linuxserver/sonarr
-            tag: 4.0.11
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:

@@ -1,14 +1,14 @@
 app-template:
   controllers:
-    readarr:
+    kavita:
       replicas: 1
       strategy: Recreate
 
       containers:
         main:
           image:
-            repository: lscr.io/linuxserver/readarr
-            tag: 0.4.3-develop
+            repository: lscr.io/linuxserver/kavita
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:
@@ -22,8 +22,8 @@ app-template:
               custom: true
               spec:
                 httpGet:
-                  path: /ping
-                  port: 8787
+                  path: /
+                  port: 5000
                 initialDelaySeconds: 30
                 periodSeconds: 30
             readiness:
@@ -31,32 +31,31 @@ app-template:
               custom: true
               spec:
                 httpGet:
-                  path: /ping
-                  port: 8787
+                  path: /
+                  port: 5000
                 initialDelaySeconds: 30
                 periodSeconds: 10
 
           resources:
             requests:
               memory: 256Mi
-              cpu: 50m
+              cpu: 100m
             limits:
-              memory: 1Gi
-
+              memory: 2Gi
 
   service:
     main:
-      controller: readarr
+      controller: kavita
       ports:
         http:
-          port: 8787
+          port: 5000
 
   ingress:
     main:
       enabled: true
       className: tailscale
       hosts:
-        - host: readarr
+        - host: kavita
           paths:
             - path: /
               pathType: Prefix
@@ -67,12 +66,12 @@ app-template:
         tailscale.com/proxy-class: "control-plane"
       tls:
         - hosts:
-            - readarr
+            - kavita
 
   persistence:
     config:
       enabled: true
-      existingClaim: readarr-config
+      existingClaim: kavita-config
       globalMounts:
         - path: /config
 
@@ -81,11 +80,4 @@ app-template:
       existingClaim: media-library
       globalMounts:
         - path: /media
-          readOnly: false
-
-    downloads:
-      enabled: true
-      existingClaim: downloads
-      globalMounts:
-        - path: /downloads
           readOnly: false

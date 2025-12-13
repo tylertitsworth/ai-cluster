@@ -1,9 +1,9 @@
 apiVersion: v2
-name: readarr
-description: Ebook and audiobook management
+name: kavita
+description: Self-hosted digital library for comics, manga, and ebooks
 type: application
 version: 1.0.0
-appVersion: 0.4.3
+appVersion: 0.8.4
 dependencies:
   - name: app-template
     version: 3.5.1

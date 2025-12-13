@@ -1,8 +1,8 @@
-# Readarr - Ebook and Audiobook Management
+# Tranga - Self-hosted manga downloader and monitor
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: readarr
+  name: tranga
   namespace: argocd
   labels:
     stack: servarr
@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: servarr-stack
-    path: manifests/servarr/apps/readarr
+    path: manifests/servarr/apps/tranga
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr

@@ -1,4 +1,7 @@
 app-template:
+  global:
+    fullnameOverride: tranga
+
   controllers:
     # PostgreSQL database
     tranga-pg:

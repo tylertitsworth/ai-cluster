@@ -4,7 +4,7 @@ app-template:
 
   controllers:
     # PostgreSQL database
-    tranga-pg:
+    pg:
       replicas: 1
       strategy: Recreate
 
@@ -53,7 +53,7 @@ app-template:
               memory: 512Mi
 
     # Tranga API backend
-    tranga-api:
+    api:
       replicas: 1
       strategy: Recreate
 
@@ -100,7 +100,7 @@ app-template:
               memory: 1Gi
 
     # Tranga website frontend
-    tranga-website:
+    website:
       replicas: 1
       strategy: Recreate
 
@@ -143,20 +143,20 @@ app-template:
               memory: 256Mi
 
   service:
-    tranga-pg:
-      controller: tranga-pg
+    pg:
+      controller: pg
       ports:
         postgres:
           port: 5432
 
-    tranga-api:
-      controller: tranga-api
+    api:
+      controller: api
       ports:
         http:
           port: 6531
 
-    tranga-website:
-      controller: tranga-website
+    website:
+      controller: website
       ports:
         http:
           port: 80
@@ -171,7 +171,7 @@ app-template:
             - path: /
               pathType: Prefix
               service:
-                identifier: tranga-website
+                identifier: website
                 port: http
       annotations:
         tailscale.com/proxy-class: "control-plane"
@@ -184,7 +184,7 @@ app-template:
       enabled: true
       existingClaim: tranga-pg-data
       advancedMounts:
-        tranga-pg:
+        pg:
           main:
             - path: /var/lib/postgresql/data
 
@@ -192,7 +192,7 @@ app-template:
       enabled: true
       existingClaim: tranga-api-config
       advancedMounts:
-        tranga-api:
+        api:
           main:
             - path: /usr/share/tranga-api
 
@@ -200,7 +200,7 @@ app-template:
       enabled: true
       existingClaim: media-library
       advancedMounts:
-        tranga-api:
+        api:
           main:
             - path: /manga
               subPath: manga

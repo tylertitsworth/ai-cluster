@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: lscr.io/linuxserver/readarr
-            tag: latest
+            tag: 0.4.3-develop
             pullPolicy: IfNotPresent
 
           env:

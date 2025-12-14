@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: ghcr.io/flaresolverr/flaresolverr
-            tag: v3.3.21  # v3.3.24 has ARM64 issues
+            tag: latest
             pullPolicy: IfNotPresent
 
           env:

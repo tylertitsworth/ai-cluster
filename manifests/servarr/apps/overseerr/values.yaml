@@ -66,6 +66,7 @@ app-template:
                 port: http
       annotations:
         tailscale.com/proxy-class: "control-plane"
+        tailscale.com/funnel: "true"
       tls:
         - hosts:
             - overseerr

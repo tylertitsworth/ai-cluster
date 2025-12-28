@@ -80,7 +80,7 @@ app-template:
     plex-logs:
       enabled: true
       type: persistentVolumeClaim
-      existingClaim: pms-config-plex-0
+      existingClaim: plex-config
       globalMounts:
         - path: /plexlogs
           subPath: Library/Application Support/Plex Media Server/Logs

@@ -196,7 +196,7 @@ app-template:
 
     api-config:
       enabled: true
-      existingClaim: tranga-api-config
+      existingClaim: tranga-config
       advancedMounts:
         api:
           main:

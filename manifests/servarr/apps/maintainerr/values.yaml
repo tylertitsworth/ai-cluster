@@ -75,6 +75,6 @@ app-template:
   persistence:
     data:
       enabled: true
-      existingClaim: maintainerr-data
+      existingClaim: maintainerr-config
       globalMounts:
         - path: /opt/data

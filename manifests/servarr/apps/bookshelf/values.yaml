@@ -71,7 +71,7 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: bookshelf-config
+      existingClaim: readarr
       globalMounts:
         - path: /config
 

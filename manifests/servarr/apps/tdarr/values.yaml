@@ -1,4 +1,8 @@
 app-template:
+  defaultPodOptions:
+    nodeSelector:
+      node-type: framework
+
   controllers:
     tdarr:
       replicas: 1
@@ -15,13 +19,9 @@ app-template:
             TZ: America/Los_Angeles
             PUID: "1000"
             PGID: "1000"
-            serverIP: "0.0.0.0"
-            serverPort: "8266"
-            webUIPort: "8265"
             internalNode: "true"
             inContainer: "true"
-            ffmpegVersion: "6"
-            nodeName: "JetsonNode"
+            ffmpegVersion: "7"
 
           probes:
             liveness:
@@ -48,6 +48,8 @@ app-template:
             requests:
               memory: 1Gi
               cpu: 500m
+            limits:
+              amd.com/gpu: 1
 
   service:
     main:
@@ -78,12 +80,6 @@ app-template:
 
   persistence:
     config:
-      enabled: true
-      existingClaim: tdarr-config
-      globalMounts:
-        - path: /app/configs
-
-    server:
       enabled: true
       existingClaim: tdarr-config
       globalMounts:

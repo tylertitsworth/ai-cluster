@@ -1,6 +1,32 @@
-# https://github.com/grafana/helm-charts/tree/main/charts/loki-stack
-loki:
-  image:
-    tag: 2.9.3 # typo in current version
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
+# loki-stack - Log Aggregation
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  labels:
+    stack: monitoring
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki-stack
+      targetRevision: 2.10.2
+      helm:
+        valueFiles:
+          - $values/manifests/argocd/loki-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: servarr-stack
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grafana
+  syncPolicy:
+    # Auto-sync disabled - manual sync only
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,82 +1,36 @@
-# https://github.com/prometheus-community/helm-charts/tree/kube-prometheus-stack-66.3.1/charts/kube-prometheus-stack
-alertmanager:
-  alertmanagerSpec:
-    nodeSelector:
-      node-role.kubernetes.io/control-plane: "true"
-grafana:
-  assertNoLeakedSecrets: false
-  extraSecretMounts:
-    - mountPath: /etc/ssl/certs
-      name: ca-bundle
-      secretName: tailscale-crt
-  grafana.ini:
-    auth.anonymous:
-      enabled: true
-      org_role: Viewer
-    auth.generic_oauth:
-      allow_sign_up: true
-      api_url: https://keycloak.tail79a5c8.ts.net/realms/master/protocol/openid-connect/userinfo
-      auth_url: https://keycloak.tail79a5c8.ts.net/realms/master/protocol/openid-connect/auth
-      client_id: k3s-grafana
-      client_secret: "yfIa9aEEoEdjVaf0uCrLoYKfOFDNe9pp"
-      email_attribute_path: email
-      enabled: true
-      login_attribute_path: username
-      name: Keycloak
-      name_attribute_path: full_name
-      role_attribute_path: "contains(roles[*], 'admin') && 'Admin' ||
-        contains(roles[*], 'editor') && 'Editor' || 'Viewer'"
-      scopes: "openid email profile offline_access roles"
-      token_url: https://keycloak.tail79a5c8.ts.net/realms/master/protocol/openid-connect/token
-      use_refresh_token: true
-    security:
-      allow_embedding: true
-    server:
-      root_url: https://grafana.tail79a5c8.ts.net
-  ingress:
-    enabled: true
-    hosts:
-      - grafana
-    ingressClassName: tailscale
-    labels:
-      tailscale.com/proxy-class: "control-plane"
-    tls:
-      - hosts:
-          - grafana
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
-  persistence:
-    enabled: true
-    size: 10Gi
-  service:
-    type: LoadBalancer
-kube-state-metrics:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
-prometheus:
-  ingress:
-    enabled: true
-    hosts:
-      - prometheus
-    ingressClassName: tailscale
-    labels:
-      tailscale.com/proxy-class: "control-plane"
-    paths: ["/"]
-    tls:
-      - hosts:
-          - prometheus
-prometheus-node-exporter:
-  extraArgs:
-    - --collector.disable-defaults
-    - --collector.cpu
-    - --collector.meminfo
-    - --collector.diskstats
-    - --collector.filesystem
-    - --collector.netdev
-    - --collector.netstat
-    - --collector.time
-    - --collector.uname
-    - --collector.vmstat
-prometheusOperator:
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
+# kube-prometheus-stack - Monitoring Stack
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    stack: monitoring
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 66.3.1
+      helm:
+        valueFiles:
+          - $values/manifests/argocd/monitoring-values.yaml
+        valuesObject:
+          grafana:
+            persistence:
+              existingClaim: grafana
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: servarr-stack
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grafana
+  syncPolicy:
+    # Auto-sync disabled - manual sync only
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

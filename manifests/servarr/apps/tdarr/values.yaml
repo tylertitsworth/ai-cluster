@@ -49,10 +49,6 @@ app-template:
               memory: 1Gi
               cpu: 500m
 
-      # Pin to framework-desktop where media-library PVC replica exists
-      nodeSelector:
-        node-type: framework
-
   service:
     main:
       controller: tdarr

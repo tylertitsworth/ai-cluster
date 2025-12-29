@@ -1,0 +1,108 @@
+app-template:
+  controllers:
+    tdarr:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/haveagitgat/tdarr
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+            serverIP: "0.0.0.0"
+            serverPort: "8266"
+            webUIPort: "8265"
+            internalNode: "true"
+            inContainer: "true"
+            ffmpegVersion: "6"
+            nodeName: "JetsonNode"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /api/v2/status
+                  port: 8265
+                initialDelaySeconds: 60
+                periodSeconds: 30
+                timeoutSeconds: 10
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /api/v2/status
+                  port: 8265
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 500m
+
+      # Pin to framework-desktop where media-library PVC replica exists
+      nodeSelector:
+        node-type: framework
+
+  service:
+    main:
+      controller: tdarr
+      ports:
+        http:
+          port: 8265
+        server:
+          port: 8266
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: tdarr
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - tdarr
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: tdarr-config
+      globalMounts:
+        - path: /app/configs
+
+    server:
+      enabled: true
+      existingClaim: tdarr-config
+      globalMounts:
+        - path: /app/server
+
+    cache:
+      enabled: true
+      existingClaim: tdarr-cache
+      globalMounts:
+        - path: /temp
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media
+          readOnly: false
+

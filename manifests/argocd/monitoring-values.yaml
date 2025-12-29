@@ -5,10 +5,6 @@ alertmanager:
       node-role.kubernetes.io/control-plane: "true"
 grafana:
   assertNoLeakedSecrets: false
-  extraSecretMounts:
-    - mountPath: /etc/ssl/certs
-      name: ca-bundle
-      secretName: tailscale-crt
   grafana.ini:
     auth.anonymous:
       enabled: true

@@ -1,70 +1,22 @@
-# https://github.com/open-webui/helm-charts/tree/open-webui-4.0.6/charts/open-webui
+# https://github.com/open-webui/helm-charts/tree/open-webui-8.22.0/charts/open-webui
 extraEnvVars:
   - name: OLLAMA_DEBUG
     value: "1"
   - name: ENV
     value: "dev"
-  - name: SSL_CERT_FILE
-    value: /etc/ssl/certs/k3s/k3s-ca.crt
-sso:
-  enabled: true
-  enableSignup: true
-  mergeAccountsByEmail: true
-  oidc:
-    enabled: true
-    clientId: k3s-open-webui
-    clientSecret: 'tMQOEeQfQtJhEbBZqUSS05Op5gK4Gdsq'
-    providerUrl: https://keycloak.tail79a5c8.ts.net/realms/master/.well-known/openid-configuration
-    providerName: Keycloak
 ingress:
   class: tailscale
   enabled: true
   host: open-webui
+  extraLabels:
+    tailscale.com/proxy-class: "control-plane"
   tls: true
-livenessProbe:
-  failureThreshold: 5
-  httpGet:
-    path: /health
-    port: http
-  periodSeconds: 60
 nodeSelector:
   node-role.kubernetes.io/control-plane: "true"
 ollama:
-  ollama:
-    gpu:
-      enabled: true
-      number: 1
-      type: "nvidia"
-    models:
-      - llama3.2:1b
-  persistentVolume:
-    enabled: true
-    size: 30Gi
-  runtimeClassName: nvidia
-persistence:
-  size: 15Gi
-podLabels:
-  app.kubernetes.io/name: open-webui
-readinessProbe:
-  failureThreshold: 1
-  httpGet:
-    path: /health/db
-    port: http
+  enabled: false
   periodSeconds: 30
 service:
   type: LoadBalancer
-startupProbe:
-  failureThreshold: 20
-  httpGet:
-    path: /health
-    port: http
-  initialDelaySeconds: 60
-  periodSeconds: 10
-volumeMounts:
-  container:
-    - mountPath: /etc/ssl/certs/k3s
-      name: ca-cert
-volumes:
-  - name: ca-cert
-    secret:
-      secretName: tailscale-crt
+persistence:
+  existingClaim: open-webui

@@ -21,7 +21,7 @@ app-template:
               spec:
                 httpGet:
                   path: /
-                  port: 19200
+                  port: 5000
                 initialDelaySeconds: 60
                 periodSeconds: 30
             readiness:
@@ -30,7 +30,7 @@ app-template:
               spec:
                 httpGet:
                   path: /
-                  port: 19200
+                  port: 5000
                 initialDelaySeconds: 60
                 periodSeconds: 10
 
@@ -47,7 +47,7 @@ app-template:
       type: LoadBalancer
       ports:
         http:
-          port: 19200
+          port: 5000
 
   ingress:
     main:

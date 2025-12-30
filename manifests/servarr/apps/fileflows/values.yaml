@@ -7,7 +7,7 @@ app-template:
       containers:
         main:
           image:
-            repository: fileflows/fileflows
+            repository: revenz/fileflows
             tag: latest
             pullPolicy: IfNotPresent
 

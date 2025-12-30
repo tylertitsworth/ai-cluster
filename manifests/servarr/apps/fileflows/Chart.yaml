@@ -1,6 +1,6 @@
 apiVersion: v2
-name: tdarr
-description: Distributed transcoding system for media libraries
+name: fileflows
+description: Media file processing and transcoding server
 type: application
 version: 1.0.0
 appVersion: latest

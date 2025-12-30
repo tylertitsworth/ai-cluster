@@ -1,27 +1,18 @@
 app-template:
-  defaultPodOptions:
-    nodeSelector:
-      node-type: framework
-
   controllers:
-    tdarr:
+    fileflows:
       replicas: 1
       strategy: Recreate
 
       containers:
         main:
           image:
-            repository: ghcr.io/haveagitgat/tdarr
+            repository: fileflows/fileflows
             tag: latest
             pullPolicy: IfNotPresent
 
           env:
             TZ: America/Los_Angeles
-            PUID: "1000"
-            PGID: "1000"
-            internalNode: "true"
-            inContainer: "true"
-            ffmpegVersion: "7"
 
           probes:
             liveness:
@@ -29,43 +20,41 @@ app-template:
               custom: true
               spec:
                 httpGet:
-                  path: /api/v2/status
-                  port: 8265
+                  path: /
+                  port: 19200
                 initialDelaySeconds: 60
                 periodSeconds: 30
-                timeoutSeconds: 10
             readiness:
               enabled: true
               custom: true
               spec:
                 httpGet:
-                  path: /api/v2/status
-                  port: 8265
-                initialDelaySeconds: 30
+                  path: /
+                  port: 19200
+                initialDelaySeconds: 60
                 periodSeconds: 10
 
           resources:
             requests:
-              memory: 1Gi
-              cpu: 500m
+              memory: 256Mi
+              cpu: 100m
             limits:
-              amd.com/gpu: 1
+              memory: 1Gi
 
   service:
     main:
-      controller: tdarr
+      controller: fileflows
+      type: LoadBalancer
       ports:
         http:
-          port: 8265
-        server:
-          port: 8266
+          port: 19200
 
   ingress:
     main:
       enabled: true
       className: tailscale
       hosts:
-        - host: tdarr
+        - host: fileflows
           paths:
             - path: /
               pathType: Prefix
@@ -76,18 +65,18 @@ app-template:
         tailscale.com/proxy-class: "control-plane"
       tls:
         - hosts:
-            - tdarr
+            - fileflows
 
   persistence:
     config:
       enabled: true
-      existingClaim: tdarr-config
+      existingClaim: fileflows-config
       globalMounts:
-        - path: /app/server
+        - path: /app/Data
 
-    cache:
+    temp:
       enabled: true
-      existingClaim: tdarr-cache
+      type: emptyDir
       globalMounts:
         - path: /temp
 

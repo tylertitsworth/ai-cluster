@@ -1,0 +1,23 @@
+# https://github.com/open-webui/helm-charts/tree/open-webui-8.22.0/charts/open-webui
+extraEnvVars:
+  - name: OLLAMA_DEBUG
+    value: "1"
+  - name: ENV
+    value: "dev"
+ingress:
+  class: tailscale
+  enabled: true
+  host: open-webui
+  extraLabels:
+    tailscale.com/proxy-class: "control-plane"
+  tls: true
+nodeSelector:
+  node-role.kubernetes.io/control-plane: "true"
+ollama:
+  enabled: false
+  periodSeconds: 30
+service:
+  type: LoadBalancer
+persistence:
+  existingClaim: open-webui
+

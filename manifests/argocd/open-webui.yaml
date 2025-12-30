@@ -20,7 +20,7 @@ spec:
       ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: open-webui
+    namespace: ollama
   syncPolicy:
     # Manual sync only (no automated block)
     syncOptions:

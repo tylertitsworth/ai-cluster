@@ -1,0 +1,89 @@
+app-template:
+  controllers:
+    komf:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: sndxr/komf
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+            # Komf server port
+            KOMF_SERVER_PORT: "8085"
+            # Kavita integration - update KOMF_KAVITA_API_KEY with your API key
+            KOMF_KAVITA_BASE_URI: "http://kavita.servarr.svc.cluster.local:5000"
+            # Get this from Kavita: Settings -> General -> API Key
+            KOMF_KAVITA_API_KEY: "34d9d9b7-f198-4197-840f-c968a1ae0c6b"
+            # Metadata providers (can be configured in config file)
+            # KOMF_METADATA_PROVIDERS_MAL_ENABLED: "true"
+            # KOMF_METADATA_PROVIDERS_ANILIST_ENABLED: "true"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 8085
+                initialDelaySeconds: 30
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 8085
+                initialDelaySeconds: 15
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+
+  service:
+    main:
+      controller: komf
+      ports:
+        http:
+          port: 8085
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: komf
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - komf
+
+  persistence:
+    # Komf config (stores application.yml and database)
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /config
+

@@ -1,0 +1,104 @@
+app-template:
+  controllers:
+    suwayomi:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/suwayomi/suwayomi-server
+            tag: stable
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+            BIND_IP: "0.0.0.0"
+            BIND_PORT: "4567"
+            # Download as CBZ for Kavita compatibility
+            DOWNLOAD_AS_CBZ: "true"
+            # Auto download new chapters
+            AUTO_DOWNLOAD_NEW_CHAPTERS: "false"
+            # Extension repos (comma separated)
+            # EXTENSION_REPOS: ""
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 4567
+                initialDelaySeconds: 60
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 4567
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+  service:
+    main:
+      controller: suwayomi
+      ports:
+        http:
+          port: 4567
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: suwayomi
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - suwayomi
+
+  persistence:
+    # Suwayomi data (manga library, extensions, etc)
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 50Gi
+      globalMounts:
+        - path: /home/suwayomi/.local/share/Tachidesk
+
+    # Shared media library (for downloaded manga to be accessible by Kavita)
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media
+          readOnly: false
+
+    # Downloads folder
+    downloads:
+      enabled: true
+      existingClaim: downloads
+      globalMounts:
+        - path: /downloads
+          readOnly: false
+

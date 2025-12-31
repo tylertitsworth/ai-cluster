@@ -1,22 +1,22 @@
-# NVIDIA Device Plugin
+# Samba Operator - SMB shares on PVCs
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nvidia-device-plugin
+  name: samba-operator
   namespace: argocd
   labels:
-    stack: gpu
+    stack: storage
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://nvidia.github.io/k8s-device-plugin
-    chart: nvidia-device-plugin
-    targetRevision: 0.17.1
+    repoURL: https://github.com/samba-in-kubernetes/samba-operator.git
+    targetRevision: v0.8
+    path: config/default
   destination:
     server: https://kubernetes.default.svc
-    namespace: kube-system
+    namespace: samba-operator-system
   syncPolicy:
     # Auto-sync disabled - manual sync only
     # automated:
@@ -24,3 +24,4 @@ spec:
     #   selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true

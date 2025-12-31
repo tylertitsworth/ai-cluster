@@ -1,0 +1,243 @@
+app-template:
+  controllers:
+    # Main Kaizoku application
+    kaizoku:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/oae/kaizoku
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+            KAIZOKU_PORT: "3000"
+            DATABASE_URL: "postgresql://kaizoku:kaizoku@kaizoku-db:5432/kaizoku"
+            REDIS_HOST: "kaizoku-redis"
+            REDIS_PORT: "6379"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 3000
+                initialDelaySeconds: 60
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 3000
+                initialDelaySeconds: 60
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+    # Redis for job queue
+    redis:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: redis
+            tag: 7-alpine
+            pullPolicy: IfNotPresent
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - redis-cli
+                    - ping
+                initialDelaySeconds: 10
+                periodSeconds: 10
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - redis-cli
+                    - ping
+                initialDelaySeconds: 5
+                periodSeconds: 5
+
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+
+    # PostgreSQL database
+    db:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: postgres
+            tag: alpine
+            pullPolicy: IfNotPresent
+
+          env:
+            POSTGRES_USER: "kaizoku"
+            POSTGRES_DB: "kaizoku"
+            POSTGRES_PASSWORD: "kaizoku"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - pg_isready
+                    - -U
+                    - kaizoku
+                initialDelaySeconds: 30
+                periodSeconds: 10
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - pg_isready
+                    - -U
+                    - kaizoku
+                initialDelaySeconds: 5
+                periodSeconds: 5
+
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 512Mi
+
+  service:
+    main:
+      controller: kaizoku
+      ports:
+        http:
+          port: 3000
+
+    redis:
+      controller: redis
+      ports:
+        redis:
+          port: 6379
+
+    db:
+      controller: db
+      ports:
+        postgres:
+          port: 5432
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: kaizoku
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - kaizoku
+
+  persistence:
+    # Kaizoku data (manga library)
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 50Gi
+      advancedMounts:
+        kaizoku:
+          main:
+            - path: /data
+
+    # Kaizoku config
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      advancedMounts:
+        kaizoku:
+          main:
+            - path: /config
+
+    # Kaizoku logs
+    logs:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      advancedMounts:
+        kaizoku:
+          main:
+            - path: /logs
+
+    # Redis data
+    redis-data:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      advancedMounts:
+        redis:
+          main:
+            - path: /data
+
+    # PostgreSQL data
+    postgres-data:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      advancedMounts:
+        db:
+          main:
+            - path: /var/lib/postgresql/data
+              subPath: postgres
+
+    # Shared media library (for Kavita integration)
+    media:
+      enabled: true
+      existingClaim: media-library
+      advancedMounts:
+        kaizoku:
+          main:
+            - path: /media
+              readOnly: false
+

@@ -4,6 +4,13 @@ app-template:
       replicas: 1
       strategy: Recreate
 
+      pod:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+          fsGroupChangePolicy: OnRootMismatch
+
       containers:
         main:
           image:
@@ -13,16 +20,10 @@ app-template:
 
           env:
             TZ: America/Los_Angeles
-            PUID: "1000"
-            PGID: "1000"
             BIND_IP: "0.0.0.0"
             BIND_PORT: "4567"
-            # Download as CBZ for Kavita compatibility
             DOWNLOAD_AS_CBZ: "true"
-            # Auto download new chapters
             AUTO_DOWNLOAD_NEW_CHAPTERS: "false"
-            # Extension repos (comma separated)
-            # EXTENSION_REPOS: ""
 
           probes:
             liveness:
@@ -77,7 +78,6 @@ app-template:
             - suwayomi
 
   persistence:
-    # Suwayomi data (manga library, extensions, etc)
     data:
       enabled: true
       type: persistentVolumeClaim
@@ -86,7 +86,6 @@ app-template:
       globalMounts:
         - path: /home/suwayomi/.local/share/Tachidesk
 
-    # Shared media library (for downloaded manga to be accessible by Kavita)
     media:
       enabled: true
       existingClaim: media-library
@@ -94,11 +93,9 @@ app-template:
         - path: /media
           readOnly: false
 
-    # Downloads folder
     downloads:
       enabled: true
       existingClaim: downloads
       globalMounts:
         - path: /downloads
           readOnly: false
-

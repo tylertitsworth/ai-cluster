@@ -1,0 +1,30 @@
+# AMD GPU Device Plugin (ROCm)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: amd-device-plugin
+  namespace: argocd
+  labels:
+    stack: gpu
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://rocm.github.io/k8s-device-plugin
+    chart: amd-gpu
+    targetRevision: 0.21.0
+    helm:
+      valuesObject:
+        nodeSelector:
+          node-type: framework
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    # Auto-sync disabled - manual sync only
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

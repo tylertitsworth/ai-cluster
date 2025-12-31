@@ -1,18 +1,21 @@
 app-template:
   controllers:
-    fileflows:
+    kapowarr:
       replicas: 1
       strategy: Recreate
 
       containers:
         main:
           image:
-            repository: revenz/fileflows
+            repository: mrcas/kapowarr
             tag: latest
             pullPolicy: IfNotPresent
 
           env:
             TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+            COMICVINE_API_KEY: "74707e9a077a5e954862ba6a0138a06b1a3553c5"
 
           probes:
             liveness:
@@ -21,8 +24,8 @@ app-template:
               spec:
                 httpGet:
                   path: /
-                  port: 5000
-                initialDelaySeconds: 60
+                  port: 5656
+                initialDelaySeconds: 30
                 periodSeconds: 30
             readiness:
               enabled: true
@@ -30,31 +33,30 @@ app-template:
               spec:
                 httpGet:
                   path: /
-                  port: 5000
-                initialDelaySeconds: 60
+                  port: 5656
+                initialDelaySeconds: 30
                 periodSeconds: 10
 
           resources:
             requests:
-              memory: 512Mi
+              memory: 256Mi
               cpu: 100m
             limits:
-              memory: 4Gi
+              memory: 1Gi
 
   service:
     main:
-      controller: fileflows
-      type: LoadBalancer
+      controller: kapowarr
       ports:
         http:
-          port: 5000
+          port: 5656
 
   ingress:
     main:
       enabled: true
       className: tailscale
       hosts:
-        - host: fileflows
+        - host: kapowarr
           paths:
             - path: /
               pathType: Prefix
@@ -65,25 +67,28 @@ app-template:
         tailscale.com/proxy-class: "control-plane"
       tls:
         - hosts:
-            - fileflows
+            - kapowarr
 
   persistence:
     config:
       enabled: true
-      existingClaim: fileflows-config
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
       globalMounts:
-        - path: /app/Data
-
-    temp:
-      enabled: true
-      type: emptyDir
-      globalMounts:
-        - path: /temp
+        - path: /app/db
 
     media:
       enabled: true
       existingClaim: media-library
       globalMounts:
         - path: /media
+          readOnly: false
+
+    downloads:
+      enabled: true
+      existingClaim: downloads
+      globalMounts:
+        - path: /downloads
           readOnly: false
 

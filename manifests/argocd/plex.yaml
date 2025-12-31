@@ -29,8 +29,8 @@ spec:
 
         # PMS (Plex Media Server) specific settings
         pms:
-          # Persistent storage configuration - let it create its own claim
-          configStorage: 2Gi
+          # Use existing PVC for config storage
+          configExistingClaim: plex-config
 
           # GPU configuration for hardware acceleration
           gpu:
@@ -48,7 +48,7 @@ spec:
         extraEnv:
           PLEX_CLAIM: ""  # Get from https://www.plex.tv/claim/ - format: claim-XXXXXXXXXXXXXXXXXXXX
           TZ: "America/Los_Angeles"
-          ALLOWED_NETWORKS: "192.168.1.0/24,10.0.0.0/8"
+          ALLOWED_NETWORKS: "192.168.0.0/24,192.168.1.0/24,10.0.0.0/8"
 
         # Service configuration
         service:
@@ -56,7 +56,7 @@ spec:
           port: 32400
           nodePort: 32400
           externalTrafficPolicy: Local
-          loadBalancerIP: 192.168.1.89
+          loadBalancerIP: 192.168.0.89
 
         # Ingress configuration
         ingress:
@@ -73,14 +73,11 @@ spec:
         nodeSelector:
           kubernetes.io/hostname: framework-desktop
 
-        # Extra volumes for GPU, transcode, and media storage
+        # Extra volumes for GPU and media storage
         extraVolumes:
           - name: dri
             hostPath:
               path: /dev/dri
-          - name: transcode
-            persistentVolumeClaim:
-              claimName: plex-transcode
           - name: media-library
             persistentVolumeClaim:
               claimName: media-library
@@ -92,8 +89,6 @@ spec:
         extraVolumeMounts:
           - name: dri
             mountPath: /dev/dri
-          - name: transcode
-            mountPath: /transcode
           - name: media-library
             mountPath: /media
           - name: downloads

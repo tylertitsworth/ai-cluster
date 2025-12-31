@@ -15,5 +15,5 @@ metrics:
     enabled: true
 service:
   ui:
-    loadBalancerIP: 192.168.1.81
+    loadBalancerIP: 192.168.0.81
     type: LoadBalancer

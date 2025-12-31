@@ -31,12 +31,16 @@ spec:
                         values:
                         - jetson
 
-            containers:
+            initContainers:
+              # Gluetun as a native sidecar (Kubernetes 1.28+)
+              # Starts before main containers and keeps running alongside them
               gluetun:
                 image:
                   repository: qmcgaw/gluetun
                   tag: v3.39.1
                   pullPolicy: IfNotPresent
+
+                restartPolicy: Always  # Makes this a sidecar that keeps running
 
                 securityContext:
                   capabilities:
@@ -49,6 +53,7 @@ spec:
                 env:
                   VPN_SERVICE_PROVIDER: airvpn
                   VPN_TYPE: wireguard
+                  WIREGUARD_MTU: "1280"  # Lower MTU for Kubernetes overlay networks
                   FIREWALL: "on"
                   FIREWALL_VPN_INPUT_PORTS: "34590"
                   FIREWALL_INPUT_PORTS: "8080"
@@ -61,6 +66,16 @@ spec:
                     name: vpn-config
 
                 probes:
+                  startup:
+                    enabled: true
+                    custom: true
+                    spec:
+                      httpGet:
+                        path: /v1/publicip/ip
+                        port: 8000
+                      initialDelaySeconds: 45
+                      periodSeconds: 5
+                      failureThreshold: 30
                   liveness:
                     enabled: true
                     custom: true
@@ -77,7 +92,6 @@ spec:
                       httpGet:
                         path: /v1/publicip/ip
                         port: 8000
-                      initialDelaySeconds: 30
                       periodSeconds: 10
 
                 resources:
@@ -87,14 +101,12 @@ spec:
                   limits:
                     memory: 512Mi
 
+            containers:
               qbittorrent:
                 image:
                   repository: lscr.io/linuxserver/qbittorrent
                   tag: 4.6.7
                   pullPolicy: IfNotPresent
-
-                dependsOn:
-                - gluetun
 
                 env:
                   TZ: America/Los_Angeles
@@ -157,7 +169,7 @@ spec:
         persistence:
           config:
             enabled: true
-            existingClaim: qbittorrent-config
+            existingClaim: qbitorrent-config
             globalMounts:
               - path: /config
 

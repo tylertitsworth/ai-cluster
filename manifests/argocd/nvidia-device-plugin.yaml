@@ -1,26 +1,38 @@
-# Tranga - Self-hosted manga downloader and monitor
+# NVIDIA Device Plugin
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tranga
+  name: nvidia-device-plugin
   namespace: argocd
   labels:
-    stack: servarr
+    stack: gpu
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/tranga
+    repoURL: https://nvidia.github.io/k8s-device-plugin
+    chart: nvidia-device-plugin
+    targetRevision: 0.17.1
   destination:
     server: https://kubernetes.default.svc
-    namespace: servarr
+    namespace: kube-system
   syncPolicy:
-    # Disabled auto-sync for testing
+    # Auto-sync disabled - manual sync only
     # automated:
     #   prune: true
     #   selfHeal: true
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=true
+
+
+
+
+
+
+
+
+
+
+
+

@@ -4,6 +4,12 @@ app-template:
       replicas: 1
       strategy: Recreate
 
+      pod:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+
       containers:
         main:
           image:
@@ -66,7 +72,7 @@ serverConfig: |
   # World settings - autocreate a new world if none exists
   autocreate=2
   worldname=Test
-  difficulty=0
+  difficulty=1
   
   # Server settings
   maxplayers=8

@@ -57,9 +57,9 @@ serverConfig: |
   # tModLoader Server Configuration
   # World settings - autocreate a new world if none exists
   # world= must be set for autocreate to work in non-interactive mode
-  world=/home/tml/.local/share/Terraria/tModLoader/Worlds/Test.wld
+  world=/home/tml/.local/share/Terraria/tModLoader/Worlds/coop-tyler-nathan-kaitlynd.wld
   autocreate=2
-  worldname=Test
+  worldname=coop-tyler-nathan-kaitlynd
   difficulty=1
 
   # Server settings

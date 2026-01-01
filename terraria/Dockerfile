@@ -14,6 +14,10 @@ ENV LD_LIBRARY_PATH /steamlib
 # Set a specific tModLoader version, defaults to the latest Github release
 ARG TML_VERSION
 
+# Create .dockerenv marker for Kubernetes compatibility
+# The management script checks for this file to detect container environment
+RUN touch /.dockerenv
+
 # Create tModLoader user and drop root permissions
 ARG UID=1000
 ARG GID=1000
@@ -37,4 +41,3 @@ RUN ./manage-tModLoaderServer.sh install-tml --github --tml-version $TML_VERSION
 EXPOSE 7777
 
 ENTRYPOINT [ "./manage-tModLoaderServer.sh", "docker", "--folder", "/home/tml/.local/share/Terraria/tModLoader" ]
-

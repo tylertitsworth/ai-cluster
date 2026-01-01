@@ -24,28 +24,14 @@ app-template:
     main:
       controller: terraria
       type: LoadBalancer
+      annotations:
+        tailscale.com/expose: "true"
+        tailscale.com/hostname: "terraria"
+        tailscale.com/proxy-class: "control-plane"
       ports:
         game:
           port: 7777
           protocol: TCP
-
-  ingress:
-    main:
-      enabled: true
-      className: tailscale
-      hosts:
-        - host: terraria
-          paths:
-            - path: /
-              pathType: Prefix
-              service:
-                identifier: main
-                port: game
-      annotations:
-        tailscale.com/proxy-class: "control-plane"
-      tls:
-        - hosts:
-            - terraria
 
   persistence:
     data:
@@ -75,22 +61,22 @@ serverConfig: |
   autocreate=2
   worldname=Test
   difficulty=1
-  
+
   # Server settings
   maxplayers=8
   port=7777
   password=password
-  
+
   # Message of the day
   motd=Welcome to the tModLoader server!
-  
+
   # Performance
   priority=1
   npcstream=1
-  
+
   # Security
   secure=1
   steam=1
-  
+
   # Language (en-US, de-DE, it-IT, fr-FR, es-ES, ru-RU, zh-Hans, pt-BR, pl-PL)
   language=en-US

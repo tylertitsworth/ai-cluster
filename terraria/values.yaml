@@ -70,6 +70,8 @@ app-template:
 serverConfig: |
   # tModLoader Server Configuration
   # World settings - autocreate a new world if none exists
+  # world= must be set for autocreate to work in non-interactive mode
+  world=/home/tml/.local/share/Terraria/tModLoader/Worlds/Test.wld
   autocreate=2
   worldname=Test
   difficulty=1

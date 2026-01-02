@@ -31,3 +31,48 @@ spec:
       port: 445
       targetPort: 445
       protocol: TCP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tyler-cloud
+  namespace: tyler
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  volumeName: "pvc-e7d2c11a-0de3-4148-b525-0f776bd4b4ff"
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: samba-operator.samba.org/v1alpha1
+kind: SmbShare
+metadata:
+  name: tyler-cloud
+  namespace: tyler
+spec:
+  storage:
+    pvc:
+      name: tyler-cloud
+  readOnly: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tyler-cloud-smb
+  namespace: tyler
+  labels:
+    tailscale.com/proxy-class: control-plane
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "tyler-cloud-smb"
+spec:
+  type: LoadBalancer
+  selector:
+    samba-operator.samba.org/service: tyler-cloud
+  ports:
+    - name: smb
+      port: 445
+      targetPort: 445
+      protocol: TCP

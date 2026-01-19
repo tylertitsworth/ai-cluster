@@ -20,4 +20,6 @@ service:
   type: LoadBalancer
 persistence:
   existingClaim: open-webui
-
+image:
+  repository: ghcr.io/open-webui/open-webui
+  tag: 0.7.2

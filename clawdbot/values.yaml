@@ -12,7 +12,7 @@ app-template:
             pullPolicy: IfNotPresent
 
           # Run gateway with LAN binding for container networking
-          command: ["moltbot"]
+          command: ["clawdbot"]
           args:
             - "gateway"
             - "--bind"

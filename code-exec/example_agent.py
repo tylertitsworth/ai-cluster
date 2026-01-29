@@ -5,7 +5,7 @@ from kernel_client import KernelClient
 
 async def main():
     # Example AI agent using the kernel client
-    async with KernelClient("192.168.1.91:8888") as client:
+    async with KernelClient("192.168.0.91:8888") as client:
         # Example 1: Basic computation
         code1 = """
         import numpy as np

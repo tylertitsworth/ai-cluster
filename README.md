@@ -79,10 +79,10 @@ Setting up any Node in K3s is trivial, and I'm super happy that it's this way:
 
 ```sh
 # Master
-curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --disable servicelb --token <my-token> --node-ip 192.168.1.41 --disable-cloud-controller --disable local-storage
+curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --disable servicelb --token <my-token> --node-ip 192.168.0.41 --disable-cloud-controller --disable local-storage
 # Get kubeconfig from /etc/rancher/k3s/k3s.yaml, replace server field with K3S_URL
 # Worker
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.41:6443 K3S_TOKEN=<my-token> sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://192.168.0.41:6443 K3S_TOKEN=<my-token> sh -
 ```
 
 Afterwards, you get something like this:
@@ -90,10 +90,10 @@ Afterwards, you get something like this:
 ```txt
 $ kubectl get node -o wide
 NAME             STATUS   ROLES                  AGE    VERSION        INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
-npu01.local      Ready    control-plane,master   55d    v1.30.6+k3s1   192.168.1.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
-npu02.local      Ready    control-plane          55d    v1.30.6+k3s1   192.168.1.44   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
-orinnx01.local   Ready    worker                 7d4h   v1.30.6+k3s1   192.168.1.15   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
-orinnx02.local   Ready    worker                 7d5h   v1.30.6+k3s1   192.168.1.14   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
+npu01.local      Ready    control-plane,master   55d    v1.30.6+k3s1   192.168.0.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
+npu02.local      Ready    control-plane          55d    v1.30.6+k3s1   192.168.0.44   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
+orinnx01.local   Ready    worker                 7d4h   v1.30.6+k3s1   192.168.0.15   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
+orinnx02.local   Ready    worker                 7d5h   v1.30.6+k3s1   192.168.0.14   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
 ```
 
 > The RK1's have the label `node-type=npu` and the Jetson `node-type=jetson`. This will be important later.
@@ -102,7 +102,7 @@ I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-age
 
 ### Networking
 
-After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.1.80-192.168.1.90` and then reserved all of those spaces on my router along with the turing nodes.
+After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.0.80-192.168.0.90` and then reserved all of those spaces on my router along with the turing nodes.
 
 Now whenever I have an application that I want to make available on the private network, I can set the service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD.
 

@@ -22,6 +22,7 @@ spec:
         # Image configuration
         image:
           tag: latest
+          imagePullPolicy: Always
 
         # Network configuration
         hostNetwork: true

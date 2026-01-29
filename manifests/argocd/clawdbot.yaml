@@ -1,0 +1,24 @@
+# Clawdbot/Moltbot - MCP Gateway for Discord bots and AI agents
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: clawdbot
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: servarr-stack
+    path: clawdbot
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: clawdbot
+  syncPolicy:
+    # Manual sync for initial setup (need to copy config first)
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

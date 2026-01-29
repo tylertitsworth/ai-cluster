@@ -1,0 +1,100 @@
+app-template:
+  controllers:
+    clawdbot:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: moltbot/moltbot
+            tag: "2026.1.24"
+            pullPolicy: IfNotPresent
+
+          # Run gateway with LAN binding for container networking
+          command: ["moltbot"]
+          args:
+            - "gateway"
+            - "--bind"
+            - "lan"
+            - "--port"
+            - "18789"
+            - "--allow-unconfigured"
+
+          env:
+            TZ: America/Los_Angeles
+            # Config and state directories (matches container defaults)
+            HOME: /home/node
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 18789
+                initialDelaySeconds: 30
+                periodSeconds: 30
+                timeoutSeconds: 10
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 18789
+                initialDelaySeconds: 15
+                periodSeconds: 10
+                timeoutSeconds: 5
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+  service:
+    main:
+      controller: clawdbot
+      ports:
+        http:
+          port: 18789
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: clawdbot
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - clawdbot
+
+  persistence:
+    # Main config directory containing clawdbot.json, agents, memory, sessions
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      globalMounts:
+        - path: /home/node/.clawdbot
+
+    # Main agent workspace directory
+    workspace:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 10Gi
+      globalMounts:
+        - path: /home/node/clawd

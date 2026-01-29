@@ -1,0 +1,10 @@
+apiVersion: v2
+name: clawdbot
+description: Clawdbot/Moltbot MCP Gateway for Discord bots and AI agents
+type: application
+version: 1.0.0
+appVersion: 2026.1.24
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

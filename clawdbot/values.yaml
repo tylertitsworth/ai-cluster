@@ -11,15 +11,11 @@ app-template:
             tag: "2026.1.24"
             pullPolicy: IfNotPresent
 
-          # Run gateway with LAN binding for container networking
-          command: ["clawdbot"]
+          # Override bind mode for container networking (default config uses loopback)
           args:
             - "gateway"
             - "--bind"
             - "lan"
-            - "--port"
-            - "18789"
-            - "--allow-unconfigured"
 
           env:
             TZ: America/Los_Angeles

@@ -10,7 +10,9 @@ spec:
   resources:
     requests:
       storage: {{ .Values.storage.mealieSize }}
+  {{- if .Values.storage.className }}
   storageClassName: {{ .Values.storage.className }}
+  {{- end }}
 {{- end }}
 ---
 {{- if and (.Values.storage.enabled) (.Values.postgres.enabled) -}}
@@ -25,5 +27,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.storage.postgresSize }}
+  {{- if .Values.storage.className }}
   storageClassName: {{ .Values.storage.className }}
+  {{- end }}
 {{- end }}

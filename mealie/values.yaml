@@ -158,10 +158,10 @@ storage:
   # -- The storage class to use.
   className: ""
   # -- Size of storage to allocate for mealie.
-  mealieSize: "4Gi"
+  mealieSize: "1Gi"
   # -- Size of storage to allocate for postgres.
-  postgresSize: "8Gi"
+  postgresSize: "2Gi"
   # -- The access mode that is supported for Mealie.
-  accessModeMealie: ReadWriteMany
+  accessModeMealie: ReadWriteOnce
   # -- The access mode that is supported for Postgres.
-  accessModePostgres: ReadWriteMany
+  accessModePostgres: ReadWriteOnce

@@ -27,6 +27,7 @@ spec:
     - port:  {{ .Values.postgres.service.port}}
       targetPort:  {{ .Values.postgres.service.port}}
   selector:
+    {{- include "mealie.postgresSelectorLabels" . | nindent 4 }}
     {{- with .Values.customLabels.postgres }}
       {{- toYaml . | nindent 4 }}
     {{- end }}

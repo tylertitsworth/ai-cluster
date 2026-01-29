@@ -33,7 +33,7 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# -- Make sure to leave at least one label for mealie and postgres so the services connect properly.
+# -- Labels used as Service spec.selector and on pod template. Must be flat key-value pairs only (no nested structures like matchLabels).
 customLabels:
   mealie:
     mealie.is-api: "true"

@@ -14,7 +14,7 @@ A Helm chart for deploying Mealie to a Kubernetes cluster with built in postgres
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| customLabels | object | `{"mealie":{"app.kubernetes.io/component":"mealie","mealie.is-api":"true"},"postgres":{"app":"postgres-mealie","mealie.postgres":"true"}}` | Make sure to leave at least one label for mealie and postgres so the services connect properly. |
+| customLabels | object | `{"mealie":{"app.kubernetes.io/component":"mealie","mealie.is-api":"true"},"postgres":{"app":"postgres-mealie","mealie.postgres":"true"}}` | Labels used as Service selectors and on pods. Must be flat key-value pairs only (no nested structures like matchLabels). |
 | image.pgtag | string | `"15"` | Which version of postgres to use if enabled. |
 | image.postgresRepo | string | `"postgres"` | The repository for postgres. |
 | image.pullPolicy | string | `"Always"` | The pull policy for mealie and postgres images. |

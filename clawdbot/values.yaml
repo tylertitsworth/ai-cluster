@@ -49,6 +49,71 @@ app-template:
             limits:
               memory: 2Gi
 
+        # Config watchdog - monitors config changes and restores backup if gateway becomes unhealthy
+        watchdog:
+          image:
+            repository: alpine
+            tag: "3.19"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              apk add --no-cache inotify-tools curl >/dev/null 2>&1
+              
+              CONFIG="/home/node/.clawdbot/clawdbot.json"
+              BACKUP_DIR="/home/node/.clawdbot/watchdog-backups"
+              HEALTH_URL="http://localhost:18789/"
+              TIMEOUT=30
+              POLL_INTERVAL=2
+              
+              mkdir -p "$BACKUP_DIR"
+              
+              # Wait for config file to exist
+              while [ ! -f "$CONFIG" ]; do
+                echo "[watchdog] Waiting for config file..."
+                sleep 5
+              done
+              
+              # Save initial known-good config
+              cp "$CONFIG" "$BACKUP_DIR/last-known-good.json"
+              echo "[watchdog] Saved initial config as last-known-good"
+              
+              # Watch for config changes
+              inotifywait -m -e close_write "$CONFIG" | while read -r dir events file; do
+                echo "[watchdog] Config change detected, monitoring health..."
+                
+                # Save pre-change backup
+                cp "$BACKUP_DIR/last-known-good.json" "$BACKUP_DIR/pre-change.json"
+                
+                # Wait for gateway to become healthy
+                elapsed=0
+                healthy=false
+                while [ $elapsed -lt $TIMEOUT ]; do
+                  if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
+                    # Healthy - promote current config to last-known-good
+                    cp "$CONFIG" "$BACKUP_DIR/last-known-good.json"
+                    echo "[watchdog] Config validated, health OK after ${elapsed}s"
+                    healthy=true
+                    break
+                  fi
+                  sleep $POLL_INTERVAL
+                  elapsed=$((elapsed + POLL_INTERVAL))
+                done
+                
+                # If we exhausted timeout, restore backup
+                if [ "$healthy" = "false" ]; then
+                  echo "[watchdog] Health check failed after ${TIMEOUT}s, restoring backup"
+                  cp "$BACKUP_DIR/pre-change.json" "$CONFIG"
+                  echo "[watchdog] Backup restored, gateway will restart"
+                fi
+              done
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 64Mi
+
   service:
     main:
       controller: clawdbot

@@ -1,8 +1,8 @@
-# Clawdbot/Moltbot - MCP Gateway for Discord bots and AI agents
+# OpenClaw - MCP Gateway for Discord bots and AI agents
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: clawdbot
+  name: openclaw
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -11,10 +11,10 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: servarr-stack
-    path: clawdbot
+    path: openclaw
   destination:
     server: https://kubernetes.default.svc
-    namespace: clawdbot
+    namespace: openclaw
   syncPolicy:
     # Manual sync for initial setup (need to copy config first)
     # automated:

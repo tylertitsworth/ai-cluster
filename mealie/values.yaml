@@ -56,7 +56,7 @@ mealie:
   # -- Mealie environment variables. Additional environment variables for mealie can be found at https://docs.mealie.io/documentation/getting-started/installation/backend-config/.
   env:
     - name: ALLOW_SIGNUP
-      value: false
+      value: "false"
     - name: DEFAULT_GROUP
       value: HOME
     - name: DEFAULT_HOUSEHOLD
@@ -91,7 +91,7 @@ mealie:
 
 postgres:
   # -- Set enabled to true if you want to use the included Postgres Database.
-  enabled: false
+  enabled: "false"
   # @ignore
   service:
     type: ClusterIP
@@ -115,7 +115,7 @@ postgres:
 
 # @ignore
 ingress:
-  enabled: false
+  enabled: "false"
   className: ""
   annotations:
     {}
@@ -154,7 +154,7 @@ tolerations: []
 affinity: {}
 storage:
   # -- Enable storage that isn't emphemeral.
-  enabled: true
+  enabled: "true"
   # -- The storage class to use.
   className: ""
   # -- Size of storage to allocate for mealie.

@@ -4,6 +4,17 @@ app-template:
       replicas: 1
       strategy: Recreate
 
+      initContainers:
+        doctor-fix:
+          image:
+            repository: ghcr.io/openclaw/openclaw
+            tag: "2026.2.6"
+            pullPolicy: IfNotPresent
+          command: ["node", "dist/index.js"]
+          args: ["doctor", "--fix"]
+          env:
+            HOME: /home/node
+
       containers:
         main:
           image:
@@ -48,92 +59,6 @@ app-template:
               cpu: 100m
             limits:
               memory: 2Gi
-
-        # Config watchdog - monitors config changes and restores backup if gateway becomes unhealthy
-        watchdog:
-          image:
-            repository: alpine
-            tag: "3.19"
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              set -e
-              apk add --no-cache inotify-tools curl >/dev/null 2>&1
-              
-              CONFIG="/home/node/.openclaw/openclaw.json"
-              BACKUP_DIR="/home/node/.openclaw/watchdog-backups"
-              HEALTH_URL="http://localhost:18789/"
-              TIMEOUT=30
-              STARTUP_TIMEOUT=60
-              POLL_INTERVAL=2
-              
-              mkdir -p "$BACKUP_DIR"
-              
-              # Wait for config file to exist
-              while [ ! -f "$CONFIG" ]; do
-                echo "[watchdog] Waiting for config file..."
-                sleep 5
-              done
-              
-              # Startup recovery: if config is already bad at pod start, restore from previous last-known-good
-              echo "[watchdog] Checking gateway health at startup..."
-              elapsed=0
-              startup_healthy=false
-              while [ $elapsed -lt $STARTUP_TIMEOUT ]; do
-                if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
-                  startup_healthy=true
-                  break
-                fi
-                sleep $POLL_INTERVAL
-                elapsed=$((elapsed + POLL_INTERVAL))
-              done
-              
-              if [ "$startup_healthy" = "true" ]; then
-                cp "$CONFIG" "$BACKUP_DIR/last-known-good.json"
-                echo "[watchdog] Saved initial config as last-known-good"
-              elif [ -f "$BACKUP_DIR/last-known-good.json" ]; then
-                echo "[watchdog] Gateway unhealthy after ${STARTUP_TIMEOUT}s at startup, restoring last-known-good"
-                cp "$BACKUP_DIR/last-known-good.json" "$CONFIG"
-                echo "[watchdog] Backup restored, gateway will restart"
-              else
-                echo "[watchdog] Gateway unhealthy and no last-known-good backup; waiting for config changes"
-              fi
-              
-              # Watch for config changes
-              inotifywait -m -e close_write "$CONFIG" | while read -r dir events file; do
-                echo "[watchdog] Config change detected, monitoring health..."
-                
-                # Save pre-change backup
-                cp "$BACKUP_DIR/last-known-good.json" "$BACKUP_DIR/pre-change.json"
-                
-                # Wait for gateway to become healthy
-                elapsed=0
-                healthy=false
-                while [ $elapsed -lt $TIMEOUT ]; do
-                  if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
-                    # Healthy - promote current config to last-known-good
-                    cp "$CONFIG" "$BACKUP_DIR/last-known-good.json"
-                    echo "[watchdog] Config validated, health OK after ${elapsed}s"
-                    healthy=true
-                    break
-                  fi
-                  sleep $POLL_INTERVAL
-                  elapsed=$((elapsed + POLL_INTERVAL))
-                done
-                
-                # If we exhausted timeout, restore backup
-                if [ "$healthy" = "false" ]; then
-                  echo "[watchdog] Health check failed after ${TIMEOUT}s, restoring backup"
-                  cp "$BACKUP_DIR/pre-change.json" "$CONFIG"
-                  echo "[watchdog] Backup restored, gateway will restart"
-                fi
-              done
-          resources:
-            requests:
-              memory: 32Mi
-              cpu: 10m
-            limits:
-              memory: 64Mi
 
   service:
     main:

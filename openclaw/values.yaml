@@ -10,10 +10,14 @@ app-template:
             repository: ghcr.io/openclaw/openclaw
             tag: "2026.2.6"
             pullPolicy: IfNotPresent
-          command: ["node", "dist/index.js"]
-          args: ["doctor", "--fix"]
+          command: ["/bin/sh", "-c"]
+          args:
+            - "node dist/index.js doctor --fix && chown -R 1000:1000 /home/node/.openclaw"
           env:
             HOME: /home/node
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
 
       containers:
         main:

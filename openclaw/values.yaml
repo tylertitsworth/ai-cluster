@@ -34,6 +34,13 @@ app-template:
             TZ: America/Los_Angeles
             # Config and state directories (matches container defaults)
             HOME: /home/node
+            # Gateway token (required by OpenClaw). Create: kubectl create secret generic openclaw-gateway-token -n openclaw --from-literal=token=YOUR_TOKEN
+            # Generate a token: openclaw doctor --generate-gateway-token (run in a dev pod or locally)
+            OPENCLAW_GATEWAY_TOKEN:
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-gateway-token
+                  key: token
 
           probes:
             liveness:

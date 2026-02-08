@@ -8,7 +8,7 @@ app-template:
         main:
           image:
             repository: ghcr.io/openclaw/openclaw
-            tag: "2026.1.29"
+            tag: "2026.2.6"
             pullPolicy: IfNotPresent
 
           # Run gateway with LAN binding for container networking
@@ -64,6 +64,7 @@ app-template:
               BACKUP_DIR="/home/node/.openclaw/watchdog-backups"
               HEALTH_URL="http://localhost:18789/"
               TIMEOUT=30
+              STARTUP_TIMEOUT=60
               POLL_INTERVAL=2
               
               mkdir -p "$BACKUP_DIR"
@@ -74,9 +75,29 @@ app-template:
                 sleep 5
               done
               
-              # Save initial known-good config
-              cp "$CONFIG" "$BACKUP_DIR/last-known-good.json"
-              echo "[watchdog] Saved initial config as last-known-good"
+              # Startup recovery: if config is already bad at pod start, restore from previous last-known-good
+              echo "[watchdog] Checking gateway health at startup..."
+              elapsed=0
+              startup_healthy=false
+              while [ $elapsed -lt $STARTUP_TIMEOUT ]; do
+                if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
+                  startup_healthy=true
+                  break
+                fi
+                sleep $POLL_INTERVAL
+                elapsed=$((elapsed + POLL_INTERVAL))
+              done
+              
+              if [ "$startup_healthy" = "true" ]; then
+                cp "$CONFIG" "$BACKUP_DIR/last-known-good.json"
+                echo "[watchdog] Saved initial config as last-known-good"
+              elif [ -f "$BACKUP_DIR/last-known-good.json" ]; then
+                echo "[watchdog] Gateway unhealthy after ${STARTUP_TIMEOUT}s at startup, restoring last-known-good"
+                cp "$BACKUP_DIR/last-known-good.json" "$CONFIG"
+                echo "[watchdog] Backup restored, gateway will restart"
+              else
+                echo "[watchdog] Gateway unhealthy and no last-known-good backup; waiting for config changes"
+              fi
               
               # Watch for config changes
               inotifywait -m -e close_write "$CONFIG" | while read -r dir events file; do

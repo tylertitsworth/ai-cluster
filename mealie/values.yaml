@@ -39,8 +39,8 @@ customLabels:
     mealie.is-api: "true"
     app.kubernetes.io/component: "mealie"
   postgres:
-      mealie.postgres: "true"
-      app: "postgres-mealie"
+    mealie.postgres: "true"
+    app: "postgres-mealie"
 
 mealie:
   # -- The number of api replicas to run. Only set above 1 if using postgres.
@@ -91,11 +91,11 @@ mealie:
 
 postgres:
   # -- Set enabled to true if you want to use the included Postgres Database.
-  enabled: "false"
+  enabled: false
   # @ignore
   service:
     type: ClusterIP
-    port: "5432"
+    port: 5432
 
   # -- The initial delay for the liveness and readiness probes for postgres.
   initialDelaySeconds: 10
@@ -115,7 +115,7 @@ postgres:
 
 # @ignore
 ingress:
-  enabled: "false"
+  enabled: false
   className: "longhorn"
   annotations:
     {}
@@ -154,7 +154,7 @@ tolerations: []
 affinity: {}
 storage:
   # -- Enable storage that isn't emphemeral.
-  enabled: "true"
+  enabled: true
   # -- The storage class to use.
   className: ""
   # -- Size of storage to allocate for mealie.

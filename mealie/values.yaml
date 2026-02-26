@@ -165,3 +165,8 @@ storage:
   accessModeMealie: ReadWriteOnce
   # -- The access mode that is supported for Postgres.
   accessModePostgres: ReadWriteOnce
+  # -- The name of an existing PV to bind for mealie data (optional)
+  mealieVolumeName: ""
+  # -- The name of an existing PV to bind for postgres data (optional)
+  postgresVolumeName: ""
+

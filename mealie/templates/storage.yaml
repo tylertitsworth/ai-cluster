@@ -13,8 +13,11 @@ spec:
   {{- if .Values.storage.className }}
   storageClassName: {{ .Values.storage.className }}
   {{- end }}
----
+  {{- if .Values.storage.mealieVolumeName }}
+  volumeName: {{ .Values.storage.mealieVolumeName }}
 {{- end }}
+---
+  {{- end }}
 {{- if and (.Values.storage.enabled) (.Values.postgres.enabled) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -29,5 +32,9 @@ spec:
       storage: {{ .Values.storage.postgresSize }}
   {{- if .Values.storage.className }}
   storageClassName: {{ .Values.storage.className }}
+{{- end }}
+  {{- if .Values.storage.postgresVolumeName }}
+  volumeName: {{ .Values.storage.postgresVolumeName }}
   {{- end }}
 {{- end }}
+

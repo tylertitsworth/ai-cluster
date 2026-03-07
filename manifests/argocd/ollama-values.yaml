@@ -22,7 +22,7 @@ extraEnv:
     value: "1"
   # 12K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "12288"
+    value: "16384"
   # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m

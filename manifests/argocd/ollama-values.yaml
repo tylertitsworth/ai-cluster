@@ -3,8 +3,8 @@ fullnameOverride: ollama
 
 image:
   repository: ollama/ollama
-  # Rolling ROCm tag for latest ROCm-enabled image
-  tag: rocm
+  # Pinned latest versioned ROCm image tag
+  tag: 0.17.7-rocm
   pullPolicy: Always
 
 ollama:

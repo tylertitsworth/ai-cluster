@@ -26,6 +26,16 @@ spec:
         release: monitoring
 ---
 apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: relay-egress
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+---
+apiVersion: tailscale.com/v1alpha1
 kind: Connector
 metadata:
   name: control-plane
@@ -43,4 +53,23 @@ metadata:
   name: egress
 spec:
   type: egress
-  proxyClass: control-plane
+  replicas: 2
+  proxyClass: relay-egress
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress
+  namespace: tailscale
+spec:
+  type: NodePort
+  selector:
+    tailscale.com/parent-resource: egress
+    tailscale.com/parent-resource-type: proxygroup
+  ports:
+    - port: 40000
+      targetPort: 40000
+      # NodePort must be in service-node-port-range (default 30000-32767).
+      nodePort: 32000
+      protocol: UDP
+      name: egress-udp

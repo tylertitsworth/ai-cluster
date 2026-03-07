@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rayclaw
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: servarr-stack
+    path: rayclaw
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rayclaw
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,66 @@
+# ollama chart values for AMD ROCm + Tailscale ingress
+fullnameOverride: ollama
+
+image:
+  repository: ollama/ollama
+  # Rolling ROCm tag for latest ROCm-enabled image
+  tag: rocm
+  pullPolicy: Always
+
+ollama:
+  gpu:
+    enabled: true
+    type: amd
+    number: 1
+
+extraEnv:
+  # Force Vulkan backend on AMD where supported
+  - name: OLLAMA_LLM_LIBRARY
+    value: vulkan
+  # 12K default context length (KV cache-backed token window)
+  - name: OLLAMA_CONTEXT_LENGTH
+    value: "12288"
+  # Allow up to 30 minutes for large model load stalls
+  - name: OLLAMA_LOAD_TIMEOUT
+    value: 30m
+  # Keep only one model loaded in memory at a time
+  - name: OLLAMA_MAX_LOADED_MODELS
+    value: "1"
+
+service:
+  type: ClusterIP
+  port: 11434
+
+ingress:
+  enabled: true
+  className: tailscale
+  annotations:
+    tailscale.com/proxy-class: "control-plane"
+  hosts:
+    - host: ollama
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - ollama
+
+persistentVolume:
+  enabled: true
+  existingClaim: ollama-data
+
+nodeSelector:
+  kubernetes.io/hostname: framework-desktop
+
+extraObjects:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: ollama-data
+      namespace: ollama
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 60Gi

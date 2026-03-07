@@ -110,6 +110,49 @@ Now whenever I have an application that I want to make available on the private 
 
 After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes. The Tailscale Operator was added to act as an Ingress Controller for the cluster. Additionally, the operator acts as an API proxy, subnet router,and  control plane egress.
 
+#### Peer Relay Operations (Dynamic WAN IP)
+
+Peer relay for the `egress` ProxyGroup is configured with:
+
+- `manifests/tailscale.yaml` for ProxyClass/ProxyGroup and NodePort exposure
+- `manifests/tailscale-relay-updater.yaml` for automatic public IP detection and endpoint refresh
+
+Apply/update:
+
+```sh
+kubectl apply -f manifests/tailscale.yaml
+kubectl apply -f manifests/tailscale-relay-updater.yaml
+```
+
+The updater runs every 5 minutes and only changes relay configuration when WAN IP changes.
+
+Validation checks:
+
+```sh
+kubectl get proxygroup egress -o jsonpath='{range .status.conditions[*]}{.type}={.status}{"\n"}{end}'
+kubectl -n tailscale get cronjob tailscale-relay-updater
+kubectl -n tailscale get jobs --sort-by=.metadata.creationTimestamp | tail -n 5
+kubectl exec -n tailscale egress-0 -c tailscale -- tailscale debug peer-relay-servers
+kubectl exec -n tailscale egress-1 -c tailscale -- tailscale debug peer-relay-servers
+```
+
+Manual recovery (if CronJob fails):
+
+```sh
+./scripts/update-tailscale-relay-ip.sh
+# or force a specific public IP:
+RELAY_IP=<public-ip> ./scripts/update-tailscale-relay-ip.sh
+```
+
+Rollback / disable automation:
+
+```sh
+kubectl -n tailscale delete cronjob tailscale-relay-updater
+kubectl -n tailscale delete rolebinding tailscale-relay-updater
+kubectl -n tailscale delete role tailscale-relay-updater
+kubectl -n tailscale delete serviceaccount tailscale-relay-updater
+```
+
 ### Nvidia Device Plugin
 
 There is some additional setup required to make sure that the GPU is accessible. The Jetson uses the same device plugin daemonset that any other card uses, and the [documentation](https://docs.turingpi.com/docs/turing-pi2-kubernetes-cluster-nvidia-jetson) for this setup has a lot of unecessary steps. All of the networking stuff was not really required. Like I mention in the Nvidia Flashing & OS Setup document, there is a lot of out of date information surrounding the Orin + Turing Pi, but once `./deviceQuery` runs without fail in a pod I officially had compute on K3s.

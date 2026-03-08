@@ -31,7 +31,10 @@ extraEnv:
     value: "1"
   # 12K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "16384"
+    value: "12288"
+  # Reduce KV cache memory pressure to increase full-GPU offload chance
+  - name: OLLAMA_KV_CACHE_TYPE
+    value: q8_0
   # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m

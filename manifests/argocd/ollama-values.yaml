@@ -37,7 +37,7 @@ extraEnv:
     value: "1"
   # 32K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "65536"
+    value: "131072"
   # Quality-optimized KV cache type
   - name: OLLAMA_KV_CACHE_TYPE
     value: q4_0

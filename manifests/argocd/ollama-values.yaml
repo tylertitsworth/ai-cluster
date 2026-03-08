@@ -20,7 +20,7 @@ ollama:
       - name: qwen3.5-35b
         template: |
           FROM qwen3.5:35b
-          PARAMETER num_ctx: 131072
+          PARAMETER num_ctx 262144
     run:
       - qwen3.5-35b
     clean: true
@@ -37,7 +37,7 @@ extraEnv:
     value: "1"
   # 32K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "131072"
+    value: "262144"
   # Quality-optimized KV cache type
   - name: OLLAMA_KV_CACHE_TYPE
     value: q4_0

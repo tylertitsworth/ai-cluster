@@ -15,9 +15,9 @@ ollama:
   models:
     # Ensure model exists locally, then load it into memory at startup
     pull:
-      - qwen3.5:35b-a3b-q8_0
+      - qwen3.5:35b
     run:
-      - qwen3.5:35b-a3b-q8_0
+      - qwen3.5:35b
 
 extraEnv:
   # Force Vulkan backend on AMD where supported
@@ -29,12 +29,12 @@ extraEnv:
   # Explicitly enable experimental flash attention
   - name: OLLAMA_FLASH_ATTENTION
     value: "1"
-  # 12K default context length (KV cache-backed token window)
+  # 32K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "12288"
-  # Reduce KV cache memory pressure to increase full-GPU offload chance
+    value: "32768"
+  # Quality-optimized KV cache type
   - name: OLLAMA_KV_CACHE_TYPE
-    value: q8_0
+    value: q4_0
   # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m

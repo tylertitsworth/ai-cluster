@@ -20,7 +20,7 @@ ollama:
       - name: qwen3.5-35b
         template: |
           FROM qwen3.5:35b
-          PARAMETER num_ctx: 65536
+          PARAMETER num_ctx 65536
     run:
       - qwen3.5-35b
 

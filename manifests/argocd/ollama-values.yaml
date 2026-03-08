@@ -15,10 +15,13 @@ ollama:
 
 extraEnv:
   # Force Vulkan backend on AMD where supported
-  - name: OLLAMA_LLM_LIBRARY
-    value: vulkan
-  # Explicitly enable experimental Vulkan runtime path
-  - name: OLLAMA_VULKAN
+  # - name: OLLAMA_LLM_LIBRARY
+  #   value: vulkan
+  # # Explicitly enable experimental Vulkan runtime path
+  # - name: OLLAMA_VULKAN
+  #   value: "1"
+  # Explicitly enable experimental flash attention
+  - name: OLLAMA_FLASH_ATTENTION
     value: "1"
   # 12K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH

@@ -12,6 +12,12 @@ ollama:
     enabled: true
     type: amd
     number: 1
+  models:
+    # Ensure model exists locally, then load it into memory at startup
+    pull:
+      - qwen3.5:35b-a3b-q8_0
+    run:
+      - qwen3.5:35b-a3b-q8_0
 
 extraEnv:
   # Force Vulkan backend on AMD where supported

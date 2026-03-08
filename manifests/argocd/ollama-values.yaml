@@ -16,14 +16,18 @@ ollama:
     # Ensure model exists locally, then load it into memory at startup
     pull:
       - qwen3.5:35b
+      - glm-4.7-flash
     create:
       - name: qwen3.5-35b
         template: |
           FROM qwen3.5:35b
           PARAMETER num_ctx 262144
+      - name: glm-4.7-flash-full
+        template: |
+          FROM glm-4.7-flash
+          PARAMETER num_ctx 198000
     run:
-      - qwen3.5-35b
-    clean: true
+      - glm-4.7-flash-full
 
 extraEnv:
   # Force Vulkan backend on AMD where supported

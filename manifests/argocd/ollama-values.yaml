@@ -29,6 +29,9 @@ extraEnv:
   # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m
+  # Keep loaded models in memory indefinitely (never unload on idle)
+  - name: OLLAMA_KEEP_ALIVE
+    value: "-1"
   # Keep only one model loaded in memory at a time
   - name: OLLAMA_MAX_LOADED_MODELS
     value: "1"

@@ -16,8 +16,13 @@ ollama:
     # Ensure model exists locally, then load it into memory at startup
     pull:
       - qwen3.5:35b
+    create:
+      - name: qwen3.5-35b
+        template: |
+          FROM qwen3.5:35b
+          PARAMTER num_ctx: 65536
     run:
-      - qwen3.5:35b
+      - qwen3.5-35b
 
 extraEnv:
   # Force Vulkan backend on AMD where supported
@@ -31,7 +36,7 @@ extraEnv:
     value: "1"
   # 32K default context length (KV cache-backed token window)
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "32768"
+    value: "65536"
   # Quality-optimized KV cache type
   - name: OLLAMA_KV_CACHE_TYPE
     value: q4_0

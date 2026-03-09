@@ -31,6 +31,11 @@ ollama:
           PARAMETER presence_penalty 1.0
     run:
       - glm-4.7-flash-full
+      - glm-5:cloud
+      - minimax-m2.5:cloud
+      - qwen3.5:397b-cloud
+      - kimi-k2.5:cloud
+      - deepseek-v3.2:cloud
     clean: true
 
 extraEnv:

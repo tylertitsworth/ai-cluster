@@ -43,7 +43,7 @@ extraEnv:
   # Explicitly enable experimental flash attention
   - name: OLLAMA_FLASH_ATTENTION
     value: "1"
-  # 32K default context length (KV cache-backed token window)
+  # Max Content Length for any Model
   - name: OLLAMA_CONTEXT_LENGTH
     value: "262144"
   # Quality-optimized KV cache type
@@ -58,6 +58,12 @@ extraEnv:
   # Keep only one model loaded in memory at a time
   - name: OLLAMA_MAX_LOADED_MODELS
     value: "1"
+  # Pull Ollama cloud API key from Kubernetes Secret (value not stored in Git)
+  - name: OLLAMA_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: ollama-api-key
+        key: OLLAMA_API_KEY
 
 service:
   type: ClusterIP

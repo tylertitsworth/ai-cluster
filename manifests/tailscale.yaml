@@ -73,3 +73,20 @@ spec:
       nodePort: 32000
       protocol: UDP
       name: egress-udp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai
+  namespace: tailscale
+  annotations:
+    tailscale.com/tailnet-fqdn: "ai.tail79a5c8.ts.net"
+    tailscale.com/proxy-group: "egress"
+spec:
+  type: ExternalName
+  # Placeholder value required by K8s; the operator rewrites this service.
+  externalName: placeholder
+  ports:
+    - name: https
+      port: 443
+      targetPort: 443

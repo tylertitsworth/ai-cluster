@@ -22,6 +22,7 @@ ollama:
         template: |
           FROM qwen3.5:35b
           PARAMETER num_ctx 262144
+          PARAMETER num_batch 1024
       - name: glm-4.7-flash-full
         template: |
           FROM glm-4.7-flash
@@ -29,13 +30,9 @@ ollama:
           PARAMETER temperature 0.7
           PARAMETER top_p 0.95
           PARAMETER presence_penalty 1.0
+          PARANETER num_batch 1024
     run:
       - glm-4.7-flash-full
-      - glm-5:cloud
-      - minimax-m2.5:cloud
-      - qwen3.5:397b-cloud
-      - kimi-k2.5:cloud
-      - deepseek-v3.2:cloud
     clean: true
 
 extraEnv:

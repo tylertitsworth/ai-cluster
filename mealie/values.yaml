@@ -116,7 +116,7 @@ postgres:
 # @ignore
 ingress:
   enabled: false
-  className: "longhorn"
+  className: "tailscale"
   annotations:
     {}
     # kubernetes.io/ingress.class: nginx

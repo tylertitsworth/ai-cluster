@@ -17,6 +17,7 @@ ollama:
     pull:
       - qwen3.5:35b
       - glm-4.7-flash
+      - nemotron-3-nano:30b
     create:
       - name: qwen3.5-35b-full
         template: |
@@ -29,9 +30,14 @@ ollama:
           PARAMETER temperature 0.7
           PARAMETER top_p 0.95
           PARAMETER presence_penalty 1.0
+      - name: nemotron-3-nano-30b-full
+        template: |
+          FROM nemotron-3-nano:30b
+          PARAMETER num_ctx 350000
     run:
       # - glm-4.7-flash-full
-      - qwen3.5-35b-full
+      # - qwen3.5-35b-full
+      - nemotron-3-nano-30b-full
     clean: true
 
 extraEnv:
@@ -46,7 +52,7 @@ extraEnv:
     value: "1"
   # Max Content Length for any Model
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "262144"
+    value: "350000"
   # Quality-optimized KV cache type
   - name: OLLAMA_KV_CACHE_TYPE
     value: q4_0

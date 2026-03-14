@@ -33,7 +33,7 @@ ollama:
       - name: nemotron-3-nano-30b-full
         template: |
           FROM nemotron-3-nano:30b
-          PARAMETER num_ctx 300000
+          PARAMETER num_ctx 200000
     run:
       # - glm-4.7-flash-full
       # - qwen3.5-35b-full

@@ -20,23 +20,38 @@ spec:
       agents:
         defaults:
           workspace: "/home/openclaw/.openclaw/workspace"
-        {{- if $values.models.defaultModel }}
+{{- if $values.models.defaultModel }}
+{{- if kindIs "string" $values.models.defaultModel }}
           model: {{ $values.models.defaultModel | quote }}
-        {{- end }}
+{{- else }}
+          model:
+{{ toYaml $values.models.defaultModel | nindent 12 }}
+{{- end }}
+{{- end }}
         list:
           - id: {{ $values.agents.main.id | quote }}
             name: {{ $values.agents.main.name | quote }}
             workspace: {{ $values.agents.main.workspace | quote }}
-            {{- if $values.agents.main.model }}
+{{- if $values.agents.main.model }}
+{{- if kindIs "string" $values.agents.main.model }}
             model: {{ $values.agents.main.model | quote }}
-            {{- end }}
+{{- else }}
+            model:
+{{ toYaml $values.agents.main.model | nindent 14 }}
+{{- end }}
+{{- end }}
         {{- range $values.agents.subagents }}
           - id: {{ .id | quote }}
             name: {{ .name | quote }}
             workspace: {{ .workspace | quote }}
-            {{- if .model }}
+{{- if .model }}
+{{- if kindIs "string" .model }}
             model: {{ .model | quote }}
-            {{- end }}
+{{- else }}
+            model:
+{{ toYaml .model | nindent 14 }}
+{{- end }}
+{{- end }}
         {{- end }}
         {{- if $values.models.providers }}
       models:

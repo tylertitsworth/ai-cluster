@@ -6,7 +6,10 @@ agents:
     id: main
     name: Lathandar
     workspace: /home/openclaw/.openclaw/workspace/lathandar
-    model: aperature/gpt-codex-5.3
+    model:
+      primary: aperture/gpt-5.3-codex
+      fallbacks:
+        - aperture/gpt-5.4
   subagents:
     - id: nhp
       name: NHP
@@ -19,25 +22,29 @@ agents:
       workspace: /home/openclaw/.openclaw/workspace/colville
 
 models:
-  defaultModel: aperature/gpt-5.4
+  defaultModel:
+    primary: aperture/gpt-5.4
+    fallbacks: []
   providers:
-    aperature:
-      api: openai-completions
-      baseUrl: https://ai.tail79a5c8.ts.net/
+    aperture:
+      api: openai-responses
+      baseUrl: https://ai.tail79a5c8.ts.net/v1
+      apiKey: internal-noauth-key
       models:
         - id: gpt-5.4
           name: gpt-5.4
-          api: openai-completions
-        - id: gpt-codex-5.3
-          name: gpt-codex-5.3
-          api: openai-completions
+          api: openai-responses
+        - id: gpt-5.3-codex
+          name: gpt-5.3-codex
+          api: openai-responses
     ollama:
-      api: openai-completions
-      baseUrl: https://ollama.tail79a5c8.ts.net/
+      api: ollama
+      baseUrl: http://ollama.ollama.svc.cluster.local:11434
+      apiKey: internal-noauth-key
       models:
         - id: nemotron-3-nano-30b-full:latest
           name: nemotron-3-nano-30b-full:latest
-          api: openai-completions
+          api: ollama
 
 discord:
   enabled: true
@@ -214,6 +221,23 @@ security:
     allowedIngressNamespaces:
       - openclaw
       - tailscale
+    additionalEgress:
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: tailscale
+        ports:
+          - protocol: TCP
+            port: 443
+          - protocol: TCP
+            port: 10557
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ollama
+        ports:
+          - protocol: TCP
+            port: 11434
 
 probes:
   startup:

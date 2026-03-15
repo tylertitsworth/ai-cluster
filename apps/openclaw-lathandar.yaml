@@ -22,7 +22,7 @@ spec:
       ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: openclaw-lathandar
+    namespace: openclaw
   syncPolicy:
     automated:
       enabled: false

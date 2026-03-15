@@ -2,9 +2,9 @@ instance:
   name: openclaw-lathandar
 
 secretRefs:
-  providerSecret: openclaw-provider-secrets
-  discordSecret: openclaw-discord-secrets
-  gatewayTokenSecret: openclaw-gateway-token
+  providerSecret: openclaw-lathandar-provider-secrets
+  discordSecret: openclaw-lathandar-discord-secrets
+  gatewayTokenSecret: openclaw-lathandar-gateway-token
 
 agents:
   main:

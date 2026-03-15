@@ -15,7 +15,7 @@ spec:
     raw:
       agents:
         defaults:
-          workspace: "/home/node/.openclaw/workspace"
+          workspace: "/home/openclaw/.openclaw/workspace"
         list:
           - id: {{ .Values.agents.main.id | quote }}
             name: {{ .Values.agents.main.name | quote }}
@@ -76,6 +76,10 @@ spec:
 {{- if .Values.networking }}
   networking:
 {{- toYaml .Values.networking | nindent 4 }}
+{{- end }}
+{{- if .Values.networkPolicy }}
+  networkPolicy:
+{{- toYaml .Values.networkPolicy | nindent 4 }}
 {{- end }}
 {{- if .Values.probes }}
   probes:

@@ -40,6 +40,8 @@ networking:
     hosts: []
     tls: []
 
+networkPolicy: {}
+
 probes:
   startup:
     enabled: true

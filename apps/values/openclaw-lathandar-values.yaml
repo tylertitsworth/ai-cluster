@@ -10,17 +10,17 @@ agents:
   main:
     id: main
     name: Lathandar
-    workspace: /home/node/.openclaw/workspace/lathandar
+    workspace: /home/openclaw/.openclaw/workspace/lathandar
   subagents:
     - id: nhp
       name: NHP
-      workspace: /home/node/.openclaw/workspace/nhp
+      workspace: /home/openclaw/.openclaw/workspace/nhp
     - id: volo
       name: Volo
-      workspace: /home/node/.openclaw/workspace/volo
+      workspace: /home/openclaw/.openclaw/workspace/volo
     - id: colville
       name: Colville
-      workspace: /home/node/.openclaw/workspace/colville
+      workspace: /home/openclaw/.openclaw/workspace/colville
 
 discord:
   enabled: true
@@ -182,6 +182,12 @@ networking:
     tls:
       - hosts:
           - openclaw-lathandar
+
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - openclaw
+    - tailscale
 
 probes:
   startup:

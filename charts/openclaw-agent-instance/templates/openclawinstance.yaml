@@ -1,0 +1,57 @@
+apiVersion: openclaw.rocks/v1alpha1
+kind: OpenClawInstance
+metadata:
+  name: {{ include "openclaw-agent-instance.fullname" . }}
+spec:
+  envFrom:
+    - secretRef:
+        name: {{ .Values.secretRefs.providerSecret | quote }}
+    - secretRef:
+        name: {{ .Values.secretRefs.discordSecret | quote }}
+  gateway:
+    existingSecret: {{ .Values.secretRefs.gatewayTokenSecret | quote }}
+  config:
+    mergeMode: overwrite
+    raw:
+      agents:
+        defaults:
+          workspace: "/home/node/.openclaw/workspace"
+        list:
+          - id: {{ .Values.agents.main.id | quote }}
+            name: {{ .Values.agents.main.name | quote }}
+            workspace: {{ .Values.agents.main.workspace | quote }}
+{{- range .Values.agents.subagents }}
+          - id: {{ .id | quote }}
+            name: {{ .name | quote }}
+            workspace: {{ .workspace | quote }}
+{{- end }}
+      bindings:
+{{- toYaml .Values.discord.bindings | nindent 8 }}
+      channels:
+        discord:
+          enabled: {{ .Values.discord.enabled }}
+          token: {{ printf "${%s}" .Values.discord.tokenEnvVar | quote }}
+          groupPolicy: {{ .Values.discord.groupPolicy | quote }}
+          streaming: {{ .Values.discord.streaming | quote }}
+          accounts:
+{{- range $id, $cfg := .Values.discord.accounts }}
+            {{ $id }}:
+              name: {{ $cfg.name | quote }}
+              token: {{ printf "${%s}" $cfg.tokenEnvVar | quote }}
+              groupPolicy: {{ $cfg.groupPolicy | quote }}
+              streaming: {{ $cfg.streaming | quote }}
+              guilds:
+{{- toYaml $cfg.guilds | nindent 16 }}
+{{- end }}
+{{- if not .Values.discord.accounts }}
+            {}
+{{- end }}
+  workspace:
+    initialDirectories:
+{{- range .Values.workspace.initialDirectories }}
+      - {{ . | quote }}
+{{- end }}
+    initialFiles:
+{{- range $path, $content := .Values.workspace.initialFiles }}
+      {{ $path | quote }}: {{ $content | quote }}
+{{- end }}

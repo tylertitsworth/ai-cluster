@@ -1,0 +1,30 @@
+# OpenClaw Lathandar - Lathandar main + NHP/Volo/Colville subagents
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openclaw-lathandar
+  namespace: argocd
+  labels:
+    stack: agents
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: openclaw-operator
+      path: charts/openclaw-agent-instance
+      helm:
+        valueFiles:
+          - $values/apps/values/openclaw-lathandar-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: openclaw-operator
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openclaw-lathandar
+  syncPolicy:
+    automated:
+      enabled: false
+    syncOptions:
+      - CreateNamespace=true

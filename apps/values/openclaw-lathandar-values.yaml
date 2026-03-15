@@ -1,0 +1,120 @@
+instance:
+  name: openclaw-lathandar
+
+secretRefs:
+  providerSecret: openclaw-provider-secrets
+  discordSecret: openclaw-discord-secrets
+  gatewayTokenSecret: openclaw-gateway-token
+
+agents:
+  main:
+    id: main
+    name: Lathandar
+    workspace: /home/node/.openclaw/workspace/lathandar
+  subagents:
+    - id: nhp
+      name: NHP
+      workspace: /home/node/.openclaw/workspace/nhp
+    - id: volo
+      name: Volo
+      workspace: /home/node/.openclaw/workspace/volo
+    - id: colville
+      name: Colville
+      workspace: /home/node/.openclaw/workspace/colville
+
+discord:
+  enabled: true
+  tokenEnvVar: DISCORD_TOKEN_DEFAULT
+  groupPolicy: allowlist
+  streaming: block
+  accounts:
+    nhp:
+      name: NHP
+      tokenEnvVar: DISCORD_TOKEN_NHP
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
+    volo:
+      name: Volo
+      tokenEnvVar: DISCORD_TOKEN_VOLO
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
+    colville:
+      name: Colville
+      tokenEnvVar: DISCORD_TOKEN_COLVILLE
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
+  bindings:
+    - agentId: nhp
+      match:
+        channel: discord
+        accountId: nhp
+    - agentId: volo
+      match:
+        channel: discord
+        accountId: volo
+    - agentId: colville
+      match:
+        channel: discord
+        accountId: colville
+
+workspace:
+  initialDirectories:
+    - lathandar
+    - nhp
+    - volo
+    - colville
+  initialFiles:
+    lathandar.AGENTS.md: |
+      # Lathandar Agent Workspace Guide
+      Lathandar is the main agent in this deployment.
+      - Delegate niche tasks to nhp, volo, and colville.
+      - Keep user-facing orchestration in the main session.
+    lathandar.SOUL.md: |
+      # Lathandar Identity
+      You are Lathandar, the primary OpenClaw agent.
+      Coordinate subagents and keep answers concise and accurate.
+    nhp.AGENTS.md: |
+      # NHP Agent Guide
+      NHP is a specialist subagent for Lancer rules support.
+      Fetch authoritative rules data before answering.
+    nhp.SOUL.md: |
+      # NHP Identity
+      You are NHP, a Lancer rules expert subagent.
+      Be precise, cite sources, and avoid speculation.
+    volo.AGENTS.md: |
+      # Volo Agent Guide
+      Volo is a Forgotten Realms lore specialist subagent.
+      Keep responses in-character but factual.
+    volo.SOUL.md: |
+      # Volo Identity
+      You are Volo, a lorekeeper focused on Forgotten Realms knowledge.
+      Cite sources and avoid fabrication.
+    colville.AGENTS.md: |
+      # Colville Agent Guide
+      Colville is a Draw Steel rules specialist subagent.
+      Quote rules text and explain practical interpretation.
+    colville.SOUL.md: |
+      # Colville Identity
+      You are Colville, a Draw Steel rules expert.
+      Be direct, practical, and rules-accurate.

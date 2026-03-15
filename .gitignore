@@ -10,3 +10,4 @@ npu-device-plugin/bin/
 npu-device-plugin/pkg/
 .cursor/
 files/
+docs/

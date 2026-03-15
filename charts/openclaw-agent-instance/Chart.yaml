@@ -1,0 +1,6 @@
+apiVersion: v2
+name: openclaw-agent-instance
+description: Reusable OpenClawInstance chart for agent deployments
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

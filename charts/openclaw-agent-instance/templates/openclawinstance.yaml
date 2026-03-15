@@ -20,52 +20,52 @@ spec:
       agents:
         defaults:
           workspace: "/home/openclaw/.openclaw/workspace"
-{{- if $values.models.defaultModel }}
-{{- if kindIs "string" $values.models.defaultModel }}
+          {{- if $values.models.defaultModel }}
+          {{- if kindIs "string" $values.models.defaultModel }}
           model: {{ $values.models.defaultModel | quote }}
-{{- else }}
+          {{- else }}
           model:
-{{ toYaml $values.models.defaultModel | nindent 12 }}
-{{- end }}
-{{- end }}
+            {{ toYaml $values.models.defaultModel | nindent 12 }}
+          {{- end }}
+          {{- end }}
         list:
           - id: {{ $values.agents.main.id | quote }}
             name: {{ $values.agents.main.name | quote }}
             workspace: {{ $values.agents.main.workspace | quote }}
-{{- if $values.agents.main.model }}
-{{- if kindIs "string" $values.agents.main.model }}
+            {{- if $values.agents.main.model }}
+            {{- if kindIs "string" $values.agents.main.model }}
             model: {{ $values.agents.main.model | quote }}
-{{- else }}
+            {{- else }}
             model:
-{{ toYaml $values.agents.main.model | nindent 14 }}
-{{- end }}
-{{- end }}
+              {{ toYaml $values.agents.main.model | nindent 14 }}
+            {{- end }}
+            {{- end }}
         {{- range $values.agents.subagents }}
           - id: {{ .id | quote }}
             name: {{ .name | quote }}
             workspace: {{ .workspace | quote }}
-{{- if .model }}
-{{- if kindIs "string" .model }}
+            {{- if .model }}
+            {{- if kindIs "string" .model }}
             model: {{ .model | quote }}
-{{- else }}
+            {{- else }}
             model:
-{{ toYaml .model | nindent 14 }}
-{{- end }}
-{{- end }}
+              {{ toYaml .model | nindent 14 }}
+            {{- end }}
+            {{- end }}
         {{- end }}
         {{- range $id := keys $values.agents.subagentsMap | sortAlpha }}
         {{- $cfg := index $values.agents.subagentsMap $id }}
           - id: {{ default $id $cfg.id | quote }}
             name: {{ $cfg.name | quote }}
             workspace: {{ $cfg.workspace | quote }}
-{{- if $cfg.model }}
-{{- if kindIs "string" $cfg.model }}
+            {{- if $cfg.model }}
+            {{- if kindIs "string" $cfg.model }}
             model: {{ $cfg.model | quote }}
-{{- else }}
+            {{- else }}
             model:
-{{ toYaml $cfg.model | nindent 14 }}
-{{- end }}
-{{- end }}
+              {{ toYaml $cfg.model | nindent 14 }}
+            {{- end }}
+            {{- end }}
         {{- end }}
         {{- if $values.models.providers }}
       models:
@@ -74,19 +74,19 @@ spec:
         {{- end }}
 
       bindings:
-{{- if $values.discord.bindings }}
-{{ toYaml $values.discord.bindings | nindent 8 }}
-{{- end }}
-{{- range $id := keys $values.discord.bindingsMap | sortAlpha }}
-{{- $binding := index $values.discord.bindingsMap $id }}
+      {{- if $values.discord.bindings }}
+        {{ toYaml $values.discord.bindings | nindent 8 }}
+      {{- end }}
+      {{- range $id := keys $values.discord.bindingsMap | sortAlpha }}
+      {{- $binding := index $values.discord.bindingsMap $id }}
         - agentId: {{ default $id $binding.agentId | quote }}
           match:
             channel: {{ default "discord" $binding.channel | quote }}
             accountId: {{ $binding.accountId | quote }}
-{{- end }}
-{{- if and (not $values.discord.bindings) (eq (len $values.discord.bindingsMap) 0) }}
+      {{- end }}
+      {{- if and (not $values.discord.bindings) (eq (len $values.discord.bindingsMap) 0) }}
         []
-{{- end }}
+      {{- end }}
 
       channels:
         discord:

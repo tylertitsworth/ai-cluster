@@ -30,11 +30,6 @@ discord:
   enabled: true
   configWrites: false
   accounts:
-    default:
-      name: default
-      tokenEnvVar: DISCORD_TOKEN_DEFAULT
-      groupPolicy: allowlist
-      streaming: block
 
 gatewayRaw:
   controlUi:

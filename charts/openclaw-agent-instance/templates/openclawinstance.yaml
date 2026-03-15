@@ -65,6 +65,12 @@ spec:
       channels:
         discord:
           enabled: {{ $values.discord.enabled }}
+          {{- if ne $values.discord.configWrites nil }}
+          configWrites: {{ $values.discord.configWrites }}
+          {{- end }}
+          {{- if ne $values.discord.blockStreaming nil }}
+          blockStreaming: {{ $values.discord.blockStreaming }}
+          {{- end }}
           {{- if not $hasDiscordAccounts }}
           token: {{ printf "${%s}" $values.discord.tokenEnvVar | quote }}
           groupPolicy: {{ $values.discord.groupPolicy | quote }}
@@ -102,6 +108,26 @@ spec:
       {{- if $values.gatewayRaw }}
       gateway:
         {{- toYaml $values.gatewayRaw | nindent 8 }}
+      {{- end }}
+      {{- if $values.commandsRaw }}
+      commands:
+        {{- toYaml $values.commandsRaw | nindent 8 }}
+      {{- end }}
+      {{- if $values.sessionRaw }}
+      session:
+        {{- toYaml $values.sessionRaw | nindent 8 }}
+      {{- end }}
+      {{- if $values.messagesRaw }}
+      messages:
+        {{- toYaml $values.messagesRaw | nindent 8 }}
+      {{- end }}
+      {{- if $values.hooksRaw }}
+      hooks:
+        {{- toYaml $values.hooksRaw | nindent 8 }}
+      {{- end }}
+      {{- if $values.toolsRaw }}
+      tools:
+        {{- toYaml $values.toolsRaw | nindent 8 }}
       {{- end }}
 
   workspace:

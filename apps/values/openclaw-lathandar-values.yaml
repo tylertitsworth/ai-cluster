@@ -48,6 +48,7 @@ models:
 
 discord:
   enabled: true
+  configWrites: false
   tokenEnvVar: DISCORD_TOKEN_DEFAULT
   groupPolicy: allowlist
   streaming: block
@@ -157,6 +158,19 @@ gatewayRaw:
       - http://localhost:18789
       - https://openclaw-lathandar
       - https://openclaw-lathandar.tail79a5c8.ts.net
+
+hooksRaw:
+  internal:
+    enabled: true
+    entries:
+      boot-md:
+        enabled: false
+
+sessionRaw:
+  resetByType:
+    group:
+      mode: idle
+      idleMinutes: 90
 
 workspace:
   initialDirectories:

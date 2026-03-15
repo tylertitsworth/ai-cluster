@@ -1,5 +1,4 @@
 {{- $values := .Values -}}
-{{- $hasDiscordAccounts := gt (len $values.discord.accounts) 0 -}}
 apiVersion: openclaw.rocks/v1alpha1
 kind: OpenClawInstance
 metadata:
@@ -94,19 +93,28 @@ spec:
           {{- if ne $values.discord.configWrites nil }}
           configWrites: {{ $values.discord.configWrites }}
           {{- end }}
+          {{- if $values.discord.defaultAccount }}
+          defaultAccount: {{ $values.discord.defaultAccount | quote }}
+          {{- end }}
           {{- if ne $values.discord.blockStreaming nil }}
           blockStreaming: {{ $values.discord.blockStreaming }}
           {{- end }}
-          {{- if not $hasDiscordAccounts }}
+          {{- if $values.discord.tokenEnvVar }}
           token: {{ printf "${%s}" $values.discord.tokenEnvVar | quote }}
+          {{- end }}
+          {{- if $values.discord.groupPolicy }}
           groupPolicy: {{ $values.discord.groupPolicy | quote }}
+          {{- end }}
+          {{- if $values.discord.streaming }}
           streaming: {{ $values.discord.streaming | quote }}
           {{- end }}
           accounts:
           {{- range $id, $cfg := $values.discord.accounts }}
             {{ $id }}:
               name: {{ $cfg.name | quote }}
+              {{- if $cfg.tokenEnvVar }}
               token: {{ printf "${%s}" $cfg.tokenEnvVar | quote }}
+              {{- end }}
               {{- if $cfg.commands }}
               commands:
                 {{- toYaml $cfg.commands | nindent 16 }}
@@ -124,8 +132,10 @@ spec:
               {{- end }}
               groupPolicy: {{ $cfg.groupPolicy | quote }}
               streaming: {{ $cfg.streaming | quote }}
+              {{- if $cfg.guilds }}
               guilds:
                 {{- toYaml $cfg.guilds | nindent 16 }}
+              {{- end }}
           {{- end }}
           {{- if not $values.discord.accounts }}
             {}

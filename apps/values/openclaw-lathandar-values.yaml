@@ -29,6 +29,10 @@ models:
 discord:
   enabled: true
   configWrites: false
+  defaultAccount: lathandar
+  tokenEnvVar: ""
+  groupPolicy: ""
+  streaming: ""
   accounts:
 
 gatewayRaw:
@@ -44,7 +48,7 @@ hooksRaw:
     enabled: true
     entries:
       boot-md:
-        enabled: false
+        enabled: true
 
 sessionRaw:
   resetByType:

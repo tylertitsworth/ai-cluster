@@ -1,26 +1,24 @@
-# Bookshelf - Book and audiobook collection manager (Readarr fork)
+# Terraria tModLoader Server
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: bookshelf
+  name: terraria
   namespace: argocd
-  labels:
-    stack: servarr
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/bookshelf
+    targetRevision: main
+    path: charts/terraria
   destination:
     server: https://kubernetes.default.svc
-    namespace: servarr
+    namespace: terraria
   syncPolicy:
-    # Disabled auto-sync for testing
-    # automated:
-    #   prune: true
-    #   selfHeal: true
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
     - CreateNamespace=true
+

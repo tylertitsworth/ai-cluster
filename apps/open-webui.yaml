@@ -1,32 +1,27 @@
-# loki-stack - Log Aggregation
+# Open WebUI - Web Interface for LLMs
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: loki
+  name: open-webui
   namespace: argocd
-  labels:
-    stack: monitoring
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   sources:
-    - repoURL: https://grafana.github.io/helm-charts
-      chart: loki-stack
-      targetRevision: 2.10.2
+    - repoURL: https://open-webui.github.io/helm-charts
+      chart: open-webui
+      targetRevision: 8.22.0
       helm:
         valueFiles:
-          - $values/manifests/argocd/loki-values.yaml
+          - $values/apps/open-webui-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: servarr-stack
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: grafana
+    namespace: ollama
   syncPolicy:
-    # Auto-sync disabled - manual sync only
-    # automated:
-    #   prune: true
-    #   selfHeal: true
+    # Manual sync only (no automated block)
     syncOptions:
       - CreateNamespace=true

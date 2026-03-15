@@ -1,8 +1,8 @@
-# Sonarr - TV Show Management
+# Overseerr - Request Management & Media Discovery
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sonarr
+  name: overseerr
   namespace: argocd
   labels:
     stack: servarr
@@ -12,8 +12,8 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/sonarr
+    targetRevision: main
+    path: charts/servarr/overseerr
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr

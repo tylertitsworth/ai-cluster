@@ -1,27 +1,28 @@
-# Open WebUI - Web Interface for LLMs
+# Ollama (ROCm) - LLM server
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: open-webui
+  name: ollama
   namespace: argocd
+  labels:
+    stack: ai
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   sources:
-    - repoURL: https://open-webui.github.io/helm-charts
-      chart: open-webui
-      targetRevision: 8.22.0
+    - repoURL: https://helm.otwld.com/
+      chart: ollama
+      targetRevision: 1.49.0
       helm:
         valueFiles:
-          - $values/manifests/argocd/open-webui-values.yaml
+          - $values/apps/ollama-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: servarr-stack
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: ollama
   syncPolicy:
-    # Manual sync only (no automated block)
     syncOptions:
       - CreateNamespace=true

@@ -1,9 +1,11 @@
-# Terraria tModLoader Server
+# Prowlarr - Indexer Manager
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: terraria
+  name: prowlarr
   namespace: argocd
+  labels:
+    stack: servarr
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -11,14 +13,14 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: main
-    path: terraria
+    path: charts/servarr/prowlarr
   destination:
     server: https://kubernetes.default.svc
-    namespace: terraria
+    namespace: servarr
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    # Disabled auto-sync for testing
+    # automated:
+    #   prune: true
+    #   selfHeal: true
     syncOptions:
     - CreateNamespace=true
-

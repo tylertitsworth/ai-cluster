@@ -1,22 +1,24 @@
-# OpenClaw - MCP Gateway for Discord bots and AI agents
+# Kavita - Self-hosted digital library for comics, manga, and ebooks
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: openclaw
+  name: kavita
   namespace: argocd
+  labels:
+    stack: servarr
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: openclaw
+    targetRevision: main
+    path: charts/servarr/kavita
   destination:
     server: https://kubernetes.default.svc
-    namespace: openclaw
+    namespace: servarr
   syncPolicy:
-    # Manual sync for initial setup (need to copy config first)
+    # Disabled auto-sync for testing
     # automated:
     #   prune: true
     #   selfHeal: true

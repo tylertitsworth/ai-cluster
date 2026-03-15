@@ -1,7 +1,7 @@
 app-template:
   controllers:
     openclaw:
-      replicas: 1
+      replicas: 0
       strategy: Recreate
 
       initContainers:

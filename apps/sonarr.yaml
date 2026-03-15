@@ -1,8 +1,8 @@
-# FileFlows - Media File Processing & Transcoding Server
+# Sonarr - TV Show Management
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: fileflows
+  name: sonarr
   namespace: argocd
   labels:
     stack: servarr
@@ -12,13 +12,15 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/fileflows
+    targetRevision: main
+    path: charts/servarr/sonarr
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr
   syncPolicy:
-    # Manual sync only
+    # Disabled auto-sync for testing
+    # automated:
+    #   prune: true
+    #   selfHeal: true
     syncOptions:
     - CreateNamespace=true
-

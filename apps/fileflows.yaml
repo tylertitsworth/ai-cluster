@@ -1,8 +1,8 @@
-# Profilarr - Quality Profile Management for Radarr/Sonarr
+# FileFlows - Media File Processing & Transcoding Server
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: profilarr
+  name: fileflows
   namespace: argocd
   labels:
     stack: servarr
@@ -12,15 +12,13 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/profilarr
+    targetRevision: main
+    path: charts/servarr/fileflows
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr
   syncPolicy:
-    # Disabled auto-sync for testing
-    # automated:
-    #   prune: true
-    #   selfHeal: true
+    # Manual sync only
     syncOptions:
     - CreateNamespace=true
+

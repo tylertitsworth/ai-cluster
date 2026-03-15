@@ -1,24 +1,22 @@
-# Bazarr - Subtitle Management
+# OpenClaw - MCP Gateway for Discord bots and AI agents
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: bazarr
+  name: openclaw
   namespace: argocd
-  labels:
-    stack: servarr
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/bazarr
+    targetRevision: main
+    path: charts/openclaw
   destination:
     server: https://kubernetes.default.svc
-    namespace: servarr
+    namespace: openclaw
   syncPolicy:
-    # Disabled auto-sync for testing
+    # Manual sync for initial setup (need to copy config first)
     # automated:
     #   prune: true
     #   selfHeal: true

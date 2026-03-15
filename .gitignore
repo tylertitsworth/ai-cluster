@@ -5,6 +5,8 @@
 *.crt
 *.pem
 **__pycache__**
-manifests/argocd/tailscale.yaml
+apps/tailscale.yaml
 npu-device-plugin/bin/
 npu-device-plugin/pkg/
+.cursor/
+files/

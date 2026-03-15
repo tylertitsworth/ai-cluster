@@ -1,8 +1,8 @@
-# kube-prometheus-stack - Monitoring Stack
+# loki-stack - Log Aggregation
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitoring
+  name: loki
   namespace: argocd
   labels:
     stack: monitoring
@@ -11,18 +11,14 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
-      chart: kube-prometheus-stack
-      targetRevision: 66.3.1
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki-stack
+      targetRevision: 2.10.2
       helm:
         valueFiles:
-          - $values/manifests/argocd/monitoring-values.yaml
-        valuesObject:
-          grafana:
-            persistence:
-              existingClaim: grafana
+          - $values/apps/loki-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: servarr-stack
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

@@ -1,8 +1,8 @@
-# Kavita - Self-hosted digital library for comics, manga, and ebooks
+# Bookshelf - Book and audiobook collection manager (Readarr fork)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kavita
+  name: bookshelf
   namespace: argocd
   labels:
     stack: servarr
@@ -12,8 +12,8 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: servarr-stack
-    path: manifests/servarr/apps/kavita
+    targetRevision: main
+    path: charts/servarr/bookshelf
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr

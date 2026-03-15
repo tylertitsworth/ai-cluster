@@ -18,6 +18,9 @@ spec:
       valuesObject:
         nodeSelector:
           node-type: framework
+        node_selector:
+          node-type: framework
+        node_selector_enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

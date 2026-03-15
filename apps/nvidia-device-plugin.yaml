@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://nvidia.github.io/k8s-device-plugin
     chart: nvidia-device-plugin
-    targetRevision: 0.17.1
+    targetRevision: 0.18.2
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

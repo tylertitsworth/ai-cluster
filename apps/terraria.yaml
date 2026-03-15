@@ -17,6 +17,7 @@ spec:
     namespace: terraria
   syncPolicy:
     automated:
+      enabled: false
       prune: true
       selfHeal: true
     syncOptions:

@@ -1,0 +1,39 @@
+# Mealie
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mealie
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mealie
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster
+    targetRevision: mealie3
+    path: mealie
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: storage.className
+          value: longhorn
+        - name: storage.mealieVolumeName
+          value: mealie
+        - name: storage.postgresVolumeName
+          value: mealie-pg
+        - name: storage.mealieSize
+          value: 4Gi
+        - name: storage.postgresSize
+          value: 8Gi
+        - name: postgres.enabled
+          value: "true"
+        - name: image.tag
+          value: v3.12.0
+        - name: ingress.className
+          value: tailscale
+        - name: ingress.enabled
+          value: "true"
+        - name: ingress.hosts[0].host
+          value: mealie.tail79a5c8.ts.net

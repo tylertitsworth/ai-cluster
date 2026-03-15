@@ -11,17 +11,25 @@ spec:
   sources:
     - repoURL: https://open-webui.github.io/helm-charts
       chart: open-webui
-      targetRevision: 8.22.0
+      targetRevision: 10.2.1
       helm:
+        parameters:
+          - forceString: true
+            name: image.repository
+            value: ghcr.io/open-webui/open-webui
+          - forceString: true
+            name: image.tag
+            value: v0.8.10
         valueFiles:
-          - $values/apps/open-webui-values.yaml
+          - $values/manifests/argocd/open-webui-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: main
+      targetRevision: servarr-stack
       ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: ollama
   syncPolicy:
-    # Manual sync only (no automated block)
+    automated:
+      enabled: false
     syncOptions:
       - CreateNamespace=true

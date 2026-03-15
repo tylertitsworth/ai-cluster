@@ -1,26 +1,6 @@
 instance:
   name: openclaw-lathandar
 
-agents:
-  main:
-    id: main
-    name: Lathandar
-    workspace: /home/openclaw/.openclaw/workspace/lathandar
-    model:
-      primary: aperture/gpt-5.3-codex
-      fallbacks:
-        - aperture/gpt-5.4
-  subagents:
-    - id: nhp
-      name: NHP
-      workspace: /home/openclaw/.openclaw/workspace/nhp
-    - id: volo
-      name: Volo
-      workspace: /home/openclaw/.openclaw/workspace/volo
-    - id: colville
-      name: Colville
-      workspace: /home/openclaw/.openclaw/workspace/colville
-
 models:
   defaultModel:
     primary: aperture/gpt-5.4
@@ -49,107 +29,12 @@ models:
 discord:
   enabled: true
   configWrites: false
-  tokenEnvVar: DISCORD_TOKEN_DEFAULT
-  groupPolicy: allowlist
-  streaming: block
   accounts:
-    lathandar:
-      name: Lathandar
+    default:
+      name: default
       tokenEnvVar: DISCORD_TOKEN_DEFAULT
-      commands:
-        native: false
-      dmPolicy: allowlist
-      dm:
-        allowFrom:
-          - "*"
-      allowFrom:
-        - "*"
       groupPolicy: allowlist
       streaming: block
-      guilds:
-        "501818463090638859":
-          requireMention: true
-          channels:
-            "1467730720402309262":
-              allow: true
-              requireMention: true
-    nhp:
-      name: NHP
-      tokenEnvVar: DISCORD_TOKEN_NHP
-      commands:
-        native: false
-      dmPolicy: allowlist
-      dm:
-        allowFrom:
-          - "*"
-      allowFrom:
-        - "*"
-      groupPolicy: allowlist
-      streaming: block
-      guilds:
-        "501818463090638859":
-          requireMention: true
-          channels:
-            "1467730720402309262":
-              allow: true
-              requireMention: true
-    volo:
-      name: Volo
-      tokenEnvVar: DISCORD_TOKEN_VOLO
-      commands:
-        native: false
-      dmPolicy: allowlist
-      dm:
-        allowFrom:
-          - "*"
-      allowFrom:
-        - "*"
-      groupPolicy: allowlist
-      streaming: block
-      guilds:
-        "501818463090638859":
-          requireMention: true
-          channels:
-            "1467730720402309262":
-              allow: true
-              requireMention: true
-    colville:
-      name: Colville
-      tokenEnvVar: DISCORD_TOKEN_COLVILLE
-      commands:
-        native: false
-      dmPolicy: allowlist
-      dm:
-        allowFrom:
-          - "*"
-      allowFrom:
-        - "*"
-      groupPolicy: allowlist
-      streaming: block
-      guilds:
-        "501818463090638859":
-          requireMention: true
-          channels:
-            "1467730720402309262":
-              allow: true
-              requireMention: true
-  bindings:
-    - agentId: main
-      match:
-        channel: discord
-        accountId: lathandar
-    - agentId: nhp
-      match:
-        channel: discord
-        accountId: nhp
-    - agentId: volo
-      match:
-        channel: discord
-        accountId: volo
-    - agentId: colville
-      match:
-        channel: discord
-        accountId: colville
 
 gatewayRaw:
   controlUi:
@@ -171,6 +56,17 @@ sessionRaw:
     group:
       mode: idle
       idleMinutes: 90
+
+toolsRaw:
+  agentToAgent:
+    enabled: true
+    allow:
+      - main
+      - nhp
+      - volo
+      - colville
+  sessions:
+    visibility: all
 
 workspace:
   initialDirectories:

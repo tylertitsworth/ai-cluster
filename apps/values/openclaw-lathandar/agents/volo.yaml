@@ -13,9 +13,6 @@ discord:
       commands:
         native: false
       dmPolicy: allowlist
-      dm:
-        allowFrom:
-          - "*"
       allowFrom:
         - "*"
       groupPolicy: allowlist

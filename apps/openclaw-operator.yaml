@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: oci://ghcr.io/openclaw-rocks/charts
+    - repoURL: ghcr.io/openclaw-rocks/charts
       chart: openclaw-operator
       targetRevision: 0.19.1
       helm:
@@ -28,6 +28,7 @@ spec:
       enabled: false
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
 
 # Phase-1 scope notes:
 # - This installs only the operator and CRDs.

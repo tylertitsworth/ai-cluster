@@ -63,3 +63,7 @@ spec:
   networking:
 {{- toYaml .Values.networking | nindent 4 }}
 {{- end }}
+{{- if .Values.probes }}
+  probes:
+{{- toYaml .Values.probes | nindent 4 }}
+{{- end }}

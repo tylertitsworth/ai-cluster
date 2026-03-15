@@ -38,6 +38,10 @@ spec:
             {{ $id }}:
               name: {{ $cfg.name | quote }}
               token: {{ printf "${%s}" $cfg.tokenEnvVar | quote }}
+{{- if $cfg.commands }}
+              commands:
+{{ toYaml $cfg.commands | nindent 16 }}
+{{- end }}
               groupPolicy: {{ $cfg.groupPolicy | quote }}
               streaming: {{ $cfg.streaming | quote }}
               guilds:
@@ -54,4 +58,8 @@ spec:
     initialFiles:
 {{- range $path, $content := .Values.workspace.initialFiles }}
       {{ $path | quote }}: {{ $content | quote }}
+{{- end }}
+{{- if .Values.networking }}
+  networking:
+{{- toYaml .Values.networking | nindent 4 }}
 {{- end }}

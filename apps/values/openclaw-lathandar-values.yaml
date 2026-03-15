@@ -31,6 +31,8 @@ discord:
     nhp:
       name: NHP
       tokenEnvVar: DISCORD_TOKEN_NHP
+      commands:
+        native: false
       groupPolicy: allowlist
       streaming: block
       guilds:
@@ -43,6 +45,8 @@ discord:
     volo:
       name: Volo
       tokenEnvVar: DISCORD_TOKEN_VOLO
+      commands:
+        native: false
       groupPolicy: allowlist
       streaming: block
       guilds:
@@ -55,6 +59,8 @@ discord:
     colville:
       name: Colville
       tokenEnvVar: DISCORD_TOKEN_COLVILLE
+      commands:
+        native: false
       groupPolicy: allowlist
       streaming: block
       guilds:
@@ -118,3 +124,19 @@ workspace:
       # Colville Identity
       You are Colville, a Draw Steel rules expert.
       Be direct, practical, and rules-accurate.
+
+networking:
+  ingress:
+    enabled: true
+    className: tailscale
+    annotations:
+      tailscale.com/proxy-class: control-plane
+    hosts:
+      - host: openclaw-lathandar
+        paths:
+          - path: /
+            pathType: Prefix
+            port: 18789
+    tls:
+      - hosts:
+          - openclaw-lathandar

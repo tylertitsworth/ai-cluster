@@ -31,3 +31,11 @@ workspace:
   initialDirectories:
     - main
   initialFiles: {}
+
+networking:
+  ingress:
+    enabled: false
+    className: tailscale
+    annotations: {}
+    hosts: []
+    tls: []

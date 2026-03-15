@@ -28,6 +28,20 @@ discord:
   groupPolicy: allowlist
   streaming: block
   accounts:
+    lathandar:
+      name: Lathandar
+      tokenEnvVar: DISCORD_TOKEN_DEFAULT
+      commands:
+        native: false
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
     nhp:
       name: NHP
       tokenEnvVar: DISCORD_TOKEN_NHP
@@ -71,6 +85,10 @@ discord:
               allow: true
               requireMention: true
   bindings:
+    - agentId: main
+      match:
+        channel: discord
+        accountId: lathandar
     - agentId: nhp
       match:
         channel: discord

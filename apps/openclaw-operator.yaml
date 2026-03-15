@@ -1,0 +1,35 @@
+# OpenClaw Operator - Kubernetes operator for OpenClaw instances
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openclaw-operator
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: oci://ghcr.io/openclaw-rocks/charts
+      chart: openclaw-operator
+      targetRevision: 0.19.1
+      helm:
+        valueFiles:
+          - $values/apps/values/openclaw-operator-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: openclaw-operator
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openclaw-operator-system
+  syncPolicy:
+    automated:
+      enabled: false
+    syncOptions:
+      - CreateNamespace=true
+
+# Phase-1 scope notes:
+# - This installs only the operator and CRDs.
+# - Creating OpenClawInstance/OpenClawSelfConfig resources is intentionally deferred.
+# - Existing apps/openclaw.yaml runtime deployment remains unchanged in this phase.

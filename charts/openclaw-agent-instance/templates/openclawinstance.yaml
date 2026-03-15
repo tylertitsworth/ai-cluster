@@ -30,9 +30,12 @@ spec:
       channels:
         discord:
           enabled: {{ .Values.discord.enabled }}
+{{- $hasDiscordAccounts := gt (len .Values.discord.accounts) 0 }}
+{{- if not $hasDiscordAccounts }}
           token: {{ printf "${%s}" .Values.discord.tokenEnvVar | quote }}
           groupPolicy: {{ .Values.discord.groupPolicy | quote }}
           streaming: {{ .Values.discord.streaming | quote }}
+{{- end }}
           accounts:
 {{- range $id, $cfg := .Values.discord.accounts }}
             {{ $id }}:
@@ -41,6 +44,17 @@ spec:
 {{- if $cfg.commands }}
               commands:
 {{ toYaml $cfg.commands | nindent 16 }}
+{{- end }}
+{{- if $cfg.allowFrom }}
+              allowFrom:
+{{ toYaml $cfg.allowFrom | nindent 16 }}
+{{- end }}
+{{- if $cfg.dmPolicy }}
+              dmPolicy: {{ $cfg.dmPolicy | quote }}
+{{- end }}
+{{- if $cfg.dm }}
+              dm:
+{{ toYaml $cfg.dm | nindent 16 }}
 {{- end }}
               groupPolicy: {{ $cfg.groupPolicy | quote }}
               streaming: {{ $cfg.streaming | quote }}

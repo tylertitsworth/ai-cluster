@@ -33,6 +33,12 @@ discord:
       tokenEnvVar: DISCORD_TOKEN_DEFAULT
       commands:
         native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
       groupPolicy: allowlist
       streaming: block
       guilds:
@@ -47,6 +53,12 @@ discord:
       tokenEnvVar: DISCORD_TOKEN_NHP
       commands:
         native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
       groupPolicy: allowlist
       streaming: block
       guilds:
@@ -61,6 +73,12 @@ discord:
       tokenEnvVar: DISCORD_TOKEN_VOLO
       commands:
         native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
       groupPolicy: allowlist
       streaming: block
       guilds:
@@ -75,6 +93,12 @@ discord:
       tokenEnvVar: DISCORD_TOKEN_COLVILLE
       commands:
         native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
       groupPolicy: allowlist
       streaming: block
       guilds:

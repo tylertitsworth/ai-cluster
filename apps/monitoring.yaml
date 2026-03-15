@@ -16,7 +16,7 @@ spec:
       targetRevision: 66.3.1
       helm:
         valueFiles:
-          - $values/apps/monitoring-values.yaml
+          - $values/apps/values/monitoring-values.yaml
         valuesObject:
           grafana:
             persistence:

@@ -16,7 +16,7 @@ spec:
       targetRevision: 1.49.0
       helm:
         valueFiles:
-          - $values/apps/ollama-values.yaml
+          - $values/apps/values/ollama-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: main
       ref: values

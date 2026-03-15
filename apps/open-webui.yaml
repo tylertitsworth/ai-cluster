@@ -11,7 +11,7 @@ spec:
   sources:
     - repoURL: https://open-webui.github.io/helm-charts
       chart: open-webui
-      targetRevision: 10.2.1
+      targetRevision: 12.10.0
       helm:
         parameters:
           - forceString: true
@@ -19,11 +19,23 @@ spec:
             value: ghcr.io/open-webui/open-webui
           - forceString: true
             name: image.tag
-            value: v0.8.10
+            value: latest
+          - forceString: true
+            name: fullnameOverride
+            value: open-webui
+          - forceString: true
+            name: ollama.fullnameOverride
+            value: open-webui-ollama
+          - forceString: true
+            name: pipelines.fullnameOverride
+            value: open-webui-pipelines
+          - forceString: true
+            name: websocket.url
+            value: redis://open-webui-redis:6379/0
         valueFiles:
-          - $values/manifests/argocd/open-webui-values.yaml
+          - $values/apps/values/open-webui-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: servarr-stack
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

@@ -1,4 +1,4 @@
-# https://github.com/open-webui/helm-charts/tree/open-webui-8.22.0/charts/open-webui
+# https://github.com/open-webui/helm-charts/tree/open-webui-12.10.0/charts/open-webui
 extraEnvVars:
   - name: OLLAMA_DEBUG
     value: "1"
@@ -22,4 +22,4 @@ persistence:
   existingClaim: open-webui
 image:
   repository: ghcr.io/open-webui/open-webui
-  tag: 0.7.2
+  tag: latest

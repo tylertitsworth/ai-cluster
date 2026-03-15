@@ -1,6 +1,6 @@
 # ArgoCD App and Values Files
 
-This folder contains ArgoCD `Application` manifests and values files used by multi-source applications.
+This folder contains ArgoCD `Application` manifests. Chart values used by multi-source applications are stored under `apps/values/`.
 
 ## Prerequisites
 

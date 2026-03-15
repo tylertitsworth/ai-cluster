@@ -16,7 +16,7 @@ spec:
       targetRevision: 2.10.2
       helm:
         valueFiles:
-          - $values/apps/loki-values.yaml
+          - $values/apps/values/loki-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: main
       ref: values

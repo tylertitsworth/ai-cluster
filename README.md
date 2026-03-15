@@ -194,7 +194,7 @@ One of the first orders of business is to replace the existing longhorn configur
 
 > The ArgoCD Dashboard
 
-Each values file associated with each application is stored in the [argocd](./apps/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
+Each values file associated with each application is stored in the [apps values folder](./apps/values/). Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
 
 ```yaml
 # from source: to
@@ -204,7 +204,7 @@ sources:
     targetRevision: main
     helm:
       valueFiles:
-        - $values/apps/<application-name>.yaml
+        - $values/apps/values/<application-name>.yaml
   - repoURL: https://github.com/tylertitsworth/ai-cluster
     targetRevision: main
     ref: values
@@ -249,7 +249,7 @@ Deploying Flyte on anything other than AWS is very difficult, and I tried to lev
 
 For those who are trying to deploy Flyte, and have search far and wide for solutions to their issues, here's the K3s solution:
 
-- Check out my `flyte` values file under `apps/` for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
+- Check out my `flyte` values file under `apps/values/` for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
 - Create a config file at `~/.flyte/config` with the following:
 
 ```yaml

@@ -1,3 +1,5 @@
+{{- $values := .Values -}}
+{{- $hasDiscordAccounts := gt (len $values.discord.accounts) 0 -}}
 apiVersion: openclaw.rocks/v1alpha1
 kind: OpenClawInstance
 metadata:
@@ -5,83 +7,107 @@ metadata:
 spec:
   envFrom:
     - secretRef:
-        name: {{ .Values.secretRefs.providerSecret | quote }}
+        name: {{ include "openclaw-agent-instance.providerSecretName" . | quote }}
     - secretRef:
-        name: {{ .Values.secretRefs.discordSecret | quote }}
+        name: {{ include "openclaw-agent-instance.discordSecretName" . | quote }}
+
   gateway:
-    existingSecret: {{ .Values.secretRefs.gatewayTokenSecret | quote }}
+    existingSecret: {{ include "openclaw-agent-instance.gatewayTokenSecretName" . | quote }}
+
   config:
     mergeMode: overwrite
     raw:
       agents:
         defaults:
           workspace: "/home/openclaw/.openclaw/workspace"
+        {{- if $values.models.defaultModel }}
+          model: {{ $values.models.defaultModel | quote }}
+        {{- end }}
         list:
-          - id: {{ .Values.agents.main.id | quote }}
-            name: {{ .Values.agents.main.name | quote }}
-            workspace: {{ .Values.agents.main.workspace | quote }}
-{{- range .Values.agents.subagents }}
+          - id: {{ $values.agents.main.id | quote }}
+            name: {{ $values.agents.main.name | quote }}
+            workspace: {{ $values.agents.main.workspace | quote }}
+            {{- if $values.agents.main.model }}
+            model: {{ $values.agents.main.model | quote }}
+            {{- end }}
+        {{- range $values.agents.subagents }}
           - id: {{ .id | quote }}
             name: {{ .name | quote }}
             workspace: {{ .workspace | quote }}
-{{- end }}
+            {{- if .model }}
+            model: {{ .model | quote }}
+            {{- end }}
+        {{- end }}
+        {{- if $values.models.providers }}
+      models:
+        providers:
+          {{- toYaml $values.models.providers | nindent 10 }}
+        {{- end }}
+
       bindings:
-{{- toYaml .Values.discord.bindings | nindent 8 }}
+{{ toYaml $values.discord.bindings | nindent 8 }}
+
       channels:
         discord:
-          enabled: {{ .Values.discord.enabled }}
-{{- $hasDiscordAccounts := gt (len .Values.discord.accounts) 0 }}
-{{- if not $hasDiscordAccounts }}
-          token: {{ printf "${%s}" .Values.discord.tokenEnvVar | quote }}
-          groupPolicy: {{ .Values.discord.groupPolicy | quote }}
-          streaming: {{ .Values.discord.streaming | quote }}
-{{- end }}
+          enabled: {{ $values.discord.enabled }}
+          {{- if not $hasDiscordAccounts }}
+          token: {{ printf "${%s}" $values.discord.tokenEnvVar | quote }}
+          groupPolicy: {{ $values.discord.groupPolicy | quote }}
+          streaming: {{ $values.discord.streaming | quote }}
+          {{- end }}
           accounts:
-{{- range $id, $cfg := .Values.discord.accounts }}
+          {{- range $id, $cfg := $values.discord.accounts }}
             {{ $id }}:
               name: {{ $cfg.name | quote }}
               token: {{ printf "${%s}" $cfg.tokenEnvVar | quote }}
-{{- if $cfg.commands }}
+              {{- if $cfg.commands }}
               commands:
-{{ toYaml $cfg.commands | nindent 16 }}
-{{- end }}
-{{- if $cfg.allowFrom }}
+                {{- toYaml $cfg.commands | nindent 16 }}
+              {{- end }}
+              {{- if $cfg.allowFrom }}
               allowFrom:
-{{ toYaml $cfg.allowFrom | nindent 16 }}
-{{- end }}
-{{- if $cfg.dmPolicy }}
+                {{- toYaml $cfg.allowFrom | nindent 16 }}
+              {{- end }}
+              {{- if $cfg.dmPolicy }}
               dmPolicy: {{ $cfg.dmPolicy | quote }}
-{{- end }}
-{{- if $cfg.dm }}
+              {{- end }}
+              {{- if $cfg.dm }}
               dm:
-{{ toYaml $cfg.dm | nindent 16 }}
-{{- end }}
+                {{- toYaml $cfg.dm | nindent 16 }}
+              {{- end }}
               groupPolicy: {{ $cfg.groupPolicy | quote }}
               streaming: {{ $cfg.streaming | quote }}
               guilds:
-{{- toYaml $cfg.guilds | nindent 16 }}
-{{- end }}
-{{- if not .Values.discord.accounts }}
+                {{- toYaml $cfg.guilds | nindent 16 }}
+          {{- end }}
+          {{- if not $values.discord.accounts }}
             {}
-{{- end }}
+          {{- end }}
+
+      {{- if $values.gatewayRaw }}
+      gateway:
+        {{- toYaml $values.gatewayRaw | nindent 8 }}
+      {{- end }}
+
   workspace:
     initialDirectories:
-{{- range .Values.workspace.initialDirectories }}
+    {{- range $values.workspace.initialDirectories }}
       - {{ . | quote }}
-{{- end }}
+    {{- end }}
     initialFiles:
-{{- range $path, $content := .Values.workspace.initialFiles }}
+    {{- range $path, $content := $values.workspace.initialFiles }}
       {{ $path | quote }}: {{ $content | quote }}
-{{- end }}
-{{- if .Values.networking }}
+    {{- end }}
+
+  {{- if $values.networking }}
   networking:
-{{- toYaml .Values.networking | nindent 4 }}
-{{- end }}
-{{- if .Values.networkPolicy }}
-  networkPolicy:
-{{- toYaml .Values.networkPolicy | nindent 4 }}
-{{- end }}
-{{- if .Values.probes }}
+    {{- toYaml $values.networking | nindent 4 }}
+  {{- end }}
+  {{- if $values.security }}
+  security:
+    {{- toYaml $values.security | nindent 4 }}
+  {{- end }}
+  {{- if $values.probes }}
   probes:
-{{- toYaml .Values.probes | nindent 4 }}
-{{- end }}
+    {{- toYaml $values.probes | nindent 4 }}
+  {{- end }}

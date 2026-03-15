@@ -1,16 +1,12 @@
 instance:
   name: openclaw-lathandar
 
-secretRefs:
-  providerSecret: openclaw-lathandar-provider-secrets
-  discordSecret: openclaw-lathandar-discord-secrets
-  gatewayTokenSecret: openclaw-lathandar-gateway-token
-
 agents:
   main:
     id: main
     name: Lathandar
     workspace: /home/openclaw/.openclaw/workspace/lathandar
+    model: aperature/gpt-codex-5.3
   subagents:
     - id: nhp
       name: NHP
@@ -21,6 +17,27 @@ agents:
     - id: colville
       name: Colville
       workspace: /home/openclaw/.openclaw/workspace/colville
+
+models:
+  defaultModel: aperature/gpt-5.4
+  providers:
+    aperature:
+      api: openai-completions
+      baseUrl: https://ai.tail79a5c8.ts.net/
+      models:
+        - id: gpt-5.4
+          name: gpt-5.4
+          api: openai-completions
+        - id: gpt-codex-5.3
+          name: gpt-codex-5.3
+          api: openai-completions
+    ollama:
+      api: openai-completions
+      baseUrl: https://ollama.tail79a5c8.ts.net/
+      models:
+        - id: nemotron-3-nano-30b-full:latest
+          name: nemotron-3-nano-30b-full:latest
+          api: openai-completions
 
 discord:
   enabled: true
@@ -126,6 +143,14 @@ discord:
         channel: discord
         accountId: colville
 
+gatewayRaw:
+  controlUi:
+    allowedOrigins:
+      - http://127.0.0.1:18789
+      - http://localhost:18789
+      - https://openclaw-lathandar
+      - https://openclaw-lathandar.tail79a5c8.ts.net
+
 workspace:
   initialDirectories:
     - lathandar
@@ -183,11 +208,12 @@ networking:
       - hosts:
           - openclaw-lathandar
 
-networkPolicy:
-  enabled: true
-  allowedIngressNamespaces:
-    - openclaw
-    - tailscale
+security:
+  networkPolicy:
+    enabled: true
+    allowedIngressNamespaces:
+      - openclaw
+      - tailscale
 
 probes:
   startup:

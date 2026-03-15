@@ -74,8 +74,20 @@ workspace:
     - volo
     - colville
   initialFiles:
-    BOOT.md: |
-      # BOOT.md — Startup Instructions
+    boot.md: |
+      # boot.md — Startup Instructions
+      
+      On every gateway startup, do the following:
+      
+      1. Use the message tool to message Tyler on Discord (channel 1465586524098658417):
+         - Say you just started up (restarted/booted)
+         - Include the current time in PT
+         - Note the OpenClaw version (`cd /app && node dist/index.js --version`)
+         - Keep it short — one or two lines
+      
+      2. After sending, reply with NO_REPLY.
+    lathandar/boot.md: |
+      # boot.md — Startup Instructions
       
       On every gateway startup, do the following:
       
@@ -135,7 +147,9 @@ probes:
     timeoutSeconds: 3
     failureThreshold: 120
   readiness:
-    enabled: true
+    # /readyz currently tracks downstream channel health (e.g. Discord connectivity)
+    # and can remain false even when gateway HTTP is serving.
+    enabled: false
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 3

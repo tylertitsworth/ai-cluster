@@ -108,4 +108,4 @@ extraObjects:
         - ReadWriteOnce
       resources:
         requests:
-          storage: 60Gi
+          storage: 72Gi

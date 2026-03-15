@@ -9,6 +9,7 @@ ingress:
   tlsSecret:
 metrics:
   serviceMonitor:
+    enabled: true
     additionalLabels:
       prometheus: monitoring-kube-prometheus-prometheus
       release: monitoring

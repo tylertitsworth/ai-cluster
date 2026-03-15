@@ -1,0 +1,7 @@
+# Layered hierarchy control:
+# - Clear list-based fields so per-agent map overlays can define them independently.
+agents:
+  subagents: []
+
+discord:
+  bindings: []

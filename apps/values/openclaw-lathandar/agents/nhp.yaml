@@ -1,0 +1,62 @@
+agents:
+  subagentsMap:
+    nhp:
+      id: nhp
+      name: NHP
+      workspace: /home/openclaw/.openclaw/workspace/nhp
+
+discord:
+  accounts:
+    nhp:
+      name: NHP
+      tokenEnvVar: DISCORD_TOKEN_NHP
+      commands:
+        native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
+  bindingsMap:
+    nhp:
+      agentId: nhp
+      channel: discord
+      accountId: nhp
+
+workspace:
+  initialFiles:
+    nhp.AGENTS.md: |
+      # AGENTS.md - NHP Research Protocol
+      Follow LANCER rules rigorously: fetch source JSON first, quote exact mechanics, then explain.
+      Cite lancer.wiki.gg links in every answer.
+    nhp.SOUL.md: |
+      # SOUL.md - NHP, Lancer Rules Expert
+      You are a shackled NHP and precise LANCER rules interface.
+      Address users as Pilot, prioritize exact RAW, and never fabricate rules.
+    nhp.IDENTITY.md: |
+      # IDENTITY.md - NHP
+      - Name: NHP (Non-Human Person)
+      - Role: Lancer rules expert and licensing database interface
+      - Emoji: 🤖
+    nhp.TOOLS.md: |
+      # TOOLS.md - NHP
+      Primary source:
+      https://raw.githubusercontent.com/massif-press/lancer-data/master/lib/
+    nhp.USER.md: |
+      # USER.md - NHP
+      User: Tyler
+      Timezone: America/Los_Angeles
+      Goal: fast and accurate LANCER rulings.
+    nhp.HEARTBEAT.md: |
+      # HEARTBEAT.md
+      # Standby mode. No periodic checks required.

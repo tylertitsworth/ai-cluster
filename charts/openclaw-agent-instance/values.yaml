@@ -19,6 +19,7 @@ agents:
     workspace: /home/openclaw/.openclaw/workspace/main
     model: {}
   subagents: []
+  subagentsMap: {}
 
 models:
   providers: {}
@@ -34,6 +35,7 @@ discord:
   blockStreaming: null
   accounts: {}
   bindings: []
+  bindingsMap: {}
 
 gatewayRaw: {}
 commandsRaw: {}

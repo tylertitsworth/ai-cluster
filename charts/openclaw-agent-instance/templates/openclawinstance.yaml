@@ -53,6 +53,20 @@ spec:
 {{- end }}
 {{- end }}
         {{- end }}
+        {{- range $id := keys $values.agents.subagentsMap | sortAlpha }}
+        {{- $cfg := index $values.agents.subagentsMap $id }}
+          - id: {{ default $id $cfg.id | quote }}
+            name: {{ $cfg.name | quote }}
+            workspace: {{ $cfg.workspace | quote }}
+{{- if $cfg.model }}
+{{- if kindIs "string" $cfg.model }}
+            model: {{ $cfg.model | quote }}
+{{- else }}
+            model:
+{{ toYaml $cfg.model | nindent 14 }}
+{{- end }}
+{{- end }}
+        {{- end }}
         {{- if $values.models.providers }}
       models:
         providers:
@@ -60,7 +74,19 @@ spec:
         {{- end }}
 
       bindings:
+{{- if $values.discord.bindings }}
 {{ toYaml $values.discord.bindings | nindent 8 }}
+{{- end }}
+{{- range $id := keys $values.discord.bindingsMap | sortAlpha }}
+{{- $binding := index $values.discord.bindingsMap $id }}
+        - agentId: {{ default $id $binding.agentId | quote }}
+          match:
+            channel: {{ default "discord" $binding.channel | quote }}
+            accountId: {{ $binding.accountId | quote }}
+{{- end }}
+{{- if and (not $values.discord.bindings) (eq (len $values.discord.bindingsMap) 0) }}
+        []
+{{- end }}
 
       channels:
         discord:

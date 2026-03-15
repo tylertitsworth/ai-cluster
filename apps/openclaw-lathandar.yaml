@@ -17,6 +17,11 @@ spec:
       helm:
         valueFiles:
           - $values/apps/values/openclaw-lathandar-values.yaml
+          - $values/apps/values/openclaw-lathandar/00-hierarchy-enable.yaml
+          - $values/apps/values/openclaw-lathandar/agents/lathandar.yaml
+          - $values/apps/values/openclaw-lathandar/agents/nhp.yaml
+          - $values/apps/values/openclaw-lathandar/agents/volo.yaml
+          - $values/apps/values/openclaw-lathandar/agents/colville.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: openclaw-operator
       ref: values

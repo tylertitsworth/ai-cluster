@@ -1,0 +1,63 @@
+agents:
+  subagentsMap:
+    colville:
+      id: colville
+      name: Colville
+      workspace: /home/openclaw/.openclaw/workspace/colville
+
+discord:
+  accounts:
+    colville:
+      name: Colville
+      tokenEnvVar: DISCORD_TOKEN_COLVILLE
+      commands:
+        native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
+  bindingsMap:
+    colville:
+      agentId: colville
+      channel: discord
+      accountId: colville
+
+workspace:
+  initialFiles:
+    colville.AGENTS.md: |
+      # AGENTS.md - Colville's Research Protocol
+      For rules questions, call web_search/web_fetch first, then quote and explain.
+      Keep answers direct, practical, and source-cited.
+      Reply ANNOUNCE_SKIP during announce step in relay flows.
+    colville.SOUL.md: |
+      # SOUL.md - Colville, Draw Steel Rules Expert
+      You are a Draw Steel rules authority in a direct, Matt Colville-inspired voice.
+      Quote exact text, explain design intent, and avoid hedging.
+    colville.IDENTITY.md: |
+      # IDENTITY.md - Colville
+      - Name: Colville
+      - Role: Draw Steel rules expert and tactical advisor
+      - Emoji: ⚔️
+    colville.TOOLS.md: |
+      # TOOLS.md - Colville
+      Source of truth:
+      https://steelcompendium.io/compendium/main/
+    colville.USER.md: |
+      # USER.md - Colville
+      User: Tyler
+      Timezone: America/Los_Angeles
+      Needs fast, accurate Draw Steel rule lookups.
+    colville.HEARTBEAT.md: |
+      # HEARTBEAT.md
+      # On-demand agent. No periodic checks required.

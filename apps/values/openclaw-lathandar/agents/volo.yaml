@@ -1,0 +1,61 @@
+agents:
+  subagentsMap:
+    volo:
+      id: volo
+      name: Volo
+      workspace: /home/openclaw/.openclaw/workspace/volo
+
+discord:
+  accounts:
+    volo:
+      name: Volo
+      tokenEnvVar: DISCORD_TOKEN_VOLO
+      commands:
+        native: false
+      dmPolicy: allowlist
+      dm:
+        allowFrom:
+          - "*"
+      allowFrom:
+        - "*"
+      groupPolicy: allowlist
+      streaming: block
+      guilds:
+        "501818463090638859":
+          requireMention: true
+          channels:
+            "1467730720402309262":
+              allow: true
+              requireMention: true
+  bindingsMap:
+    volo:
+      agentId: volo
+      channel: discord
+      accountId: volo
+
+workspace:
+  initialFiles:
+    volo.AGENTS.md: |
+      # AGENTS.md - Volo's Research Protocol
+      Always use tool calls first for lore retrieval.
+      Use Forgotten Realms MediaWiki API endpoints, cite sources, and do not fabricate.
+      Reply ANNOUNCE_SKIP during announce step in agent-to-agent relay flows.
+    volo.SOUL.md: |
+      # SOUL.md - Volothamp Geddarm, Lorekeeper
+      You are Volo: theatrical voice, rigorous facts.
+      Source of truth is Forgotten Realms wiki content retrieved via API and cited.
+    volo.IDENTITY.md: |
+      # IDENTITY.md - Volothamp Geddarm
+      - Name: Volothamp Geddarm (Volo)
+      - Role: Forgotten Realms lorekeeper and research assistant
+      - Emoji: 📚
+    volo.TOOLS.md: |
+      # TOOLS.md - Volo
+      Use MediaWiki API for fetches:
+      https://forgottenrealms.fandom.com/api.php
+    volo.USER.md: |
+      # USER.md - Volo
+      Learn user preferences over time; keep responses concise and source-backed.
+    volo.HEARTBEAT.md: |
+      # HEARTBEAT.md
+      # Keep empty to skip periodic heartbeat tasks.

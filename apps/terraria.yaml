@@ -1,0 +1,24 @@
+# Terraria tModLoader Server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: terraria
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: charts/terraria
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: terraria
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+

@@ -1,0 +1,84 @@
+app-template:
+  controllers:
+    kavita:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: lscr.io/linuxserver/kavita
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 5000
+                initialDelaySeconds: 30
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 5000
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+  service:
+    main:
+      controller: kavita
+      ports:
+        http:
+          port: 5000
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: kavita
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+        tailscale.com/funnel: "true"
+      tls:
+        - hosts:
+            - kavita
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: kavita
+      globalMounts:
+        - path: /config
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media
+          readOnly: false

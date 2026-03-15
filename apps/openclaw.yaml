@@ -1,0 +1,24 @@
+# OpenClaw - MCP Gateway for Discord bots and AI agents
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openclaw
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: charts/openclaw
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openclaw
+  syncPolicy:
+    # Manual sync for initial setup (need to copy config first)
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

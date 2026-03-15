@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kuberay-operator
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://ray-project.github.io/kuberay-helm/
+    chart: kuberay-operator
+    targetRevision: 1.5.1
+    helm:
+      valuesObject:
+        watchNamespace: []
+        singleNamespaceInstall: false
+        rbacEnable: true
+        crNamespacedRbacEnable: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kuberay-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

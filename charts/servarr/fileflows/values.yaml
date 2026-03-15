@@ -1,0 +1,81 @@
+app-template:
+  controllers:
+    fileflows:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: revenz/fileflows
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 5000
+                initialDelaySeconds: 60
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 5000
+                initialDelaySeconds: 60
+                periodSeconds: 10
+
+  service:
+    main:
+      controller: fileflows
+      type: LoadBalancer
+      ports:
+        http:
+          port: 5000
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: fileflows
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - fileflows
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: fileflows-config
+      globalMounts:
+        - path: /app/Data
+
+    temp:
+      enabled: true
+      type: emptyDir
+      globalMounts:
+        - path: /temp
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media
+          readOnly: false

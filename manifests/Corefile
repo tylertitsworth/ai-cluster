@@ -1,27 +1,28 @@
-.:53 {
-    errors
-    health
-    ready
-    kubernetes cluster.local in-addr.arpa ip6.arpa {
-      pods insecure
-      fallthrough in-addr.arpa ip6.arpa
+    .:53 {
+        errors
+        health
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+        }
+        hosts /etc/coredns/NodeHosts {
+          ttl 60
+          reload 15s
+          fallthrough
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf
+        cache 30
+        loop
+        reload
+        loadbalance
+        import /etc/coredns/custom/*.override
     }
-    hosts /etc/coredns/NodeHosts {
-      ttl 60
-      reload 15s
-      fallthrough
+    ts.net:53 {
+        errors
+        cache 30
+        # tailscale/nameserver ClusterIP
+        forward . 10.43.240.44
     }
-    prometheus :9153
-    forward . /etc/resolv.conf
-    cache 30
-    loop
-    reload
-    loadbalance
-    import /etc/coredns/custom/*.override
-}
-ts.net:53 {
-    errors
-    cache 30
-    forward . 10.43.24.7
-}
-import /etc/coredns/custom/*.server
+    import /etc/coredns/custom/*.server

@@ -1,0 +1,111 @@
+# ollama chart values for AMD ROCm + Tailscale ingress
+fullnameOverride: ollama
+
+image:
+  repository: ollama/ollama
+  # Pinned latest versioned ROCm image tag
+  tag: 0.17.7-rocm
+  pullPolicy: Always
+
+ollama:
+  gpu:
+    enabled: true
+    type: amd
+    number: 1
+  models:
+    # Ensure model exists locally, then load it into memory at startup
+    pull:
+      - qwen3.5:35b
+      - glm-4.7-flash
+      - nemotron-3-nano:30b
+    create:
+      - name: qwen3.5-35b-full
+        template: |
+          FROM qwen3.5:35b
+          PARAMETER num_ctx 262144
+      - name: glm-4.7-flash-full
+        template: |
+          FROM glm-4.7-flash
+          PARAMETER num_ctx 202752
+          PARAMETER temperature 0.7
+          PARAMETER top_p 0.95
+          PARAMETER presence_penalty 1.0
+      - name: nemotron-3-nano-30b-full
+        template: |
+          FROM nemotron-3-nano:30b
+          PARAMETER num_ctx 200000
+    run:
+      # - glm-4.7-flash-full
+      # - qwen3.5-35b-full
+      - nemotron-3-nano-30b-full
+    clean: true
+
+extraEnv:
+  # Force Vulkan backend on AMD where supported
+  # - name: OLLAMA_LLM_LIBRARY
+  #   value: vulkan
+  # # Explicitly enable experimental Vulkan runtime path
+  # - name: OLLAMA_VULKAN
+  #   value: "1"
+  # Explicitly enable experimental flash attention
+  - name: OLLAMA_FLASH_ATTENTION
+    value: "1"
+  # Max Content Length for any Model
+  - name: OLLAMA_CONTEXT_LENGTH
+    value: "300000"
+  # Quality-optimized KV cache type
+  - name: OLLAMA_KV_CACHE_TYPE
+    value: q4_0
+  # Allow up to 30 minutes for large model load stalls
+  - name: OLLAMA_LOAD_TIMEOUT
+    value: 30m
+  # Keep loaded models in memory indefinitely (never unload on idle)
+  - name: OLLAMA_KEEP_ALIVE
+    value: "-1"
+  # Keep only one model loaded in memory at a time
+  - name: OLLAMA_MAX_LOADED_MODELS
+    value: "1"
+  # Pull Ollama cloud API key from Kubernetes Secret (value not stored in Git)
+  - name: OLLAMA_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: ollama-api-key
+        key: OLLAMA_API_KEY
+
+service:
+  type: ClusterIP
+  port: 11434
+
+ingress:
+  enabled: true
+  className: tailscale
+  annotations:
+    tailscale.com/proxy-class: "control-plane"
+  hosts:
+    - host: ollama
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - ollama
+
+persistentVolume:
+  enabled: true
+  existingClaim: ollama-data
+
+nodeSelector:
+  kubernetes.io/hostname: framework-desktop
+
+extraObjects:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: ollama-data
+      namespace: ollama
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 60Gi

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-serverconfig
+  namespace: {{ .Release.Namespace }}
+data:
+  serverconfig.txt: |
+{{- .Values.serverConfig | nindent 4 }}
+

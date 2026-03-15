@@ -1,0 +1,26 @@
+# Flaresolverr - Cloudflare bypass proxy for Prowlarr
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flaresolverr
+  namespace: argocd
+  labels:
+    stack: servarr
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: charts/servarr/flaresolverr
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: servarr
+  syncPolicy:
+    # Disabled auto-sync for testing
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

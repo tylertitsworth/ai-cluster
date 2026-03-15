@@ -1,0 +1,28 @@
+# Ollama (ROCm) - LLM server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ollama
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://helm.otwld.com/
+      chart: ollama
+      targetRevision: 1.49.0
+      helm:
+        valueFiles:
+          - $values/apps/ollama-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ollama
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

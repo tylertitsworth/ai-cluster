@@ -1,0 +1,63 @@
+# https://github.com/prometheus-community/helm-charts/tree/kube-prometheus-stack-66.3.1/charts/kube-prometheus-stack
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+grafana:
+  assertNoLeakedSecrets: false
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+    security:
+      allow_embedding: true
+    server:
+      root_url: https://grafana.tail79a5c8.ts.net
+  ingress:
+    enabled: true
+    hosts:
+      - grafana
+    ingressClassName: tailscale
+    labels:
+      tailscale.com/proxy-class: "control-plane"
+    tls:
+      - hosts:
+          - grafana
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+  persistence:
+    enabled: true
+    size: 10Gi
+  service:
+    type: LoadBalancer
+kube-state-metrics:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+prometheus:
+  ingress:
+    enabled: true
+    hosts:
+      - prometheus
+    ingressClassName: tailscale
+    labels:
+      tailscale.com/proxy-class: "control-plane"
+    paths: ["/"]
+    tls:
+      - hosts:
+          - prometheus
+prometheus-node-exporter:
+  extraArgs:
+    - --collector.disable-defaults
+    - --collector.cpu
+    - --collector.meminfo
+    - --collector.diskstats
+    - --collector.filesystem
+    - --collector.netdev
+    - --collector.netstat
+    - --collector.time
+    - --collector.uname
+    - --collector.vmstat
+prometheusOperator:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+

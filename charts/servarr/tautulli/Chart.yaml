@@ -1,0 +1,10 @@
+apiVersion: v2
+name: tautulli
+description: Monitoring and analytics application for Plex Media Server
+type: application
+version: 1.0.0
+appVersion: 2.14.6
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

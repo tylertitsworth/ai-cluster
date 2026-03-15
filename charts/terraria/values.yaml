@@ -1,0 +1,82 @@
+app-template:
+  controllers:
+    terraria:
+      replicas: 1
+      strategy: Recreate
+
+      pod:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+
+      containers:
+        main:
+          image:
+            repository: totalsundae/dev
+            tag: terraria-tmodloader
+            pullPolicy: Always
+
+          env:
+            TZ: America/Los_Angeles
+
+  service:
+    main:
+      controller: terraria
+      type: LoadBalancer
+      annotations:
+        tailscale.com/expose: "true"
+        tailscale.com/hostname: "terraria"
+        tailscale.com/proxy-class: "control-plane"
+      ports:
+        game:
+          port: 7777
+          protocol: TCP
+
+  persistence:
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      storageClass: longhorn
+      globalMounts:
+        - path: /home/tml/.local/share/Terraria/tModLoader
+
+    serverconfig:
+      enabled: true
+      type: configMap
+      name: terraria-serverconfig
+      globalMounts:
+        - path: /home/tml/.local/share/Terraria/tModLoader/serverconfig.txt
+          subPath: serverconfig.txt
+
+# Server configuration file content
+# See: https://github.com/tModLoader/tModLoader/wiki/Command-Line
+serverConfig: |
+  # tModLoader Server Configuration
+  # World settings - autocreate a new world if none exists
+  # world= must be set for autocreate to work in non-interactive mode
+  world=/home/tml/.local/share/Terraria/tModLoader/Worlds/coop-tyler-nathan-kaitlynd.wld
+  autocreate=2
+  worldname=coop-tyler-nathan-kaitlynd
+  difficulty=1
+
+  # Server settings
+  maxplayers=8
+  port=7777
+  password=password
+
+  # Message of the day
+  motd=Welcome to the tModLoader server!
+
+  # Performance
+  priority=1
+  npcstream=1
+
+  # Security
+  secure=1
+  steam=1
+
+  # Language (en-US, de-DE, it-IT, fr-FR, es-ES, ru-RU, zh-Hans, pt-BR, pl-PL)
+  language=en-US

@@ -79,10 +79,10 @@ Setting up any Node in K3s is trivial, and I'm super happy that it's this way:
 
 ```sh
 # Master
-curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --disable servicelb --token <my-token> --node-ip 192.168.1.41 --disable-cloud-controller --disable local-storage
+curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --disable servicelb --token <my-token> --node-ip 192.168.0.41 --disable-cloud-controller --disable local-storage
 # Get kubeconfig from /etc/rancher/k3s/k3s.yaml, replace server field with K3S_URL
 # Worker
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.1.41:6443 K3S_TOKEN=<my-token> sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://192.168.0.41:6443 K3S_TOKEN=<my-token> sh -
 ```
 
 Afterwards, you get something like this:
@@ -90,10 +90,10 @@ Afterwards, you get something like this:
 ```txt
 $ kubectl get node -o wide
 NAME             STATUS   ROLES                  AGE    VERSION        INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
-npu01.local      Ready    control-plane,master   55d    v1.30.6+k3s1   192.168.1.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
-npu02.local      Ready    control-plane          55d    v1.30.6+k3s1   192.168.1.44   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
-orinnx01.local   Ready    worker                 7d4h   v1.30.6+k3s1   192.168.1.15   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
-orinnx02.local   Ready    worker                 7d5h   v1.30.6+k3s1   192.168.1.14   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
+npu01.local      Ready    control-plane,master   55d    v1.30.6+k3s1   192.168.0.41   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
+npu02.local      Ready    control-plane          55d    v1.30.6+k3s1   192.168.0.44   <none>        Ubuntu 22.04.5 LTS   5.10.160-rockchip   containerd://1.7.22-k3s1
+orinnx01.local   Ready    worker                 7d4h   v1.30.6+k3s1   192.168.0.15   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
+orinnx02.local   Ready    worker                 7d5h   v1.30.6+k3s1   192.168.0.14   <none>        Ubuntu 22.04.5 LTS   5.15.148-tegra      containerd://1.7.22-k3s1
 ```
 
 > The RK1's have the label `node-type=npu` and the Jetson `node-type=jetson`. This will be important later.
@@ -102,13 +102,56 @@ I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-age
 
 ### Networking
 
-After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.1.80-192.168.1.90` and then reserved all of those spaces on my router along with the turing nodes.
+After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.0.80-192.168.0.90` and then reserved all of those spaces on my router along with the turing nodes.
 
 Now whenever I have an application that I want to make available on the private network, I can set the service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD.
 
 ### Tailscale
 
 After setting up the cluster I started deploying apps on it, and then I wanted to invite some of my friends. Rather than exposing anything on a public network, I instead went with Tailscale's free plan to allow 2 of my friends to have access to some specific addresses so they can learn Kuberentes. The Tailscale Operator was added to act as an Ingress Controller for the cluster. Additionally, the operator acts as an API proxy, subnet router,and  control plane egress.
+
+#### Peer Relay Operations (Dynamic WAN IP)
+
+Peer relay for the `egress` ProxyGroup is configured with:
+
+- `manifests/tailscale.yaml` for ProxyClass/ProxyGroup and NodePort exposure
+- `manifests/tailscale-relay-updater.yaml` for automatic public IP detection and endpoint refresh
+
+Apply/update:
+
+```sh
+kubectl apply -f manifests/tailscale.yaml
+kubectl apply -f manifests/tailscale-relay-updater.yaml
+```
+
+The updater runs every 5 minutes and only changes relay configuration when WAN IP changes.
+
+Validation checks:
+
+```sh
+kubectl get proxygroup egress -o jsonpath='{range .status.conditions[*]}{.type}={.status}{"\n"}{end}'
+kubectl -n tailscale get cronjob tailscale-relay-updater
+kubectl -n tailscale get jobs --sort-by=.metadata.creationTimestamp | tail -n 5
+kubectl exec -n tailscale egress-0 -c tailscale -- tailscale debug peer-relay-servers
+kubectl exec -n tailscale egress-1 -c tailscale -- tailscale debug peer-relay-servers
+```
+
+Manual recovery (if CronJob fails):
+
+```sh
+./scripts/update-tailscale-relay-ip.sh
+# or force a specific public IP:
+RELAY_IP=<public-ip> ./scripts/update-tailscale-relay-ip.sh
+```
+
+Rollback / disable automation:
+
+```sh
+kubectl -n tailscale delete cronjob tailscale-relay-updater
+kubectl -n tailscale delete rolebinding tailscale-relay-updater
+kubectl -n tailscale delete role tailscale-relay-updater
+kubectl -n tailscale delete serviceaccount tailscale-relay-updater
+```
 
 ### Nvidia Device Plugin
 
@@ -151,23 +194,29 @@ One of the first orders of business is to replace the existing longhorn configur
 
 > The ArgoCD Dashboard
 
-Each values file associated with each application is stored in the [agrocd](./manifests/argocd/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
+Each values file associated with each application is stored in the [argocd](./apps/README.md) folder. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
 
 ```yaml
 # from source: to
 sources:
   - repoURL: ...
     path: ...
-    targetRevision: HEAD
+    targetRevision: main
     helm:
       valueFiles:
-        - $values/manifests/argocd/<application-name>.yaml
+        - $values/apps/<application-name>.yaml
   - repoURL: https://github.com/tylertitsworth/ai-cluster
-    targetRevision: HEAD
+    targetRevision: main
     ref: values
 ```
 
 Then we can enable automatic updates, self healing, and pruning.
+
+Apply all Argo CD `Application` and `ApplicationSet` manifests after pushing to `main`:
+
+```sh
+rg -l '^kind:\s*(Application|ApplicationSet)$' apps/*.yaml | xargs -r -n1 kubectl apply -f
+```
 
 ### Monitoring
 
@@ -200,7 +249,7 @@ Deploying Flyte on anything other than AWS is very difficult, and I tried to lev
 
 For those who are trying to deploy Flyte, and have search far and wide for solutions to their issues, here's the K3s solution:
 
-- Check out my [values.yaml](./manifests/argocd/flyte.yaml) file for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
+- Check out my `flyte` values file under `apps/` for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
 - Create a config file at `~/.flyte/config` with the following:
 
 ```yaml

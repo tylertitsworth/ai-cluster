@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-mcp-server
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/containers/kubernetes-mcp-server.git
+    targetRevision: v0.0.57
+    path: charts/kubernetes-mcp-server
+    helm:
+      valuesObject:
+        ingress:
+          enabled: true
+          className: tailscale
+          host: mcp
+          path: /
+          pathType: Prefix
+          tls:
+            secretName: ""
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: "true"
+        config:
+          port: "8080"
+          cluster_provider: in-cluster
+          disable_multi_cluster: true
+          read_only: true
+        rbac:
+          create: true
+          extraClusterRoleBindings:
+            - name: use-view-role
+              roleRef:
+                name: view
+                external: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubernetes-mcp
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

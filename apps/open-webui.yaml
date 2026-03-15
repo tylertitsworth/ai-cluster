@@ -1,0 +1,27 @@
+# Open WebUI - Web Interface for LLMs
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: open-webui
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://open-webui.github.io/helm-charts
+      chart: open-webui
+      targetRevision: 8.22.0
+      helm:
+        valueFiles:
+          - $values/apps/open-webui-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ollama
+  syncPolicy:
+    # Manual sync only (no automated block)
+    syncOptions:
+      - CreateNamespace=true

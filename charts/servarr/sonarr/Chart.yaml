@@ -1,0 +1,10 @@
+apiVersion: v2
+name: sonarr
+description: TV Show management and automation (PVR)
+type: application
+version: 1.0.0
+appVersion: 4.0.11.2680
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

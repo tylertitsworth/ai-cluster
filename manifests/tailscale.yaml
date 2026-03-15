@@ -26,6 +26,16 @@ spec:
         release: monitoring
 ---
 apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: relay-egress
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+---
+apiVersion: tailscale.com/v1alpha1
 kind: Connector
 metadata:
   name: control-plane
@@ -35,7 +45,7 @@ spec:
     advertiseRoutes:
       - "10.42.0.0/15"
       - "10.43.0.0/16"
-      - "192.168.1.64/27"
+      - "192.168.0.64/27"
 ---
 apiVersion: tailscale.com/v1alpha1
 kind: ProxyGroup
@@ -43,4 +53,40 @@ metadata:
   name: egress
 spec:
   type: egress
-  proxyClass: prod
+  replicas: 2
+  proxyClass: relay-egress
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress
+  namespace: tailscale
+spec:
+  type: NodePort
+  selector:
+    tailscale.com/parent-resource: egress
+    tailscale.com/parent-resource-type: proxygroup
+  ports:
+    - port: 40000
+      targetPort: 40000
+      # NodePort must be in service-node-port-range (default 30000-32767).
+      nodePort: 32000
+      protocol: UDP
+      name: egress-udp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai
+  namespace: tailscale
+  annotations:
+    tailscale.com/tailnet-fqdn: "ai.tail79a5c8.ts.net"
+    tailscale.com/proxy-group: "egress"
+spec:
+  type: ExternalName
+  # Placeholder value required by K8s; the operator rewrites this service.
+  externalName: placeholder
+  ports:
+    - name: https
+      port: 443
+      targetPort: 443

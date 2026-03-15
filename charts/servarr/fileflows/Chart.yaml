@@ -1,0 +1,11 @@
+apiVersion: v2
+name: fileflows
+description: Media file processing and transcoding server
+type: application
+version: 1.0.0
+appVersion: latest
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/
+

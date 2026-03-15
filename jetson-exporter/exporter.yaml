@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: jetson-exporter
+  namespace: grafana
 spec:
   selector:
     matchLabels:
@@ -40,6 +41,7 @@ metadata:
   name: jetson-exporter
   labels:
     app: jetson-exporter
+  namespace: grafana
 spec:
   selector:
     app: jetson-exporter
@@ -50,6 +52,7 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
+  namespace: grafana
   labels:
     release: monitoring
     prometheus: monitoring-kube-prometheus-prometheus

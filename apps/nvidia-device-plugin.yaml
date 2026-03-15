@@ -1,0 +1,26 @@
+# NVIDIA Device Plugin
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nvidia-device-plugin
+  namespace: argocd
+  labels:
+    stack: gpu
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://nvidia.github.io/k8s-device-plugin
+    chart: nvidia-device-plugin
+    targetRevision: 0.17.1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    # Auto-sync disabled - manual sync only
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

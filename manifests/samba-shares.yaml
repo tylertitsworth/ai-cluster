@@ -1,0 +1,33 @@
+# SMB Shares for Servarr Media Stack
+# Requires: samba-operator to be installed
+---
+apiVersion: samba-operator.samba.org/v1alpha1
+kind: SmbShare
+metadata:
+  name: media-library
+  namespace: servarr
+spec:
+  storage:
+    pvc:
+      name: media-library
+  readOnly: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-library-smb
+  namespace: servarr
+  labels:
+    tailscale.com/proxy-class: control-plane
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "media-library-smb"
+spec:
+  type: LoadBalancer
+  selector:
+    samba-operator.samba.org/service: media-library
+  ports:
+    - name: smb
+      port: 445
+      targetPort: 445
+      protocol: TCP

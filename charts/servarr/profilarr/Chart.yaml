@@ -1,0 +1,10 @@
+apiVersion: v2
+name: profilarr
+description: Quality profile management for Radarr/Sonarr
+type: application
+version: 1.0.0
+appVersion: 1.1.3
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

@@ -1,0 +1,114 @@
+app-template:
+  controllers:
+    openclaw:
+      replicas: 0
+      strategy: Recreate
+
+      initContainers:
+        doctor-fix:
+          image:
+            repository: ghcr.io/openclaw/openclaw
+            tag: "2026.2.6"
+            pullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - "node dist/index.js doctor --fix && chown -R 1000:1000 /home/node/.openclaw"
+          env:
+            HOME: /home/node
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/openclaw/openclaw
+            tag: "2026.2.6"
+            pullPolicy: IfNotPresent
+
+          # Run gateway with LAN binding for container networking
+          command: ["node", "dist/index.js"]
+          args: ["gateway", "--bind", "lan"]
+
+          env:
+            TZ: America/Los_Angeles
+            # Config and state directories (matches container defaults)
+            HOME: /home/node
+            # Gateway token (required by OpenClaw). Create: kubectl create secret generic openclaw-gateway-token -n openclaw --from-literal=token=YOUR_TOKEN
+            # Generate a token: openclaw doctor --generate-gateway-token (run in a dev pod or locally)
+            OPENCLAW_GATEWAY_TOKEN:
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-gateway-token
+                  key: token
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 18789
+                initialDelaySeconds: 30
+                periodSeconds: 30
+                timeoutSeconds: 10
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 18789
+                initialDelaySeconds: 15
+                periodSeconds: 10
+                timeoutSeconds: 5
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+  service:
+    main:
+      controller: openclaw
+      ports:
+        http:
+          port: 18789
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: openclaw
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - openclaw
+
+  persistence:
+    # Main config directory containing openclaw.json, agents, memory, sessions
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: openclaw-config
+      globalMounts:
+        - path: /home/node/.openclaw
+
+    # Main agent workspace directory
+    workspace:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: openclaw-workspace
+      globalMounts:
+        - path: /home/node/.openclaw/workspace

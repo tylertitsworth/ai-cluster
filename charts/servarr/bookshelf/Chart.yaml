@@ -1,0 +1,10 @@
+apiVersion: v2
+name: bookshelf
+description: Book and audiobook collection manager (Readarr fork with Hardcover metadata)
+type: application
+version: 1.0.0
+appVersion: 0.4.20
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

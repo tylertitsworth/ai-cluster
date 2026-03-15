@@ -1,0 +1,26 @@
+# Tautulli - Plex Media Server Monitoring
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tautulli
+  namespace: argocd
+  labels:
+    stack: servarr
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: charts/servarr/tautulli
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: servarr
+  syncPolicy:
+    # Disabled auto-sync for testing
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

@@ -1,0 +1,91 @@
+app-template:
+  controllers:
+    radarr:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: lscr.io/linuxserver/radarr
+            tag: latest
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ping
+                  port: 7878
+                initialDelaySeconds: 30
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ping
+                  port: 7878
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+
+  service:
+    main:
+      controller: radarr
+      ports:
+        http:
+          port: 7878
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      hosts:
+        - host: radarr
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      annotations:
+        tailscale.com/proxy-class: "control-plane"
+      tls:
+        - hosts:
+            - radarr
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: radarr-config
+      globalMounts:
+        - path: /config
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /media
+          readOnly: false
+
+    downloads:
+      enabled: true
+      existingClaim: downloads
+      globalMounts:
+        - path: /downloads
+          readOnly: false

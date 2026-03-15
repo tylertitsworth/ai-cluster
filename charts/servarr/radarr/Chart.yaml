@@ -1,0 +1,10 @@
+apiVersion: v2
+name: radarr
+description: Movie management and automation (PVR)
+type: application
+version: 1.0.0
+appVersion: 5.16.3.9541
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

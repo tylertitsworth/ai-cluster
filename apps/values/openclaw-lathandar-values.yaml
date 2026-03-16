@@ -74,8 +74,9 @@ workspace:
     - volo
     - colville
   initialFiles:
-    lathandar/boot.md: |
-      # boot.md — Startup Instructions
+    BOOT.md: |
+      # BOOT.md — Startup Instructions
+      Boot marker: lathandar-v3
       
       On every gateway startup, do the following:
       

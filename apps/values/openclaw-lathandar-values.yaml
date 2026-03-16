@@ -135,7 +135,7 @@ initContainers:
     volumeMounts:
       - name: data
         mountPath: /home/openclaw/.openclaw
-      - name: skills-tmp
+      - name: tmp
         mountPath: /tmp
 
 workspace:

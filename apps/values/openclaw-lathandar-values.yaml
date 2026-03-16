@@ -29,6 +29,7 @@ models:
 discord:
   enabled: true
   configWrites: false
+  tokenEnvVar: ""
   accounts: {}
 
 gatewayRaw:

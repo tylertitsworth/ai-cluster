@@ -56,6 +56,11 @@ sessionRaw:
       idleMinutes: 90
 
 messagesRaw:
+  queue:
+    mode: steer
+  ackReaction: "👀"
+  ackReactionScope: all
+  removeAckAfterReply: true
   statusReactions:
     enabled: true
     emojis:

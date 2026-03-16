@@ -13,6 +13,7 @@ discord:
       actions:
         presence: true
       activity: "⬡ SHACKLE STABLE — AWAITING PILOT INPUT"
+      status: online
       commands:
         native: false
       dmPolicy: allowlist

@@ -13,6 +13,7 @@ discord:
       actions:
         presence: true
       activity: "Running the Game"
+      status: online
       commands:
         native: false
       dmPolicy: allowlist

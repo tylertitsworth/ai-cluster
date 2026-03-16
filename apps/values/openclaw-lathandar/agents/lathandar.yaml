@@ -15,6 +15,7 @@ discord:
       tokenEnvVar: DISCORD_TOKEN_DEFAULT
       actions:
         presence: true
+      status: online
       commands:
         native: false
       dmPolicy: allowlist

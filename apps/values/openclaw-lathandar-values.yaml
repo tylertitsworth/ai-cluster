@@ -55,8 +55,8 @@ toolsRaw:
   web:
     search:
       enabled: true
-      provider: tavily
-      apiKey: ${TAVILY_API_KEY}
+      provider: brave
+      apiKey: ${BRAVE_API_KEY}
   agentToAgent:
     enabled: true
     allow:

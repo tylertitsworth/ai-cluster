@@ -41,10 +41,7 @@ gatewayRaw:
 
 hooksRaw:
   internal:
-    enabled: true
-    entries:
-      boot-md:
-        enabled: true
+    enabled: false
 
 sessionRaw:
   resetByType:
@@ -69,23 +66,6 @@ workspace:
     - nhp
     - volo
     - colville
-  initialFiles:
-    BOOT.md: |
-      # BOOT.md — Startup Instructions
-      
-      On every gateway startup, do the following:
-      
-      1. Send a Discord DM using the `message` tool with:
-         - action: send
-         - channel: discord
-         - target: channel:1465586524098658417
-         - Say you just started up (restarted/booted)
-         - Include the current time in PT
-         - Note the OpenClaw version (`cd /app && node dist/index.js --version`)
-         - Keep it short — one or two lines
-      
-      2. After the tool call succeeds, reply with exactly: NO_REPLY
-      3. Do not skip step 1.
 
 networking:
   ingress:

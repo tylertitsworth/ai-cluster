@@ -106,15 +106,36 @@ initContainers:
         export NPM_CONFIG_IGNORE_SCRIPTS=true
         mkdir -p /home/openclaw/.openclaw/skills
         _install() {
-          local output
-          if output=$(npx -y clawhub --no-input --workdir /home/openclaw/.openclaw --dir skills install "$1" --force 2>&1); then
-            echo "$output"
-          elif echo "$output" | grep -q "Already installed"; then
-            echo "Skill $1 already installed, skipping"
-          else
+          skill="$1"
+          skill_dir="/home/openclaw/.openclaw/skills/$skill"
+          # Fast path for restarts: do not hit ClawHub if files already exist.
+          if [ -d "$skill_dir" ]; then
+            echo "Skill $skill already present at $skill_dir, skipping"
+            return 0
+          fi
+          max_attempts=12
+          attempt=1
+          while [ "$attempt" -le "$max_attempts" ]; do
+            output=$(npx -y clawhub --no-input --workdir /home/openclaw/.openclaw --dir skills install "$skill" --force 2>&1) && {
+              echo "$output"
+              return 0
+            }
+            if echo "$output" | grep -q "Already installed"; then
+              echo "Skill $skill already installed, skipping"
+              return 0
+            fi
+            if echo "$output" | grep -qi "Rate limit exceeded"; then
+              sleep_seconds=$((attempt < 6 ? attempt * 2 : 15))
+              echo "Rate limited installing $skill (attempt $attempt/$max_attempts); retrying in ${sleep_seconds}s"
+              sleep "$sleep_seconds"
+              attempt=$((attempt + 1))
+              continue
+            fi
             echo "$output" >&2
             return 1
-          fi
+          done
+          echo "Failed to install $skill after $max_attempts attempts due to repeated rate limits" >&2
+          return 1
         }
         _install superpowers
         _install context7-api

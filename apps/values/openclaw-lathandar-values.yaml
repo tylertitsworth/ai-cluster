@@ -75,13 +75,17 @@ workspace:
       
       On every gateway startup, do the following:
       
-      1. Use the message tool to DM Tyler on Discord (user ID 221708456984313857):
+      1. Send a Discord DM using the `message` tool with:
+         - action: send
+         - channel: discord
+         - target: channel:1465586524098658417
          - Say you just started up (restarted/booted)
          - Include the current time in PT
          - Note the OpenClaw version (`cd /app && node dist/index.js --version`)
          - Keep it short — one or two lines
       
-      2. After sending, reply with NO_REPLY.
+      2. After the tool call succeeds, reply with exactly: NO_REPLY
+      3. Do not skip step 1.
 
 networking:
   ingress:

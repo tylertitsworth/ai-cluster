@@ -10,6 +10,9 @@ discord:
     volo:
       name: Volo
       tokenEnvVar: DISCORD_TOKEN_VOLO
+      actions:
+        presence: true
+      activity: "Researching at Candlekeep 📚"
       commands:
         native: false
       dmPolicy: allowlist

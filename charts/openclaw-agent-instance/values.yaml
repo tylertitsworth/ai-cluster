@@ -32,6 +32,9 @@ discord:
   tokenEnvVar: DISCORD_TOKEN
   groupPolicy: allowlist
   streaming: block
+  actions: {}
+  activity: ""
+  status: ""
   configWrites: null
   blockStreaming: null
   accounts: {}

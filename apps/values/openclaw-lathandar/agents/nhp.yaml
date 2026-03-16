@@ -10,6 +10,9 @@ discord:
     nhp:
       name: NHP
       tokenEnvVar: DISCORD_TOKEN_NHP
+      actions:
+        presence: true
+      activity: "⬡ SHACKLE STABLE — AWAITING PILOT INPUT"
       commands:
         native: false
       dmPolicy: allowlist

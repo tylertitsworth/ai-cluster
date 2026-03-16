@@ -112,6 +112,16 @@ spec:
           {{- if $values.discord.streaming }}
           streaming: {{ $values.discord.streaming | quote }}
           {{- end }}
+          {{- if $values.discord.actions }}
+          actions:
+            {{- toYaml $values.discord.actions | nindent 12 }}
+          {{- end }}
+          {{- if $values.discord.activity }}
+          activity: {{ $values.discord.activity | quote }}
+          {{- end }}
+          {{- if $values.discord.status }}
+          status: {{ $values.discord.status | quote }}
+          {{- end }}
           accounts:
           {{- range $id, $cfg := $values.discord.accounts }}
             {{ $id }}:
@@ -122,6 +132,16 @@ spec:
               {{- if $cfg.commands }}
               commands:
                 {{- toYaml $cfg.commands | nindent 16 }}
+              {{- end }}
+              {{- if $cfg.actions }}
+              actions:
+                {{- toYaml $cfg.actions | nindent 16 }}
+              {{- end }}
+              {{- if $cfg.activity }}
+              activity: {{ $cfg.activity | quote }}
+              {{- end }}
+              {{- if $cfg.status }}
+              status: {{ $cfg.status | quote }}
               {{- end }}
               {{- if $cfg.allowFrom }}
               allowFrom:

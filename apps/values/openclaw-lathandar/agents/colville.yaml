@@ -10,6 +10,9 @@ discord:
     colville:
       name: Colville
       tokenEnvVar: DISCORD_TOKEN_COLVILLE
+      actions:
+        presence: true
+      activity: "Running the Game"
       commands:
         native: false
       dmPolicy: allowlist

@@ -13,6 +13,8 @@ discord:
     lathandar:
       name: Lathandar
       tokenEnvVar: DISCORD_TOKEN_DEFAULT
+      actions:
+        presence: true
       commands:
         native: false
       dmPolicy: allowlist

@@ -92,8 +92,51 @@ env:
         key: CONTEXT7_API_KEY
         optional: true
 
-skills:
-  - pack:obra/superpowers/skills@v5.0.2
+initContainers:
+  - name: init-skills-force
+    image: ghcr.io/openclaw/openclaw:latest
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        export HOME=/tmp
+        export NPM_CONFIG_CACHE=/tmp/.npm
+        export NPM_CONFIG_PREFIX=/home/openclaw/.openclaw/.local
+        export NPM_CONFIG_IGNORE_SCRIPTS=true
+        mkdir -p /home/openclaw/.openclaw/skills
+        _install() {
+          local output
+          if output=$(npx -y clawhub --no-input --workdir /home/openclaw/.openclaw --dir skills install "$1" --force 2>&1); then
+            echo "$output"
+          elif echo "$output" | grep -q "Already installed"; then
+            echo "Skill $1 already installed, skipping"
+          else
+            echo "$output" >&2
+            return 1
+          fi
+        }
+        _install superpowers
+        _install context7-api
+    envFrom:
+      - secretRef:
+          name: openclaw-lathandar-provider-secrets
+      - secretRef:
+          name: openclaw-lathandar-discord-secrets
+    env:
+      - name: HOME
+        value: /tmp
+      - name: NPM_CONFIG_CACHE
+        value: /tmp/.npm
+      - name: NPM_CONFIG_PREFIX
+        value: /home/openclaw/.openclaw/.local
+      - name: NPM_CONFIG_IGNORE_SCRIPTS
+        value: "true"
+    volumeMounts:
+      - name: data
+        mountPath: /home/openclaw/.openclaw
+      - name: skills-tmp
+        mountPath: /tmp
 
 workspace:
   initialDirectories:

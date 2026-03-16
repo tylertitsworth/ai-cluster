@@ -215,6 +215,10 @@ spec:
   probes:
     {{- toYaml $values.probes | nindent 4 }}
   {{- end }}
+  {{- if $values.initContainers }}
+  initContainers:
+    {{- toYaml $values.initContainers | nindent 4 }}
+  {{- end }}
   {{- if $values.skills }}
   skills:
     {{- toYaml $values.skills | nindent 4 }}

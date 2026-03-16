@@ -52,6 +52,11 @@ sessionRaw:
       idleMinutes: 90
 
 toolsRaw:
+  web:
+    search:
+      enabled: true
+      provider: tavily
+      apiKey: ${TAVILY_API_KEY}
   agentToAgent:
     enabled: true
     allow:
@@ -61,6 +66,17 @@ toolsRaw:
       - colville
   sessions:
     visibility: all
+
+env:
+  - name: CONTEXT7_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openclaw-lathandar-provider-secrets
+        key: CONTEXT7_API_KEY
+        optional: true
+
+skills:
+  - pack:obra/superpowers/skills@v5.0.2
 
 workspace:
   initialDirectories:

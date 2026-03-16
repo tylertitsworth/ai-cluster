@@ -64,6 +64,17 @@ workspace:
       Primary tools are local workspace tools and configured model providers.
       Delegate domain-specific research to specialist subagents when appropriate.
       For agent delegation, use session tools (`sessions_list`, `sessions_send`) to talk to in-instance agents.
+      
+      ## Context7 API Workflow (Tool-like via exec)
+      Use these exact steps when you need fresh library docs:
+      1. Search libraries:
+         `curl -sS -G "https://context7.com/api/v2/libs/search" --data-urlencode "q=<library or framework>"`
+      2. Read docs/context:
+         `curl -sS -G "https://context7.com/api/v2/context" --data-urlencode "libraryId=<id from search>" --data-urlencode "topic=<topic>" --data-urlencode "tokens=4000" -H "Authorization: Bearer ${CONTEXT7_API_KEY}"`
+      
+      Rules:
+      - Do not hardcode API keys.
+      - If `CONTEXT7_API_KEY` is unavailable, report that Context7 is not configured and continue with local/workspace sources.
     lathandar.USER.md: |
       # USER.md - Lathandar
       Keep responses concise by default.

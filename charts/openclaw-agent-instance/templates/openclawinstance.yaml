@@ -137,6 +137,12 @@ spec:
               actions:
                 {{- toYaml $cfg.actions | nindent 16 }}
               {{- end }}
+              {{- if hasKey $cfg "ackReaction" }}
+              ackReaction: {{ $cfg.ackReaction | quote }}
+              {{- end }}
+              {{- if hasKey $cfg "ackReactionScope" }}
+              ackReactionScope: {{ $cfg.ackReactionScope | quote }}
+              {{- end }}
               {{- if $cfg.activity }}
               activity: {{ $cfg.activity | quote }}
               {{- end }}

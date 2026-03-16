@@ -13,6 +13,8 @@ discord:
     lathandar:
       name: Lathandar
       tokenEnvVar: DISCORD_TOKEN_DEFAULT
+      ackReaction: "👀"
+      ackReactionScope: direct
       actions:
         presence: true
       status: online

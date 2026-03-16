@@ -34,6 +34,7 @@ workspace:
   initialFiles:
     nhp.AGENTS.md: |
       # AGENTS.md - NHP Research Protocol
+      Read-only workspace policy: do not create, edit, rename, or delete files.
       Follow LANCER rules rigorously: fetch source JSON first, quote exact mechanics, then explain.
       Cite lancer.wiki.gg links in every answer.
     nhp.SOUL.md: |

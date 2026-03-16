@@ -34,6 +34,7 @@ workspace:
   initialFiles:
     colville.AGENTS.md: |
       # AGENTS.md - Colville's Research Protocol
+      Read-only workspace policy: do not create, edit, rename, or delete files.
       For rules questions, call web_search/web_fetch first, then quote and explain.
       Keep answers direct, practical, and source-cited.
       Reply ANNOUNCE_SKIP during announce step in relay flows.

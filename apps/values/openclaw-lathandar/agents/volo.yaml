@@ -34,6 +34,7 @@ workspace:
   initialFiles:
     volo.AGENTS.md: |
       # AGENTS.md - Volo's Research Protocol
+      Read-only workspace policy: do not create, edit, rename, or delete files.
       Always use tool calls first for lore retrieval.
       Use Forgotten Realms MediaWiki API endpoints, cite sources, and do not fabricate.
       Reply ANNOUNCE_SKIP during announce step in agent-to-agent relay flows.

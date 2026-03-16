@@ -9,6 +9,10 @@ spec:
         name: {{ include "openclaw-agent-instance.providerSecretName" . | quote }}
     - secretRef:
         name: {{ include "openclaw-agent-instance.discordSecretName" . | quote }}
+  {{- if $values.env }}
+  env:
+    {{- toYaml $values.env | nindent 4 }}
+  {{- end }}
 
   gateway:
     existingSecret: {{ include "openclaw-agent-instance.gatewayTokenSecretName" . | quote }}
@@ -165,6 +169,9 @@ spec:
       tools:
         {{- toYaml $values.toolsRaw | nindent 8 }}
       {{- end }}
+      {{- if $values.configRawExtra }}
+      {{- toYaml $values.configRawExtra | nindent 6 }}
+      {{- end }}
 
   workspace:
     initialDirectories:
@@ -187,4 +194,8 @@ spec:
   {{- if $values.probes }}
   probes:
     {{- toYaml $values.probes | nindent 4 }}
+  {{- end }}
+  {{- if $values.skills }}
+  skills:
+    {{- toYaml $values.skills | nindent 4 }}
   {{- end }}

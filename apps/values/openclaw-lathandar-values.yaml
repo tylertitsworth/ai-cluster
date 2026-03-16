@@ -76,7 +76,6 @@ workspace:
   initialFiles:
     BOOT.md: |
       # BOOT.md — Startup Instructions
-      Boot marker: lathandar-v3
       
       On every gateway startup, do the following:
       

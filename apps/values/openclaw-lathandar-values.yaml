@@ -29,11 +29,7 @@ models:
 discord:
   enabled: true
   configWrites: false
-  defaultAccount: lathandar
-  tokenEnvVar: ""
-  groupPolicy: ""
-  streaming: ""
-  accounts:
+  accounts: {}
 
 gatewayRaw:
   controlUi:
@@ -79,7 +75,7 @@ workspace:
       
       On every gateway startup, do the following:
       
-      1. Use the message tool to message Tyler on Discord (channel 1465586524098658417):
+      1. Use the message tool to DM Tyler on Discord (user ID 221708456984313857):
          - Say you just started up (restarted/booted)
          - Include the current time in PT
          - Note the OpenClaw version (`cd /app && node dist/index.js --version`)

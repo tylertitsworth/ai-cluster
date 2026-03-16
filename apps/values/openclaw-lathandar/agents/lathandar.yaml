@@ -24,9 +24,6 @@ discord:
         "501818463090638859":
           requireMention: true
           channels:
-            "1465586524098658417":
-              allow: true
-              requireMention: false
             "1467730720402309262":
               allow: true
               requireMention: true

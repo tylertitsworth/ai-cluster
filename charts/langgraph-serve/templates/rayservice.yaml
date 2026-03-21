@@ -40,9 +40,9 @@ spec:
               persistentVolumeClaim:
                 claimName: {{ include "langgraph-serve.fullname" . }}-data
             {{- range .Values.prompts.workflows }}
-            - name: prompts-{{ .name }}
+            - name: prompts-{{ . }}
               configMap:
-                name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ .name }}
+                name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ . }}
             {{- end }}
           containers:
             - name: ray-head
@@ -61,12 +61,24 @@ spec:
                   value: {{ .Values.openai.apiKey | quote }}
                 - name: CHECKPOINT_DB
                   value: {{ .Values.checkpoint.path | quote }}
+                {{- if .Values.apiKeys.secretName }}
+                - name: TAVILY_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.apiKeys.secretName }}
+                      key: TAVILY_API_KEY
+                - name: CONTEXT7_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.apiKeys.secretName }}
+                      key: CONTEXT7_API_KEY
+                {{- end }}
               volumeMounts:
                 - name: data
                   mountPath: /data
                 {{- range .Values.prompts.workflows }}
-                - name: prompts-{{ .name }}
-                  mountPath: /prompts/{{ .name }}
+                - name: prompts-{{ . }}
+                  mountPath: /prompts/{{ . }}
                 {{- end }}
               resources:
                 {{- toYaml .Values.head.resources | nindent 16 }}
@@ -96,9 +108,9 @@ spec:
                 persistentVolumeClaim:
                   claimName: {{ include "langgraph-serve.fullname" . }}-data
               {{- range .Values.prompts.workflows }}
-              - name: prompts-{{ .name }}
+              - name: prompts-{{ . }}
                 configMap:
-                  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ .name }}
+                  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ . }}
               {{- end }}
             containers:
               - name: ray-worker
@@ -117,12 +129,24 @@ spec:
                     value: {{ .Values.openai.apiKey | quote }}
                   - name: CHECKPOINT_DB
                     value: {{ .Values.checkpoint.path | quote }}
+                  {{- if .Values.apiKeys.secretName }}
+                  - name: TAVILY_API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.apiKeys.secretName }}
+                        key: TAVILY_API_KEY
+                  - name: CONTEXT7_API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.apiKeys.secretName }}
+                        key: CONTEXT7_API_KEY
+                  {{- end }}
                 volumeMounts:
                   - name: data
                     mountPath: /data
                   {{- range .Values.prompts.workflows }}
-                  - name: prompts-{{ .name }}
-                    mountPath: /prompts/{{ .name }}
+                  - name: prompts-{{ . }}
+                    mountPath: /prompts/{{ . }}
                   {{- end }}
                 resources:
                   {{- toYaml .Values.worker.resources | nindent 18 }}

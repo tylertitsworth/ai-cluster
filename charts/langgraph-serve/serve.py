@@ -25,6 +25,7 @@ class InvokeRequest(BaseModel):
     thread_id: str | None = None
     provider: str = "ollama"
     model: str | None = None
+    params: dict = {}
 
 
 class InvokeResponse(BaseModel):
@@ -64,10 +65,11 @@ class LangGraphService:
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
         entry = _resolve(request.workflow)
         thread_id = request.thread_id or str(uuid.uuid4())
-        logger.info(">>> workflow=%s thread=%s provider=%s model=%s query=%s",
-                     request.workflow, thread_id, request.provider, request.model, request.query)
+        logger.info(">>> workflow=%s thread=%s provider=%s model=%s params=%s query=%s",
+                     request.workflow, thread_id, request.provider, request.model, request.params, request.query)
         response = await entry["run"](
             request.provider, request.model, request.query, thread_id, self.checkpointer,
+            **request.params,
         )
         logger.info("<<< workflow=%s thread=%s response=%s", request.workflow, thread_id, response)
         return InvokeResponse(workflow=request.workflow, thread_id=thread_id, response=response)
@@ -76,12 +78,13 @@ class LangGraphService:
     async def stream(self, request: InvokeRequest):
         entry = _resolve(request.workflow)
         thread_id = request.thread_id or str(uuid.uuid4())
-        logger.info(">>> stream workflow=%s thread=%s provider=%s model=%s query=%s",
-                     request.workflow, thread_id, request.provider, request.model, request.query)
+        logger.info(">>> stream workflow=%s thread=%s provider=%s model=%s params=%s query=%s",
+                     request.workflow, thread_id, request.provider, request.model, request.params, request.query)
 
         async def event_generator():
             async for chunk in entry["stream"](
                 request.provider, request.model, request.query, thread_id, self.checkpointer,
+                **request.params,
             ):
                 yield f"data: {json.dumps(chunk)}\n\n"
 

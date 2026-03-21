@@ -23,7 +23,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.theme import Theme
 
-KNOWN_NODES = ("summarizer", "executor", "investigator", "fixer", "guardrails", "k8s_executor")
+KNOWN_NODES = ("summarizer", "executor", "investigator", "fixer", "guardrails", "k8s_executor", "orchestrator", "writers", "editor")
 
 theme = Theme({
     "summarizer": "cyan",
@@ -32,6 +32,9 @@ theme = Theme({
     "fixer": "magenta",
     "guardrails": "yellow",
     "k8s_executor": "red",
+    "orchestrator": "bright_blue",
+    "writers": "bright_magenta",
+    "editor": "bright_green",
     "tools": "dim yellow",
     "error": "bold red",
     "info": "dim",
@@ -81,8 +84,9 @@ def _session_thread_id():
 @click.option("--no-cache", is_flag=True, help="Use a fresh thread ID instead of the session default")
 @click.option("--provider", "-p", default="ollama", type=click.Choice(["ollama", "openai"]), help="LLM provider")
 @click.option("--model", "-m", default=None, help="Model name override (default: provider's default)")
+@click.option("--param", "-P", multiple=True, help="Workflow param as key=value (e.g. -P writers=4)")
 @click.pass_context
-def query(ctx, text, workflow, thread, no_cache, provider, model):
+def query(ctx, text, workflow, thread, no_cache, provider, model, param):
     """Send a query and stream the response."""
     url = ctx.obj["url"]
     if thread:
@@ -91,8 +95,28 @@ def query(ctx, text, workflow, thread, no_cache, provider, model):
         thread_id = str(uuid.uuid4())
     else:
         thread_id = _session_thread_id()
-    console.print(f"[info]thread: {thread_id} | provider: {provider} | model: {model or 'default'}[/info]")
-    payload = {"workflow": workflow, "query": text, "thread_id": thread_id, "provider": provider}
+
+    params = {}
+    for p in param:
+        if "=" not in p:
+            console.print(f"[error]Invalid param '{p}', expected key=value[/error]")
+            sys.exit(1)
+        k, v = p.split("=", 1)
+        try:
+            v = int(v)
+        except ValueError:
+            try:
+                v = float(v)
+            except ValueError:
+                pass
+        params[k] = v
+
+    info_parts = [f"thread: {thread_id}", f"provider: {provider}", f"model: {model or 'default'}"]
+    if params:
+        info_parts.append(f"params: {params}")
+    console.print(f"[info]{' | '.join(info_parts)}[/info]")
+
+    payload = {"workflow": workflow, "query": text, "thread_id": thread_id, "provider": provider, "params": params}
     if model:
         payload["model"] = model
 
@@ -121,7 +145,7 @@ def query(ctx, text, workflow, thread, no_cache, provider, model):
 def _render_event(event: dict, current_node: str | None) -> str | None:
     """Render a streaming event. Returns the current node name for line continuity."""
     node = event.get("node", "unknown")
-    style = node if node in KNOWN_NODES else "info"
+    style = node if node in KNOWN_NODES else ("writers" if node.startswith("writer:") else "info")
 
     if node in ("tools", "investigate_tools", "execute_tools"):
         return current_node

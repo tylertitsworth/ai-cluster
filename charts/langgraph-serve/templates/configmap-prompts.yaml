@@ -3,11 +3,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $workflow.name }}
+  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $workflow }}
   labels:
     {{- include "langgraph-serve.labels" $ | nindent 4 }}
 data:
-  {{- range $path, $_ := $.Files.Glob (printf "workflows/%s/prompts/*.txt" $workflow.path) }}
+  {{- range $path, $_ := $.Files.Glob (printf "workflows/%s/prompts/*.txt" $workflow) }}
   {{ base $path }}: |
 {{ $.Files.Get $path | indent 4 }}
   {{- end }}

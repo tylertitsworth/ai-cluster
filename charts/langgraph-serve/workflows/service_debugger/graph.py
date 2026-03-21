@@ -5,6 +5,10 @@ Ray actors because MCP tool objects hold session references that can't survive
 Ray serialization. Agent LLM calls still dispatch to Ray actors.
 """
 
+import operator
+from typing import Annotated
+
+from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 from utils import ContextMode, make_blocking_node, make_streaming_node, strip_think
@@ -12,11 +16,15 @@ from utils import ContextMode, make_blocking_node, make_streaming_node, strip_th
 MAX_TOOL_CALLS_PER_AGENT = 5
 
 
+class ServiceDebuggerState(MessagesState):
+    iteration_count: Annotated[int, operator.add]
+
+
 # ---------------------------------------------------------------------------
 # Routing functions
 # ---------------------------------------------------------------------------
 
-def investigator_route(state: MessagesState):
+def investigator_route(state: ServiceDebuggerState):
     raw = state["messages"][-1].content if state["messages"] else ""
     content = strip_think(raw)
     if "STATUS: FIXED" in content or "STATUS: UNFIXABLE" in content:
@@ -24,7 +32,7 @@ def investigator_route(state: MessagesState):
     return "fixer"
 
 
-def guardrails_route(state: MessagesState):
+def guardrails_route(state: ServiceDebuggerState):
     raw = state["messages"][-1].content if state["messages"] else ""
     content = strip_think(raw)
     if "VERDICT: UNSAFE" in content:
@@ -51,6 +59,7 @@ def _count_consecutive_tool_rounds(messages) -> int:
 def build_graph(
     investigator_actor, fixer_actor, guardrails_actor, executor_actor,
     ro_tools, rw_tools, checkpointer=None, streaming=False,
+    max_iterations=5,
 ):
     """Wire the four agents into the debugging loop."""
     ro_tool_node = ToolNode(ro_tools, handle_tool_errors=True)
@@ -62,7 +71,7 @@ def build_graph(
     guard = make(guardrails_actor, "guardrails", context_mode=ContextMode.SUMMARY)
     execute = make(executor_actor, "k8s_executor", context_mode=ContextMode.NONE)
 
-    def investigate_should_continue(state: MessagesState):
+    def investigate_should_continue(state: ServiceDebuggerState):
         last = state["messages"][-1]
         if not (hasattr(last, "tool_calls") and last.tool_calls):
             return "investigate_route"
@@ -70,10 +79,19 @@ def build_graph(
             return "investigate_route"
         return "investigate_tools"
 
-    async def investigate_route_node(state: MessagesState):
-        return state
+    async def investigate_route_node(state: ServiceDebuggerState):
+        count = state.get("iteration_count", 0) + 1
+        if count > max_iterations:
+            return {
+                "iteration_count": 1,
+                "messages": [AIMessage(content=(
+                    f"Investigation loop reached the maximum of {max_iterations} "
+                    "iterations without resolving the issue. STATUS: UNFIXABLE"
+                ))],
+            }
+        return {"iteration_count": 1}
 
-    def execute_should_continue(state: MessagesState):
+    def execute_should_continue(state: ServiceDebuggerState):
         last = state["messages"][-1]
         if not (hasattr(last, "tool_calls") and last.tool_calls):
             return "investigator"
@@ -81,7 +99,7 @@ def build_graph(
             return "investigator"
         return "execute_tools"
 
-    graph = StateGraph(MessagesState)
+    graph = StateGraph(ServiceDebuggerState)
 
     graph.add_node("investigator", investigate)
     graph.add_node("investigate_tools", ro_tool_node)

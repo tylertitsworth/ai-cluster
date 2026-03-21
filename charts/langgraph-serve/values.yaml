@@ -61,7 +61,9 @@ serve:
 
 prompts:
   workflows:
-    - name: example
-      path: example
-    - name: service-debugger
-      path: service_debugger
+    - example
+    - service_debugger
+    - report_writer
+
+apiKeys:
+  secretName: langgraph-api-keys

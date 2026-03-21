@@ -19,6 +19,7 @@ from enum import Enum
 import ray
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.config import get_stream_writer
+from langgraph.errors import GraphRecursionError
 
 # ---------------------------------------------------------------------------
 # Prompt loading from ConfigMap volumes
@@ -289,6 +290,14 @@ def make_actor(class_name, has_tools=False):
 # Workflow lifecycle helpers
 # ---------------------------------------------------------------------------
 
+_RECURSION_MSG = (
+    "The workflow reached its maximum number of steps without completing. "
+    "This usually means the issue requires more investigation cycles than "
+    "allowed. Please try again with a more specific query, or check the "
+    "service manually."
+)
+
+
 async def run_workflow(build_fn, query, thread_id, checkpointer, **config_extra):
     """Standard workflow lifecycle: build graph, invoke, cleanup actors.
 
@@ -306,6 +315,11 @@ async def run_workflow(build_fn, query, thread_id, checkpointer, **config_extra)
             {"messages": [HumanMessage(content=query)]}, config,
         )
         return result["messages"][-1].content
+    except GraphRecursionError:
+        logging.getLogger(__name__).warning(
+            "GraphRecursionError for thread %s — returning graceful message", thread_id,
+        )
+        return _RECURSION_MSG
     finally:
         for actor in actors:
             ray.kill(actor)
@@ -330,6 +344,11 @@ async def stream_workflow(build_fn, query, thread_id, checkpointer, **config_ext
             stream_mode="custom",
         ):
             yield event
+    except GraphRecursionError:
+        logging.getLogger(__name__).warning(
+            "GraphRecursionError for thread %s — yielding graceful message", thread_id,
+        )
+        yield {"node": "system", "error": _RECURSION_MSG}
     finally:
         for actor in actors:
             ray.kill(actor)

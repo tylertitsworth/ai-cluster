@@ -66,14 +66,14 @@ def _build(provider, model, checkpointer=None, streaming=False):
     return compiled, [summarizer, executor, tool_actor]
 
 
-async def run(provider: str, model: str, query: str, thread_id: str, checkpointer) -> str:
+async def run(provider: str, model: str, query: str, thread_id: str, checkpointer, **kwargs) -> str:
     return await run_workflow(
         lambda **kw: _build(provider, model, **kw),
         query, thread_id, checkpointer,
     )
 
 
-async def stream(provider: str, model: str, query: str, thread_id: str, checkpointer):
+async def stream(provider: str, model: str, query: str, thread_id: str, checkpointer, **kwargs):
     async for event in stream_workflow(
         lambda **kw: _build(provider, model, **kw),
         query, thread_id, checkpointer,

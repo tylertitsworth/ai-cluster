@@ -50,24 +50,25 @@ def _build(provider, model, ro_tools, rw_tools, checkpointer=None, streaming=Fal
     compiled = build_graph(
         investigator, fixer, guardrails, executor,
         ro_tools, rw_tools, checkpointer, streaming,
+        max_iterations=MAX_ITERATIONS,
     )
     return compiled, [investigator, fixer, guardrails, executor]
 
 
-async def run(provider: str, model: str, query: str, thread_id: str, checkpointer) -> str:
+async def run(provider: str, model: str, query: str, thread_id: str, checkpointer, **kwargs) -> str:
     ro_tools, rw_tools = await _get_tools()
     return await run_workflow(
         lambda **kw: _build(provider, model, ro_tools, rw_tools, **kw),
         query, thread_id, checkpointer,
-        recursion_limit=MAX_ITERATIONS * 10,
+        recursion_limit=MAX_ITERATIONS * 30,
     )
 
 
-async def stream(provider: str, model: str, query: str, thread_id: str, checkpointer):
+async def stream(provider: str, model: str, query: str, thread_id: str, checkpointer, **kwargs):
     ro_tools, rw_tools = await _get_tools()
     async for event in stream_workflow(
         lambda **kw: _build(provider, model, ro_tools, rw_tools, **kw),
         query, thread_id, checkpointer,
-        recursion_limit=MAX_ITERATIONS * 10,
+        recursion_limit=MAX_ITERATIONS * 30,
     ):
         yield event

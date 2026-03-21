@@ -1,4 +1,4 @@
-# LangGraph Agent — RayService with FastAPI + LangGraph ReAct agent
+# LangGraph Agent — RayService with FastAPI + LangGraph multi-agent workflows
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: graphserve
-    path: manifests/langgraph-serve
+    path: charts/langgraph-serve
   destination:
     server: https://kubernetes.default.svc
     namespace: langgraph-serve

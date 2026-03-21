@@ -23,10 +23,16 @@ from rich.console import Console
 from rich.markup import escape
 from rich.theme import Theme
 
+KNOWN_NODES = ("summarizer", "executor", "investigator", "fixer", "guardrails", "k8s_executor")
+
 theme = Theme({
     "summarizer": "cyan",
     "executor": "green",
-    "tools": "yellow",
+    "investigator": "blue",
+    "fixer": "magenta",
+    "guardrails": "yellow",
+    "k8s_executor": "red",
+    "tools": "dim yellow",
     "error": "bold red",
     "info": "dim",
 })
@@ -73,8 +79,10 @@ def _session_thread_id():
 @click.option("--workflow", "-w", default="example", help="Workflow name")
 @click.option("--thread", "-t", default=None, help="Thread ID for conversation memory")
 @click.option("--no-cache", is_flag=True, help="Use a fresh thread ID instead of the session default")
+@click.option("--provider", "-p", default="ollama", type=click.Choice(["ollama", "openai"]), help="LLM provider")
+@click.option("--model", "-m", default=None, help="Model name override (default: provider's default)")
 @click.pass_context
-def query(ctx, text, workflow, thread, no_cache):
+def query(ctx, text, workflow, thread, no_cache, provider, model):
     """Send a query and stream the response."""
     url = ctx.obj["url"]
     if thread:
@@ -83,10 +91,13 @@ def query(ctx, text, workflow, thread, no_cache):
         thread_id = str(uuid.uuid4())
     else:
         thread_id = _session_thread_id()
-    console.print(f"[info]thread: {thread_id}[/info]")
-    payload = {"workflow": workflow, "query": text, "thread_id": thread_id}
+    console.print(f"[info]thread: {thread_id} | provider: {provider} | model: {model or 'default'}[/info]")
+    payload = {"workflow": workflow, "query": text, "thread_id": thread_id, "provider": provider}
+    if model:
+        payload["model"] = model
 
     try:
+        current_node = None
         with httpx.stream(
             "POST",
             f"{url}/stream",
@@ -95,40 +106,54 @@ def query(ctx, text, workflow, thread, no_cache):
             timeout=httpx.Timeout(connect=10, read=300, write=10, pool=10),
         ) as resp:
             resp.raise_for_status()
-            seen = set()
             for line in resp.iter_lines():
                 if not line.startswith("data: "):
                     continue
-                chunk = json.loads(line[6:])
-                _render(chunk, seen)
+                event = json.loads(line[6:])
+                current_node = _render_event(event, current_node)
+            if current_node is not None:
+                console.print()
     except httpx.HTTPError as e:
-        console.print(f"[error]Request failed: {e}[/error]")
+        console.print(f"\n[error]Request failed: {e}[/error]")
         sys.exit(1)
 
 
-def _render(chunk: dict, seen: set):
-    node = chunk.get("node", "unknown")
-    style = node if node in ("summarizer", "executor", "tools") else "info"
+def _render_event(event: dict, current_node: str | None) -> str | None:
+    """Render a streaming event. Returns the current node name for line continuity."""
+    node = event.get("node", "unknown")
+    style = node if node in KNOWN_NODES else "info"
 
-    if node == "tools":
-        return
+    if node in ("tools", "investigate_tools", "execute_tools"):
+        return current_node
 
-    if "tool_calls" in chunk:
-        for tc in chunk["tool_calls"]:
-            key = f"tool:{tc['name']}:{tc['args']}"
-            if key in seen:
-                continue
-            seen.add(key)
-            console.print(
-                f"[{style}]\\[{node}][/{style}] "
-                f"calling [bold]{tc['name']}[/bold]({escape(str(tc['args']))})"
-            )
-    elif "content" in chunk:
-        content = chunk["content"]
-        if content in seen:
-            return
-        seen.add(content)
-        console.print(f"[{style}]\\[{node}][/{style}] {escape(content)}")
+    if "token" in event:
+        if node != current_node:
+            if current_node is not None:
+                console.print()
+            console.print(f"[{style}]\\[{node}][/{style}] ", end="")
+            current_node = node
+        console.print(escape(event["token"]), end="")
+        return current_node
+
+    if "tool_call" in event:
+        if current_node is not None:
+            console.print()
+            current_node = None
+        tc = event["tool_call"]
+        console.print(
+            f"[{style}]\\[{node}][/{style}] "
+            f"calling [bold]{tc['name']}[/bold]({escape(str(tc['args']))})"
+        )
+        return None
+
+    if "content" in event:
+        if current_node is not None:
+            console.print()
+            current_node = None
+        console.print(f"[{style}]\\[{node}][/{style}] {escape(event['content'])}")
+        return None
+
+    return current_node
 
 
 if __name__ == "__main__":

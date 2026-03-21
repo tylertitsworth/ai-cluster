@@ -44,7 +44,8 @@ The routing functions parse the last AI message content for these markers.
    `apps/kubernetes-mcp-server-rw.yaml`. Uses the `edit` ClusterRole.
    Internal only (no ingress).
 
-3. **Ollama** with a model that supports tool calling (e.g. nemotron).
+3. An **LLM provider** with a model that supports tool calling
+   (e.g. Ollama with nemotron, or OpenAI with gpt-4.1).
 
 ## Usage
 

@@ -1,0 +1,6 @@
+*.py
+Dockerfile
+requirements.txt
+cli.py
+__pycache__/
+*.pyc

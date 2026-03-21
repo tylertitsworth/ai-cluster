@@ -7,6 +7,7 @@ Ray serialization. Agent LLM calls still dispatch to Ray actors.
 
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
+from utils import make_blocking_node, make_streaming_node, strip_think
 
 MAX_TOOL_CALLS_PER_AGENT = 5
 
@@ -16,21 +17,22 @@ MAX_TOOL_CALLS_PER_AGENT = 5
 # ---------------------------------------------------------------------------
 
 def investigator_route(state: MessagesState):
-    content = state["messages"][-1].content if state["messages"] else ""
+    raw = state["messages"][-1].content if state["messages"] else ""
+    content = strip_think(raw)
     if "STATUS: FIXED" in content or "STATUS: UNFIXABLE" in content:
         return END
     return "fixer"
 
 
 def guardrails_route(state: MessagesState):
-    content = state["messages"][-1].content if state["messages"] else ""
+    raw = state["messages"][-1].content if state["messages"] else ""
+    content = strip_think(raw)
     if "VERDICT: UNSAFE" in content:
         return "investigator"
     return "k8s_executor"
 
 
 def _count_consecutive_tool_rounds(messages) -> int:
-    """Count how many consecutive tool-call/tool-result round-trips are at the end."""
     count = 0
     for msg in reversed(messages):
         if hasattr(msg, "tool_calls") and msg.tool_calls:
@@ -48,15 +50,17 @@ def _count_consecutive_tool_rounds(messages) -> int:
 
 def build_graph(
     investigator_actor, fixer_actor, guardrails_actor, executor_actor,
-    ro_tools, rw_tools, checkpointer=None,
+    ro_tools, rw_tools, checkpointer=None, streaming=False,
 ):
     """Wire the four agents into the debugging loop."""
     ro_tool_node = ToolNode(ro_tools, handle_tool_errors=True)
     rw_tool_node = ToolNode(rw_tools, handle_tool_errors=True)
 
-    async def investigate(state: MessagesState):
-        response = await investigator_actor.call.remote(state["messages"])
-        return {"messages": [response]}
+    make = make_streaming_node if streaming else make_blocking_node
+    investigate = make(investigator_actor, "investigator")
+    fix = make(fixer_actor, "fixer")
+    guard = make(guardrails_actor, "guardrails")
+    execute = make(executor_actor, "k8s_executor")
 
     def investigate_should_continue(state: MessagesState):
         last = state["messages"][-1]
@@ -68,18 +72,6 @@ def build_graph(
 
     async def investigate_route_node(state: MessagesState):
         return state
-
-    async def fix(state: MessagesState):
-        response = await fixer_actor.call.remote(state["messages"])
-        return {"messages": [response]}
-
-    async def guard(state: MessagesState):
-        response = await guardrails_actor.call.remote(state["messages"])
-        return {"messages": [response]}
-
-    async def execute(state: MessagesState):
-        response = await executor_actor.call.remote(state["messages"])
-        return {"messages": [response]}
 
     def execute_should_continue(state: MessagesState):
         last = state["messages"][-1]

@@ -1,0 +1,15 @@
+{{- range .Values.prompts.workflows }}
+{{- $workflow := . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $workflow.name }}
+  labels:
+    {{- include "langgraph-serve.labels" $ | nindent 4 }}
+data:
+  {{- range $path, $_ := $.Files.Glob (printf "workflows/%s/*.txt" $workflow.path) }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+  {{- end }}
+---
+{{- end }}

@@ -1,5 +1,6 @@
 langgraph
 langchain-ollama
+langchain-openai
 langchain-core
 langgraph-checkpoint-sqlite
 aiosqlite

@@ -15,6 +15,7 @@ spec:
         deployments:
           - name: LangGraphService
             num_replicas: {{ .Values.serve.numReplicas }}
+            max_concurrent_queries: {{ .Values.serve.maxConcurrentQueries | default 100 }}
             ray_actor_options:
               num_cpus: 0
   rayClusterConfig:
@@ -50,6 +51,8 @@ spec:
               image: {{ include "langgraph-serve.image" . }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
               env:
+                - name: ACTOR_CPU
+                  value: {{ .Values.actorCpu | quote }}
                 - name: OLLAMA_BASE_URL
                   value: {{ .Values.ollama.baseUrl | quote }}
                 - name: OLLAMA_MODEL
@@ -120,6 +123,8 @@ spec:
                 image: {{ include "langgraph-serve.image" . }}
                 imagePullPolicy: {{ .Values.image.pullPolicy }}
                 env:
+                  - name: ACTOR_CPU
+                    value: {{ .Values.actorCpu | quote }}
                   - name: OLLAMA_BASE_URL
                     value: {{ .Values.ollama.baseUrl | quote }}
                   - name: OLLAMA_MODEL

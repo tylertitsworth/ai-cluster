@@ -18,7 +18,7 @@ from utils import ContextMode, make_actor, make_blocking_node, make_streaming_no
 
 logger = logging.getLogger(__name__)
 
-WriterActor = make_actor("WriterActor", has_tools=True)
+WriterActor = make_actor("WriterActor", has_tools=True, num_cpus=0)
 
 
 def _parse_sections(content: str) -> list[dict]:

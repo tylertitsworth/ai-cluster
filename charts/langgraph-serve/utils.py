@@ -266,7 +266,7 @@ def make_blocking_node(actor, node_name=None, context_mode=ContextMode.FULL):
 # Dynamic actor factory
 # ---------------------------------------------------------------------------
 
-ACTOR_CPU = 0
+ACTOR_CPU = float(os.environ.get("ACTOR_CPU", "0.1"))
 
 
 def make_actor(class_name, has_tools=False, num_cpus=ACTOR_CPU):
@@ -276,9 +276,10 @@ def make_actor(class_name, has_tools=False, num_cpus=ACTOR_CPU):
         class_name: Name shown in Ray dashboard
         has_tools: If True, constructor accepts (provider, model, system_prompt, tools).
                    If False, constructor accepts (provider, model, system_prompt).
-        num_cpus: CPU reservation per actor. Default ACTOR_CPU (0.25) triggers
-                  autoscaling. Use 0 for ephemeral IO-bound actors (e.g. writers)
-                  that shouldn't block on cluster capacity.
+        num_cpus: CPU reservation per actor. Default ACTOR_CPU (0.1, env-configurable)
+                  provides scheduling signals and backpressure for the autoscaler.
+                  Use 0 for ephemeral IO-bound actors (e.g. writers) that shouldn't
+                  block on cluster capacity.
 
     Returns:
         A @ray.remote class with call() and stream_call() methods.

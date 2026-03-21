@@ -19,7 +19,7 @@ checkpoint:
   path: /data/checkpoints.db
 
 head:
-  cpus: "0"
+  cpus: "2"
   resources:
     limits:
       cpu: "2"
@@ -55,9 +55,12 @@ ingress:
   labels:
     tailscale.com/proxy-class: control-plane
 
+actorCpu: "0.1"
+
 serve:
   routePrefix: /serve
   numReplicas: 1
+  maxConcurrentQueries: 10
 
 prompts:
   workflows:

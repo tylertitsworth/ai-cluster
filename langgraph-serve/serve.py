@@ -5,6 +5,7 @@ import uuid
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
+import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from pydantic import BaseModel
 from ray import serve
@@ -52,7 +53,8 @@ class LangGraphService:
         logging.basicConfig(level=logging.INFO)
         self.base_url = OLLAMA_BASE_URL
         self.model = OLLAMA_MODEL
-        self.checkpointer = AsyncSqliteSaver.from_conn_string(CHECKPOINT_DB)
+        conn = aiosqlite.connect(CHECKPOINT_DB)
+        self.checkpointer = AsyncSqliteSaver(conn)
 
     @fastapi_app.get("/health")
     def health(self):

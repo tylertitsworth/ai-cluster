@@ -1,0 +1,41 @@
+# Read-write K8s MCP server for the service-debugger workflow (internal only)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-mcp-server-rw
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/containers/kubernetes-mcp-server.git
+    targetRevision: v0.0.57
+    path: charts/kubernetes-mcp-server
+    helm:
+      valuesObject:
+        fullnameOverride: kubernetes-mcp-server-rw
+        ingress:
+          enabled: false
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: "true"
+        config:
+          port: "8080"
+          cluster_provider: in-cluster
+          disable_multi_cluster: true
+          read_only: false
+        rbac:
+          create: true
+          extraClusterRoleBindings:
+            - name: use-edit-role
+              roleRef:
+                name: edit
+                external: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubernetes-mcp
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

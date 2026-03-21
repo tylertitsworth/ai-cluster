@@ -12,7 +12,7 @@ build_executor_subgraph independently.
 
 import ray
 from actors import ExecutorActor, SummarizerActor, ToolActor
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.graph import END, START, MessagesState, StateGraph
 from tools import TOOLS
 
@@ -123,7 +123,9 @@ async def stream(base_url: str, model: str, query: str, thread_id: str, checkpoi
             for node_name, update in chunk.items():
                 messages = update.get("messages", [])
                 for msg in messages:
-                    if hasattr(msg, "tool_calls") and msg.tool_calls:
+                    if not isinstance(msg, AIMessage):
+                        continue
+                    if msg.tool_calls:
                         yield {
                             "node": node_name,
                             "tool_calls": [
@@ -131,7 +133,7 @@ async def stream(base_url: str, model: str, query: str, thread_id: str, checkpoi
                                 for tc in msg.tool_calls
                             ],
                         }
-                    elif hasattr(msg, "content") and msg.content:
+                    elif msg.content:
                         yield {"node": node_name, "content": msg.content}
     finally:
         for actor in actors:

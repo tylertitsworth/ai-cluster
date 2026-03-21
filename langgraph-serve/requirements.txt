@@ -3,3 +3,4 @@ langchain-ollama
 langchain-core
 langgraph-checkpoint-sqlite
 aiosqlite
+langchain-mcp-adapters

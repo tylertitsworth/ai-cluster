@@ -11,9 +11,11 @@ Usage:
   uv run cli.py workflows --url https://langgraph/serve
 """
 
+import hashlib
 import json
 import os
 import sys
+import uuid
 
 import click
 import httpx
@@ -30,7 +32,7 @@ theme = Theme({
 })
 console = Console(theme=theme)
 
-DEFAULT_URL = os.environ.get("LANGGRAPH_URL", "https://langgraph/serve")
+DEFAULT_URL = os.environ.get("LANGGRAPH_URL", "https://langgraph.tail79a5c8.ts.net/serve")
 
 
 @click.group()
@@ -58,17 +60,31 @@ def workflows(ctx):
         sys.exit(1)
 
 
+def _session_thread_id():
+    """Stable thread ID derived from the current TTY session."""
+    tty = os.environ.get("TTY") or os.ttyname(sys.stdin.fileno()) if sys.stdin.isatty() else None
+    pid = os.getppid()
+    seed = f"{tty}-{pid}" if tty else str(pid)
+    return hashlib.sha256(seed.encode()).hexdigest()[:16]
+
+
 @cli.command()
 @click.argument("text")
 @click.option("--workflow", "-w", default="example", help="Workflow name")
 @click.option("--thread", "-t", default=None, help="Thread ID for conversation memory")
+@click.option("--no-cache", is_flag=True, help="Use a fresh thread ID instead of the session default")
 @click.pass_context
-def query(ctx, text, workflow, thread):
+def query(ctx, text, workflow, thread, no_cache):
     """Send a query and stream the response."""
     url = ctx.obj["url"]
-    payload = {"workflow": workflow, "query": text}
     if thread:
-        payload["thread_id"] = thread
+        thread_id = thread
+    elif no_cache:
+        thread_id = str(uuid.uuid4())
+    else:
+        thread_id = _session_thread_id()
+    console.print(f"[info]thread: {thread_id}[/info]")
+    payload = {"workflow": workflow, "query": text, "thread_id": thread_id}
 
     try:
         with httpx.stream(
@@ -79,28 +95,40 @@ def query(ctx, text, workflow, thread):
             timeout=httpx.Timeout(connect=10, read=300, write=10, pool=10),
         ) as resp:
             resp.raise_for_status()
+            seen = set()
             for line in resp.iter_lines():
                 if not line.startswith("data: "):
                     continue
                 chunk = json.loads(line[6:])
-                _render(chunk)
+                _render(chunk, seen)
     except httpx.HTTPError as e:
         console.print(f"[error]Request failed: {e}[/error]")
         sys.exit(1)
 
 
-def _render(chunk: dict):
+def _render(chunk: dict, seen: set):
     node = chunk.get("node", "unknown")
     style = node if node in ("summarizer", "executor", "tools") else "info"
 
+    if node == "tools":
+        return
+
     if "tool_calls" in chunk:
         for tc in chunk["tool_calls"]:
+            key = f"tool:{tc['name']}:{tc['args']}"
+            if key in seen:
+                continue
+            seen.add(key)
             console.print(
-                f"[{style}][{node}][/{style}] "
+                f"[{style}]\\[{node}][/{style}] "
                 f"calling [bold]{tc['name']}[/bold]({escape(str(tc['args']))})"
             )
     elif "content" in chunk:
-        console.print(f"[{style}][{node}][/{style}] {escape(chunk['content'])}")
+        content = chunk["content"]
+        if content in seen:
+            return
+        seen.add(content)
+        console.print(f"[{style}]\\[{node}][/{style}] {escape(content)}")
 
 
 if __name__ == "__main__":

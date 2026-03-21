@@ -1,0 +1,22 @@
+# LangGraph Agent — RayService with FastAPI + LangGraph ReAct agent
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: langgraph-serve
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: manifests/langgraph-serve
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: langgraph-serve
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,3 @@
+langgraph
+langchain-ollama
+langchain-core

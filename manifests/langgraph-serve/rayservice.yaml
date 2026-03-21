@@ -1,0 +1,53 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: langgraph-serve
+  namespace: langgraph-serve
+spec:
+  serviceUnhealthySecondThreshold: 300
+  deploymentUnhealthySecondThreshold: 300
+  serveConfigV2: |
+    applications:
+      - name: langgraph-agent
+        route_prefix: /
+        import_path: serve:app
+        deployments:
+          - name: LangGraphService
+            num_replicas: 1
+            ray_actor_options:
+              num_cpus: 1
+  rayClusterConfig:
+    rayVersion: "2.54.0"
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+        num-cpus: "2"
+      template:
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: framework-desktop
+          containers:
+            - name: ray-head
+              image: totalsundae/dev:langserve
+              imagePullPolicy: Always
+              env:
+                - name: OLLAMA_BASE_URL
+                  value: "http://ollama.ollama.svc.cluster.local:11434"
+                - name: OLLAMA_MODEL
+                  value: "nemotron-3-nano-30b-full"
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 2Gi
+                requests:
+                  cpu: "1"
+                  memory: 1Gi
+              ports:
+                - containerPort: 6379
+                  name: gcs
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 10001
+                  name: client
+                - containerPort: 8000
+                  name: serve

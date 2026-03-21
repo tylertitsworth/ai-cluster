@@ -7,7 +7,7 @@ Ray serialization. Agent LLM calls still dispatch to Ray actors.
 
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from utils import make_blocking_node, make_streaming_node, strip_think
+from utils import ContextMode, make_blocking_node, make_streaming_node, strip_think
 
 MAX_TOOL_CALLS_PER_AGENT = 5
 
@@ -57,10 +57,10 @@ def build_graph(
     rw_tool_node = ToolNode(rw_tools, handle_tool_errors=True)
 
     make = make_streaming_node if streaming else make_blocking_node
-    investigate = make(investigator_actor, "investigator")
-    fix = make(fixer_actor, "fixer")
-    guard = make(guardrails_actor, "guardrails")
-    execute = make(executor_actor, "k8s_executor")
+    investigate = make(investigator_actor, "investigator", context_mode=ContextMode.SUMMARY)
+    fix = make(fixer_actor, "fixer", context_mode=ContextMode.NONE)
+    guard = make(guardrails_actor, "guardrails", context_mode=ContextMode.SUMMARY)
+    execute = make(executor_actor, "k8s_executor", context_mode=ContextMode.NONE)
 
     def investigate_should_continue(state: MessagesState):
         last = state["messages"][-1]

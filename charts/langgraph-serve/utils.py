@@ -3,6 +3,7 @@
 Provides:
 - load_prompt: Load prompts from ConfigMap-mounted files with fallback defaults
 - strip_think: Remove <think> blocks from LLM output
+- ContextMode / filter_context: Control what message history each agent sees
 - make_streaming_node / make_blocking_node: Graph node factories
 - retry_invoke / retry_stream: LLM call retry helpers
 - make_actor: Dynamic Ray actor class factory
@@ -13,6 +14,7 @@ import logging
 import os
 import re
 import time
+from enum import Enum
 
 import ray
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -49,6 +51,49 @@ THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 def strip_think(text: str) -> str:
     """Remove <think>...</think> blocks. Use for routing decisions on complete text."""
     return THINK_RE.sub("", text).strip()
+
+
+# ---------------------------------------------------------------------------
+# Context management
+# ---------------------------------------------------------------------------
+
+class ContextMode(str, Enum):
+    """Controls what message history an agent node receives."""
+    FULL = "full"
+    NONE = "none"
+    SUMMARY = "summary"
+
+
+def filter_context(messages: list, mode: ContextMode) -> list:
+    """Filter message history based on context mode.
+
+    FULL:    All messages (default, current behavior).
+    NONE:    Original HumanMessage + last AIMessage only.
+    SUMMARY: HumanMessages + AIMessages with content (no ToolMessages,
+             no AIMessages that only contain tool_calls).
+    """
+    if mode == ContextMode.FULL:
+        return messages
+
+    if mode == ContextMode.NONE:
+        human = next((m for m in messages if m.type == "human"), None)
+        last_ai = None
+        for m in reversed(messages):
+            if m.type == "ai" and m.content:
+                last_ai = m
+                break
+        return [x for x in [human, last_ai] if x is not None]
+
+    if mode == ContextMode.SUMMARY:
+        result = []
+        for m in messages:
+            if m.type == "human":
+                result.append(m)
+            elif m.type == "ai" and m.content and not (hasattr(m, "tool_calls") and m.tool_calls):
+                result.append(m)
+        return result if result else messages
+
+    return messages
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +143,7 @@ def retry_stream(llm, messages, logger, max_retries=MAX_RETRIES):
 # Graph node factories
 # ---------------------------------------------------------------------------
 
-def make_streaming_node(actor, node_name):
+def make_streaming_node(actor, node_name, context_mode=ContextMode.FULL):
     """Create a graph node that streams tokens from a Ray actor via StreamWriter.
 
     Filters <think> blocks across chunk boundaries. Catches Ray actor failures
@@ -108,9 +153,10 @@ def make_streaming_node(actor, node_name):
     async def node_fn(state):
         writer = get_stream_writer()
         try:
+            messages = filter_context(state["messages"], context_mode)
             accumulated = None
             in_think = False
-            for ref in actor.stream_call.remote(state["messages"]):
+            for ref in actor.stream_call.remote(messages):
                 chunk = await ref
                 accumulated = chunk if accumulated is None else accumulated + chunk
                 if chunk.content:
@@ -146,7 +192,7 @@ def make_streaming_node(actor, node_name):
     return node_fn
 
 
-def make_blocking_node(actor, node_name=None):
+def make_blocking_node(actor, node_name=None, context_mode=ContextMode.FULL):
     """Create a graph node that blocks until the actor completes.
 
     Catches Ray actor failures and returns an error AIMessage with STATUS: UNFIXABLE.
@@ -155,7 +201,8 @@ def make_blocking_node(actor, node_name=None):
 
     async def node_fn(state):
         try:
-            response = await actor.call.remote(state["messages"])
+            messages = filter_context(state["messages"], context_mode)
+            response = await actor.call.remote(messages)
             return {"messages": [response]}
         except Exception as e:
             error_msg = f"Agent {label} failed: {e}. STATUS: UNFIXABLE"

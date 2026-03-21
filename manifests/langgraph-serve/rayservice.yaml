@@ -21,7 +21,7 @@ spec:
     headGroupSpec:
       rayStartParams:
         dashboard-host: "0.0.0.0"
-        num-cpus: "2"
+        num-cpus: "0"
       template:
         spec:
           nodeSelector:
@@ -38,10 +38,10 @@ spec:
               resources:
                 limits:
                   cpu: "2"
-                  memory: 2Gi
+                  memory: 4Gi
                 requests:
                   cpu: "1"
-                  memory: 1Gi
+                  memory: 2Gi
               ports:
                 - containerPort: 6379
                   name: gcs
@@ -51,3 +51,29 @@ spec:
                   name: client
                 - containerPort: 8000
                   name: serve
+    workerGroupSpecs:
+      - groupName: workers
+        replicas: 1
+        minReplicas: 1
+        maxReplicas: 1
+        rayStartParams: {}
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/hostname: framework-desktop
+            containers:
+              - name: ray-worker
+                image: totalsundae/dev:langserve
+                imagePullPolicy: Always
+                env:
+                  - name: OLLAMA_BASE_URL
+                    value: "http://ollama.ollama.svc.cluster.local:11434"
+                  - name: OLLAMA_MODEL
+                    value: "nemotron-3-nano-30b-full"
+                resources:
+                  limits:
+                    cpu: "2"
+                    memory: 4Gi
+                  requests:
+                    cpu: "1"
+                    memory: 2Gi

@@ -9,6 +9,7 @@ import operator
 from typing import Annotated
 
 from langchain_core.messages import AIMessage
+from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 from utils import ContextMode, make_blocking_node, make_streaming_node, strip_think
@@ -89,12 +90,15 @@ def build_graph(
     async def investigate_route_node(state: ServiceDebuggerState):
         count = state.get("iteration_count", 0) + 1
         if count > max_iterations:
+            msg = (
+                f"Investigation loop reached the maximum of {max_iterations} "
+                "iterations without resolving the issue. STATUS: UNFIXABLE"
+            )
+            if streaming:
+                get_stream_writer()({"node": "investigator", "token": msg})
             return {
                 "iteration_count": 1,
-                "messages": [AIMessage(content=(
-                    f"Investigation loop reached the maximum of {max_iterations} "
-                    "iterations without resolving the issue. STATUS: UNFIXABLE"
-                ))],
+                "messages": [AIMessage(content=msg)],
             }
         return {"iteration_count": 1}
 

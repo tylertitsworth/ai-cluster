@@ -35,14 +35,14 @@ class InvokeResponse(BaseModel):
 
 
 def _resolve(workflow_name: str):
-    entry = WORKFLOWS.get(workflow_name)
-    if entry is None:
+    wf = WORKFLOWS.get(workflow_name)
+    if wf is None:
         raise HTTPException(
             status_code=404,
             detail=f"Unknown workflow '{workflow_name}'. "
                    f"Available: {list(WORKFLOWS.keys())}",
         )
-    return entry
+    return wf
 
 
 @serve.deployment
@@ -59,21 +59,17 @@ class LangGraphService:
 
     @fastapi_app.get("/workflows")
     def list_workflows(self):
-        cli_meta = {}
-        for name, entry in WORKFLOWS.items():
-            meta = entry.get("cli_meta")
-            if meta:
-                cli_meta[name] = meta
+        cli_meta = {name: wf.cli_meta for name, wf in WORKFLOWS.items() if wf.cli_meta}
         return {"workflows": list(WORKFLOWS.keys()), "cli_meta": cli_meta}
 
     @fastapi_app.post("/invoke")
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        entry = _resolve(request.workflow)
+        wf = _resolve(request.workflow)
         thread_id = request.thread_id or str(uuid.uuid4())
         logger.info(">>> workflow=%s thread=%s provider=%s model=%s params=%s query=%s",
                      request.workflow, thread_id, request.provider, request.model, request.params, request.query)
         try:
-            response = await entry["run"](
+            response = await wf.run(
                 request.provider, request.model, request.query, thread_id, self.checkpointer,
                 **request.params,
             )
@@ -88,14 +84,14 @@ class LangGraphService:
 
     @fastapi_app.post("/stream")
     async def stream(self, request: InvokeRequest):
-        entry = _resolve(request.workflow)
+        wf = _resolve(request.workflow)
         thread_id = request.thread_id or str(uuid.uuid4())
         logger.info(">>> stream workflow=%s thread=%s provider=%s model=%s params=%s query=%s",
                      request.workflow, thread_id, request.provider, request.model, request.params, request.query)
 
         async def event_generator():
             try:
-                async for chunk in entry["stream"](
+                async for chunk in wf.stream(
                     request.provider, request.model, request.query, thread_id, self.checkpointer,
                     **request.params,
                 ):

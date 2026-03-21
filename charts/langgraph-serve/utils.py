@@ -1,13 +1,12 @@
 """Shared utilities for LangGraph workflows on Ray Serve.
 
 Provides:
-- load_prompt: Load prompts from ConfigMap-mounted files with fallback defaults
+- load_prompt / load_prompts: Load prompts from .txt files (ConfigMap or source tree)
 - strip_think: Remove <think> blocks from LLM output
 - ContextMode / filter_context: Control what message history each agent sees
 - make_streaming_node / make_blocking_node: Graph node factories
 - retry_invoke / retry_stream: LLM call retry helpers
 - make_actor: Dynamic Ray actor class factory
-- run_workflow / stream_workflow: Workflow lifecycle helpers
 """
 
 import asyncio
@@ -16,31 +15,69 @@ import os
 import re
 import time
 from enum import Enum
+from pathlib import Path
 
 import ray
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.config import get_stream_writer
-from langgraph.errors import GraphRecursionError
 
 # ---------------------------------------------------------------------------
-# Prompt loading from ConfigMap volumes
+# Prompt loading from .txt files
 # ---------------------------------------------------------------------------
 
 PROMPTS_DIR = os.environ.get("PROMPTS_DIR", "/prompts")
+_SOURCE_DIR = Path(__file__).resolve().parent
 
 
-def load_prompt(workflow: str, name: str, default: str = "") -> str:
-    """Load a prompt from a ConfigMap-mounted file, falling back to default.
+def _find_prompt(workflow: str, name: str) -> Path:
+    """Locate a prompt .txt file, checking K8s layout then source tree."""
+    k8s_path = Path(PROMPTS_DIR) / workflow / f"{name}.txt"
+    if k8s_path.is_file():
+        return k8s_path
 
-    Prompts are mounted at PROMPTS_DIR/<workflow>/<name>.txt by K8s ConfigMaps.
-    For local dev without K8s, the default value is used.
+    for variant in (workflow, workflow.replace("-", "_")):
+        src_path = _SOURCE_DIR / "workflows" / variant / "prompts" / f"{name}.txt"
+        if src_path.is_file():
+            return src_path
+
+    raise FileNotFoundError(
+        f"Prompt '{name}' for workflow '{workflow}' not found. "
+        f"Searched: {k8s_path}, {_SOURCE_DIR / 'workflows' / workflow / 'prompts' / (name + '.txt')}. "
+        f"Create the .txt file or set PROMPTS_DIR."
+    )
+
+
+def load_prompt(workflow: str, name: str) -> str:
+    """Load a single prompt .txt file. Raises FileNotFoundError if missing."""
+    return _find_prompt(workflow, name).read_text().strip()
+
+
+def load_prompts(workflow: str) -> dict[str, str]:
+    """Auto-discover all prompt .txt files for a workflow.
+
+    Returns a dict mapping prompt name (without .txt) to content.
+    Checks K8s ConfigMap layout first, then the source tree.
     """
-    path = os.path.join(PROMPTS_DIR, workflow, f"{name}.txt")
-    try:
-        with open(path) as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        return default
+    prompts: dict[str, str] = {}
+
+    k8s_dir = Path(PROMPTS_DIR) / workflow
+    if k8s_dir.is_dir():
+        for f in k8s_dir.glob("*.txt"):
+            prompts[f.stem] = f.read_text().strip()
+
+    for variant in (workflow, workflow.replace("-", "_")):
+        src_dir = _SOURCE_DIR / "workflows" / variant / "prompts"
+        if src_dir.is_dir():
+            for f in src_dir.glob("*.txt"):
+                if f.stem not in prompts:
+                    prompts[f.stem] = f.read_text().strip()
+
+    if not prompts:
+        raise FileNotFoundError(
+            f"No prompt .txt files found for workflow '{workflow}'. "
+            f"Searched: {k8s_dir}, {_SOURCE_DIR / 'workflows'}."
+        )
+    return prompts
 
 
 # ---------------------------------------------------------------------------
@@ -298,70 +335,3 @@ def make_actor(class_name, has_tools=False):
         _Agent.__qualname__ = class_name
         return ray.remote(num_cpus=ACTOR_CPU)(_Agent)
 
-
-# ---------------------------------------------------------------------------
-# Workflow lifecycle helpers
-# ---------------------------------------------------------------------------
-
-_RECURSION_MSG = (
-    "The workflow reached its maximum number of steps without completing. "
-    "This usually means the issue requires more investigation cycles than "
-    "allowed. Please try again with a more specific query, or check the "
-    "service manually."
-)
-
-
-async def run_workflow(build_fn, query, thread_id, checkpointer, **config_extra):
-    """Standard workflow lifecycle: build graph, invoke, cleanup actors.
-
-    Args:
-        build_fn: Callable(checkpointer, streaming=False) -> (compiled_graph, actors_list)
-        query: User query string
-        thread_id: Conversation thread ID
-        checkpointer: LangGraph checkpointer instance
-        **config_extra: Extra config keys (e.g. recursion_limit)
-    """
-    compiled, actors = build_fn(checkpointer=checkpointer, streaming=False)
-    config = {"configurable": {"thread_id": thread_id}, **config_extra}
-    try:
-        result = await compiled.ainvoke(
-            {"messages": [HumanMessage(content=query)]}, config,
-        )
-        return result["messages"][-1].content
-    except GraphRecursionError:
-        logging.getLogger(__name__).warning(
-            "GraphRecursionError for thread %s — returning graceful message", thread_id,
-        )
-        return _RECURSION_MSG
-    finally:
-        for actor in actors:
-            ray.kill(actor)
-
-
-async def stream_workflow(build_fn, query, thread_id, checkpointer, **config_extra):
-    """Standard workflow lifecycle: build graph with streaming, yield custom events, cleanup.
-
-    Args:
-        build_fn: Callable(checkpointer, streaming=True) -> (compiled_graph, actors_list)
-        query: User query string
-        thread_id: Conversation thread ID
-        checkpointer: LangGraph checkpointer instance
-        **config_extra: Extra config keys (e.g. recursion_limit)
-    """
-    compiled, actors = build_fn(checkpointer=checkpointer, streaming=True)
-    config = {"configurable": {"thread_id": thread_id}, **config_extra}
-    try:
-        async for event in compiled.astream(
-            {"messages": [HumanMessage(content=query)]},
-            config,
-            stream_mode="custom",
-        ):
-            yield event
-    except GraphRecursionError:
-        logging.getLogger(__name__).warning(
-            "GraphRecursionError for thread %s — yielding graceful message", thread_id,
-        )
-        yield {"node": "system", "error": _RECURSION_MSG}
-    finally:
-        for actor in actors:
-            ray.kill(actor)

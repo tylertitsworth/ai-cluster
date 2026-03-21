@@ -32,7 +32,7 @@ console = Console(theme=Theme(BASE_STYLES))
 DEFAULT_URL = os.environ.get("LANGGRAPH_URL", "https://langgraph.tail79a5c8.ts.net/serve")
 
 
-def _fetch_workflow_meta(url: str) -> dict:
+def _fetch_cli_meta(url: str) -> dict:
     """Fetch aggregated CLI metadata from the server's /workflows endpoint."""
     try:
         resp = httpx.get(f"{url}/workflows", verify=False, timeout=10)
@@ -42,8 +42,8 @@ def _fetch_workflow_meta(url: str) -> dict:
         return {}
 
 
-def _build_render_config(meta: dict) -> tuple[Console, set, set, dict]:
-    """Build a themed Console and render config from workflow metadata.
+def _build_render_config(cli_meta: dict) -> tuple[Console, set, set, dict]:
+    """Build a themed Console and render config from workflow CLI metadata.
 
     Returns (console, known_nodes, hidden_nodes, prefix_styles).
     """
@@ -52,7 +52,7 @@ def _build_render_config(meta: dict) -> tuple[Console, set, set, dict]:
     hidden = set()
     prefixes = {}
 
-    for wf_meta in meta.values():
+    for wf_meta in cli_meta.values():
         for node_name, color in wf_meta.get("nodes", {}).items():
             styles[node_name] = color
             known.add(node_name)
@@ -134,7 +134,7 @@ def query(ctx, text, workflow, thread, no_cache, provider, model, param):
         info_parts.append(f"params: {params}")
     console.print(f"[info]{' | '.join(info_parts)}[/info]")
 
-    meta = _fetch_workflow_meta(url)
+    meta = _fetch_cli_meta(url)
     stream_console, known_nodes, hidden_nodes, prefix_styles = _build_render_config(meta)
 
     payload = {"workflow": workflow, "query": text, "thread_id": thread_id, "provider": provider, "params": params}

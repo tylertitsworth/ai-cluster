@@ -16,8 +16,12 @@ from utils import ContextMode, make_blocking_node, make_streaming_node, strip_th
 MAX_TOOL_CALLS_PER_AGENT = 5
 
 
+MAX_GUARDRAILS_RETRIES = 2
+
+
 class ServiceDebuggerState(MessagesState):
     iteration_count: Annotated[int, operator.add]
+    guardrails_rejections: Annotated[int, operator.add]
 
 
 # ---------------------------------------------------------------------------
@@ -36,7 +40,10 @@ def guardrails_route(state: ServiceDebuggerState):
     raw = state["messages"][-1].content if state["messages"] else ""
     content = strip_think(raw)
     if "VERDICT: UNSAFE" in content:
-        return "investigator"
+        rejections = state.get("guardrails_rejections", 0)
+        if rejections >= MAX_GUARDRAILS_RETRIES:
+            return "investigator"
+        return "guardrails_rejected"
     return "k8s_executor"
 
 
@@ -67,7 +74,7 @@ def build_graph(
 
     make = make_streaming_node if streaming else make_blocking_node
     investigate = make(investigator_actor, "investigator", context_mode=ContextMode.SUMMARY)
-    fix = make(fixer_actor, "fixer", context_mode=ContextMode.NONE)
+    fix = make(fixer_actor, "fixer", context_mode=ContextMode.SUMMARY)
     guard = make(guardrails_actor, "guardrails", context_mode=ContextMode.SUMMARY)
     execute = make(executor_actor, "k8s_executor", context_mode=ContextMode.NONE)
 
@@ -91,6 +98,10 @@ def build_graph(
             }
         return {"iteration_count": 1}
 
+    async def guardrails_rejected_node(state: ServiceDebuggerState):
+        """Bump rejection counter when guardrails says UNSAFE, then retry fixer."""
+        return {"guardrails_rejections": 1}
+
     def execute_should_continue(state: ServiceDebuggerState):
         last = state["messages"][-1]
         if not (hasattr(last, "tool_calls") and last.tool_calls):
@@ -106,6 +117,7 @@ def build_graph(
     graph.add_node("investigate_route", investigate_route_node)
     graph.add_node("fixer", fix)
     graph.add_node("guardrails", guard)
+    graph.add_node("guardrails_rejected", guardrails_rejected_node)
     graph.add_node("k8s_executor", execute)
     graph.add_node("execute_tools", rw_tool_node)
 
@@ -120,8 +132,10 @@ def build_graph(
     )
     graph.add_edge("fixer", "guardrails")
     graph.add_conditional_edges(
-        "guardrails", guardrails_route, ["k8s_executor", "investigator"],
+        "guardrails", guardrails_route,
+        ["k8s_executor", "guardrails_rejected", "investigator"],
     )
+    graph.add_edge("guardrails_rejected", "fixer")
     graph.add_conditional_edges(
         "k8s_executor", execute_should_continue,
         ["execute_tools", "investigator"],

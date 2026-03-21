@@ -59,7 +59,12 @@ class LangGraphService:
 
     @fastapi_app.get("/workflows")
     def list_workflows(self):
-        return {"workflows": list(WORKFLOWS.keys())}
+        cli_meta = {}
+        for name, entry in WORKFLOWS.items():
+            meta = entry.get("cli_meta")
+            if meta:
+                cli_meta[name] = meta
+        return {"workflows": list(WORKFLOWS.keys()), "cli_meta": cli_meta}
 
     @fastapi_app.post("/invoke")
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
@@ -67,10 +72,17 @@ class LangGraphService:
         thread_id = request.thread_id or str(uuid.uuid4())
         logger.info(">>> workflow=%s thread=%s provider=%s model=%s params=%s query=%s",
                      request.workflow, thread_id, request.provider, request.model, request.params, request.query)
-        response = await entry["run"](
-            request.provider, request.model, request.query, thread_id, self.checkpointer,
-            **request.params,
-        )
+        try:
+            response = await entry["run"](
+                request.provider, request.model, request.query, thread_id, self.checkpointer,
+                **request.params,
+            )
+        except Exception:
+            logger.exception("workflow=%s thread=%s failed", request.workflow, thread_id)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Workflow '{request.workflow}' failed unexpectedly. Check server logs.",
+            )
         logger.info("<<< workflow=%s thread=%s response=%s", request.workflow, thread_id, response)
         return InvokeResponse(workflow=request.workflow, thread_id=thread_id, response=response)
 
@@ -82,11 +94,16 @@ class LangGraphService:
                      request.workflow, thread_id, request.provider, request.model, request.params, request.query)
 
         async def event_generator():
-            async for chunk in entry["stream"](
-                request.provider, request.model, request.query, thread_id, self.checkpointer,
-                **request.params,
-            ):
-                yield f"data: {json.dumps(chunk)}\n\n"
+            try:
+                async for chunk in entry["stream"](
+                    request.provider, request.model, request.query, thread_id, self.checkpointer,
+                    **request.params,
+                ):
+                    yield f"data: {json.dumps(chunk)}\n\n"
+            except Exception:
+                logger.exception("stream workflow=%s thread=%s failed", request.workflow, thread_id)
+                yield f"data: {json.dumps({'error': 'Workflow failed unexpectedly. Check server logs.'})}\n\n"
+            yield "data: [DONE]\n\n"
 
         return StreamingResponse(event_generator(), media_type="text/event-stream")
 

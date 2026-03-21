@@ -36,7 +36,17 @@ class ToolActor:
                     )
                 )
                 continue
-            output = fn.invoke(tc["args"])
+            try:
+                output = fn.invoke(tc["args"])
+            except Exception as e:
+                self.logger.error("tool '%s' raised: %s", tc["name"], e)
+                results.append(
+                    ToolMessage(
+                        content=f"Error: tool '{tc['name']}' failed: {e}",
+                        tool_call_id=tc["id"],
+                    )
+                )
+                continue
             self.logger.info("%s(%s) -> %s", tc["name"], tc["args"], output)
             results.append(ToolMessage(content=str(output), tool_call_id=tc["id"]))
         return results

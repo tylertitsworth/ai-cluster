@@ -10,6 +10,7 @@ Provides:
 - run_workflow / stream_workflow: Workflow lifecycle helpers
 """
 
+import asyncio
 import logging
 import os
 import re
@@ -144,6 +145,9 @@ def retry_stream(llm, messages, logger, max_retries=MAX_RETRIES):
 # Graph node factories
 # ---------------------------------------------------------------------------
 
+ACTOR_TIMEOUT = 300
+
+
 def make_streaming_node(actor, node_name, context_mode=ContextMode.FULL):
     """Create a graph node that streams tokens from a Ray actor via StreamWriter.
 
@@ -158,7 +162,7 @@ def make_streaming_node(actor, node_name, context_mode=ContextMode.FULL):
             accumulated = None
             in_think = False
             for ref in actor.stream_call.remote(messages):
-                chunk = await ref
+                chunk = await asyncio.wait_for(ref, timeout=ACTOR_TIMEOUT)
                 accumulated = chunk if accumulated is None else accumulated + chunk
                 if chunk.content:
                     text = chunk.content
@@ -185,6 +189,10 @@ def make_streaming_node(actor, node_name, context_mode=ContextMode.FULL):
                 for tc in accumulated.tool_calls:
                     writer({"node": node_name, "tool_call": {"name": tc["name"], "args": tc["args"]}})
             return {"messages": [accumulated]}
+        except asyncio.TimeoutError:
+            error_msg = f"Agent {node_name} timed out after {ACTOR_TIMEOUT}s. STATUS: UNFIXABLE"
+            writer({"node": node_name, "error": f"timed out after {ACTOR_TIMEOUT}s"})
+            return {"messages": [AIMessage(content=error_msg)]}
         except Exception as e:
             error_msg = f"Agent {node_name} failed: {e}. STATUS: UNFIXABLE"
             writer({"node": node_name, "error": str(e)})
@@ -203,8 +211,13 @@ def make_blocking_node(actor, node_name=None, context_mode=ContextMode.FULL):
     async def node_fn(state):
         try:
             messages = filter_context(state["messages"], context_mode)
-            response = await actor.call.remote(messages)
+            response = await asyncio.wait_for(
+                actor.call.remote(messages), timeout=ACTOR_TIMEOUT,
+            )
             return {"messages": [response]}
+        except asyncio.TimeoutError:
+            error_msg = f"Agent {label} timed out after {ACTOR_TIMEOUT}s. STATUS: UNFIXABLE"
+            return {"messages": [AIMessage(content=error_msg)]}
         except Exception as e:
             error_msg = f"Agent {label} failed: {e}. STATUS: UNFIXABLE"
             return {"messages": [AIMessage(content=error_msg)]}

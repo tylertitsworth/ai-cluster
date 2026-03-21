@@ -8,12 +8,15 @@ in parallel, one per section assigned by the orchestrator.
 
 import asyncio
 import json
+import logging
 
 import ray
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, MessagesState, StateGraph
 from utils import ContextMode, make_actor, make_blocking_node, make_streaming_node, strip_think
+
+logger = logging.getLogger(__name__)
 
 WriterActor = make_actor("WriterActor", has_tools=True)
 
@@ -53,28 +56,55 @@ def build_graph(
             ]
 
             async def run_writer(actor, section):
-                assignment = f"## {section['title']}\n{section['brief']}"
+                title = section.get("title", "Section")
+                brief = section.get("brief", "")
+                assignment = f"## {title}\n{brief}"
                 msgs = [HumanMessage(content=assignment)]
                 accumulated = None
+                in_think = False
                 for ref in actor.stream_call.remote(msgs):
                     chunk = await ref
                     accumulated = chunk if accumulated is None else accumulated + chunk
                     if chunk.content:
-                        clean = strip_think(chunk.content)
-                        if clean:
-                            writer_ref({"node": f"writer:{section['title']}", "token": clean})
-                writer_ref({"node": "writers", "token": f"\n--- Section '{section['title']}' complete ---\n"})
-                return section["title"], accumulated
+                        text = chunk.content
+                        while text:
+                            if in_think:
+                                end_idx = text.find("</think>")
+                                if end_idx != -1:
+                                    text = text[end_idx + 8:]
+                                    in_think = False
+                                else:
+                                    break
+                            else:
+                                start_idx = text.find("<think>")
+                                if start_idx != -1:
+                                    before = text[:start_idx]
+                                    if before:
+                                        writer_ref({"node": f"writer:{title}", "token": before})
+                                    text = text[start_idx + 7:]
+                                    in_think = True
+                                else:
+                                    writer_ref({"node": f"writer:{title}", "token": text})
+                                    break
+                writer_ref({"node": "writers", "token": f"\n--- Section '{title}' complete ---\n"})
+                return title, accumulated
 
-            results = await asyncio.gather(*[
-                run_writer(w, s) for w, s in zip(writers, sections)
-            ])
+            try:
+                results = await asyncio.gather(
+                    *[run_writer(w, s) for w, s in zip(writers, sections)],
+                    return_exceptions=True,
+                )
+            finally:
+                for w in writers:
+                    ray.kill(w)
 
-            for w in writers:
-                ray.kill(w)
-
-            parts = [f"## {title}\n\n{strip_think(msg.content)}" for title, msg in results if msg]
-            combined = "\n\n".join(parts)
+            parts = []
+            for r in results:
+                if isinstance(r, Exception):
+                    logger.error("Writer actor failed: %s", r)
+                elif r[1]:
+                    parts.append(f"## {r[0]}\n\n{strip_think(r[1].content)}")
+            combined = "\n\n".join(parts) or "All writers failed to produce content."
             return {"messages": [AIMessage(content=combined)]}
     else:
         async def write_sections(state: MessagesState):
@@ -86,20 +116,29 @@ def build_graph(
             ]
 
             async def run_writer(actor, section):
-                assignment = f"## {section['title']}\n{section['brief']}"
+                title = section.get("title", "Section")
+                brief = section.get("brief", "")
+                assignment = f"## {title}\n{brief}"
                 msgs = [HumanMessage(content=assignment)]
                 result = await actor.call.remote(msgs)
-                return section["title"], result
+                return title, result
 
-            results = await asyncio.gather(*[
-                run_writer(w, s) for w, s in zip(writers, sections)
-            ])
+            try:
+                results = await asyncio.gather(
+                    *[run_writer(w, s) for w, s in zip(writers, sections)],
+                    return_exceptions=True,
+                )
+            finally:
+                for w in writers:
+                    ray.kill(w)
 
-            for w in writers:
-                ray.kill(w)
-
-            parts = [f"## {title}\n\n{strip_think(msg.content)}" for title, msg in results if msg]
-            combined = "\n\n".join(parts)
+            parts = []
+            for r in results:
+                if isinstance(r, Exception):
+                    logger.error("Writer actor failed: %s", r)
+                elif r[1]:
+                    parts.append(f"## {r[0]}\n\n{strip_think(r[1].content)}")
+            combined = "\n\n".join(parts) or "All writers failed to produce content."
             return {"messages": [AIMessage(content=combined)]}
 
     graph = StateGraph(MessagesState)

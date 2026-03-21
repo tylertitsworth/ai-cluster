@@ -3,6 +3,9 @@
 START -> summarizer -> executor <-> tools -> END
 """
 
+import operator
+from typing import Annotated
+
 import ray
 from actors import ToolActor
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -16,8 +19,18 @@ from utils import (
     stream_workflow,
 )
 
+CLI_META = {
+    "nodes": {
+        "summarizer": "cyan",
+        "executor": "green",
+    },
+    "hidden_nodes": ["tools"],
+}
+
 SummarizerActor = make_actor("SummarizerActor")
 ExecutorActor = make_actor("ExecutorActor", has_tools=True)
+
+MAX_TOOL_ROUNDS = 10
 
 SUMMARIZER_PROMPT = load_prompt(
     "example", "summarizer",
@@ -34,6 +47,10 @@ EXECUTOR_PROMPT = load_prompt(
 )
 
 
+class ExampleState(MessagesState):
+    tool_rounds: Annotated[int, operator.add]
+
+
 def _build(provider, model, checkpointer=None, streaming=False):
     summarizer = SummarizerActor.remote(provider, model, SUMMARIZER_PROMPT)
     executor = ExecutorActor.remote(provider, model, EXECUTOR_PROMPT, TOOLS)
@@ -43,16 +60,18 @@ def _build(provider, model, checkpointer=None, streaming=False):
     summarize = make(summarizer, "summarizer")
     execute = make(executor, "executor")
 
-    async def tools(state: MessagesState):
+    async def tools(state: ExampleState):
         results = await tool_actor.call.remote(state["messages"][-1].tool_calls)
-        return {"messages": results}
+        return {"messages": results, "tool_rounds": 1}
 
-    def should_continue(state: MessagesState):
+    def should_continue(state: ExampleState):
+        if state.get("tool_rounds", 0) >= MAX_TOOL_ROUNDS:
+            return END
         if state["messages"][-1].tool_calls:
             return "tools"
         return END
 
-    graph = StateGraph(MessagesState)
+    graph = StateGraph(ExampleState)
     graph.add_node("summarizer", summarize)
     graph.add_node("executor", execute)
     graph.add_node("tools", tools)
@@ -70,6 +89,7 @@ async def run(provider: str, model: str, query: str, thread_id: str, checkpointe
     return await run_workflow(
         lambda **kw: _build(provider, model, **kw),
         query, thread_id, checkpointer,
+        recursion_limit=50,
     )
 
 
@@ -77,5 +97,6 @@ async def stream(provider: str, model: str, query: str, thread_id: str, checkpoi
     async for event in stream_workflow(
         lambda **kw: _build(provider, model, **kw),
         query, thread_id, checkpointer,
+        recursion_limit=50,
     ):
         yield event

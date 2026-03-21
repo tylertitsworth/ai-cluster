@@ -3,11 +3,24 @@
 Orchestrator decomposes topic -> N Writers research in parallel -> Editor assembles final report.
 """
 
+import logging
+import time
+
 import ray
 from langchain_core.messages import HumanMessage
 from utils import load_prompt, make_actor, run_workflow, stream_workflow
 from workflows.report_writer.graph import build_graph
 from workflows.report_writer.mcp import load_all_tools
+
+CLI_META = {
+    "nodes": {
+        "orchestrator": "bright_blue",
+        "writers": "bright_magenta",
+        "editor": "bright_green",
+    },
+    "hidden_nodes": [],
+    "prefix_styles": {"writer:": "writers"},
+}
 
 OrchestratorActor = make_actor("OrchestratorActor")
 EditorActor = make_actor("EditorActor")
@@ -20,13 +33,24 @@ ORCHESTRATOR_PROMPT = load_prompt("report-writer", "orchestrator", _DEFAULT_ORCH
 WRITER_PROMPT = load_prompt("report-writer", "writer", _DEFAULT_WRITER)
 EDITOR_PROMPT = load_prompt("report-writer", "editor", _DEFAULT_EDITOR)
 
+logger = logging.getLogger(__name__)
+
 _cached_tools = None
+_cache_ts = 0.0
+_CACHE_TTL = 300
 
 
 async def _get_tools():
-    global _cached_tools
-    if _cached_tools is None:
-        _cached_tools = await load_all_tools()
+    global _cached_tools, _cache_ts
+    now = time.monotonic()
+    if _cached_tools is None or now - _cache_ts > _CACHE_TTL:
+        try:
+            _cached_tools = await load_all_tools()
+            _cache_ts = now
+        except Exception:
+            _cached_tools = None
+            logger.exception("Failed to connect to research tool servers")
+            raise
     return _cached_tools
 
 

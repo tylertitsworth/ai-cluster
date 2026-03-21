@@ -6,6 +6,8 @@ Four-agent loop:
 """
 
 import asyncio
+import logging
+import time
 
 from utils import make_actor, run_workflow, stream_workflow
 from workflows.service_debugger.graph import build_graph
@@ -17,27 +19,47 @@ from workflows.service_debugger.prompts import (
     INVESTIGATOR_PROMPT,
 )
 
+CLI_META = {
+    "nodes": {
+        "investigator": "blue",
+        "fixer": "magenta",
+        "guardrails": "yellow",
+        "k8s_executor": "red",
+    },
+    "hidden_nodes": ["investigate_tools", "execute_tools", "guardrails_rejected"],
+}
+
 InvestigatorActor = make_actor("InvestigatorActor", has_tools=True)
 FixerActor = make_actor("FixerActor")
 GuardrailsActor = make_actor("GuardrailsActor")
 K8sExecutorActor = make_actor("K8sExecutorActor", has_tools=True)
 
+logger = logging.getLogger(__name__)
+
 MAX_ITERATIONS = 5
 
 _cache = {}
+_CACHE_TTL = 300
 
 
 async def _get_tools():
-    """Load MCP tools once and cache them. Both servers load in parallel."""
-    if "ro" not in _cache:
-        (ro_tools, ro_client), (rw_tools, rw_client) = await asyncio.gather(
-            load_mcp_tools(K8S_MCP_RO_URL),
-            load_mcp_tools(K8S_MCP_RW_URL),
+    """Load MCP tools with caching and TTL for stale connection recovery."""
+    now = time.monotonic()
+    if "ro" not in _cache or now - _cache.get("_ts", 0) > _CACHE_TTL:
+        try:
+            (ro_tools, ro_client), (rw_tools, rw_client) = await asyncio.gather(
+                load_mcp_tools(K8S_MCP_RO_URL),
+                load_mcp_tools(K8S_MCP_RW_URL),
+            )
+        except Exception:
+            _cache.clear()
+            logger.exception("Failed to connect to Kubernetes MCP servers")
+            raise
+        _cache.update(
+            ro=ro_tools, rw=rw_tools,
+            ro_client=ro_client, rw_client=rw_client,
+            _ts=now,
         )
-        _cache["ro"] = ro_tools
-        _cache["rw"] = rw_tools
-        _cache["ro_client"] = ro_client
-        _cache["rw_client"] = rw_client
     return _cache["ro"], _cache["rw"]
 
 

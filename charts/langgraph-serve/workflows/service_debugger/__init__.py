@@ -29,7 +29,7 @@ class ServiceDebuggerWorkflow(Workflow):
             "guardrails": "yellow",
             "k8s_executor": "red",
         },
-        "hidden_nodes": ["investigate_tools", "execute_tools", "guardrails_rejected"],
+        "hidden_nodes": ["investigate_tools", "investigate_synthesize", "execute_tools", "guardrails_rejected"],
     }
     recursion_limit = MAX_ITERATIONS * 30
 

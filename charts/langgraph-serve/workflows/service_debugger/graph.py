@@ -8,13 +8,20 @@ Ray serialization. Agent LLM calls still dispatch to Ray actors.
 import operator
 from typing import Annotated
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 from utils import ContextMode, make_blocking_node, make_streaming_node, strip_think
 
-MAX_TOOL_CALLS_PER_AGENT = 5
+_SYNTHESIZE_MSG = (
+    "You have reached the tool call limit. Do NOT make any more tool calls. "
+    "Using the information you already gathered, write your structured analysis "
+    "now (Resources Found, Diagnosis, Specific Details for Fixer) and end with "
+    "a STATUS line."
+)
+
+MAX_TOOL_CALLS_PER_AGENT = 10
 
 
 MAX_GUARDRAILS_RETRIES = 2
@@ -77,15 +84,19 @@ def build_graph(
     investigate = make(investigator_actor, "investigator", context_mode=ContextMode.SUMMARY)
     fix = make(fixer_actor, "fixer", context_mode=ContextMode.SUMMARY)
     guard = make(guardrails_actor, "guardrails", context_mode=ContextMode.SUMMARY)
-    execute = make(executor_actor, "k8s_executor", context_mode=ContextMode.NONE)
+    execute = make(executor_actor, "k8s_executor", context_mode=ContextMode.SUMMARY)
 
     def investigate_should_continue(state: ServiceDebuggerState):
         last = state["messages"][-1]
         if not (hasattr(last, "tool_calls") and last.tool_calls):
             return "investigate_route"
         if _count_consecutive_tool_rounds(state["messages"]) >= MAX_TOOL_CALLS_PER_AGENT:
-            return "investigate_route"
+            return "investigate_synthesize"
         return "investigate_tools"
+
+    async def investigate_synthesize_node(state: ServiceDebuggerState):
+        """Force the investigator to write analysis when the tool limit is hit."""
+        return {"messages": [HumanMessage(content=_SYNTHESIZE_MSG)]}
 
     async def investigate_route_node(state: ServiceDebuggerState):
         count = state.get("iteration_count", 0) + 1
@@ -118,6 +129,7 @@ def build_graph(
 
     graph.add_node("investigator", investigate)
     graph.add_node("investigate_tools", ro_tool_node)
+    graph.add_node("investigate_synthesize", investigate_synthesize_node)
     graph.add_node("investigate_route", investigate_route_node)
     graph.add_node("fixer", fix)
     graph.add_node("guardrails", guard)
@@ -128,9 +140,10 @@ def build_graph(
     graph.add_edge(START, "investigator")
     graph.add_conditional_edges(
         "investigator", investigate_should_continue,
-        ["investigate_tools", "investigate_route"],
+        ["investigate_tools", "investigate_synthesize", "investigate_route"],
     )
     graph.add_edge("investigate_tools", "investigator")
+    graph.add_edge("investigate_synthesize", "investigator")
     graph.add_conditional_edges(
         "investigate_route", investigator_route, ["fixer", END],
     )

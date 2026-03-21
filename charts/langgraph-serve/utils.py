@@ -266,19 +266,19 @@ def make_blocking_node(actor, node_name=None, context_mode=ContextMode.FULL):
 # Dynamic actor factory
 # ---------------------------------------------------------------------------
 
-ACTOR_CPU = 0.25
+ACTOR_CPU = 0
 
 
-def make_actor(class_name, has_tools=False):
+def make_actor(class_name, has_tools=False, num_cpus=ACTOR_CPU):
     """Create a named Ray actor class that appears as class_name in the dashboard.
-
-    Each actor requests ACTOR_CPU (0.25) so the Ray autoscaler provisions
-    workers when requests arrive. A worker with 1 CPU fits ~4 actors = 1 request.
 
     Args:
         class_name: Name shown in Ray dashboard
         has_tools: If True, constructor accepts (provider, model, system_prompt, tools).
                    If False, constructor accepts (provider, model, system_prompt).
+        num_cpus: CPU reservation per actor. Default ACTOR_CPU (0.25) triggers
+                  autoscaling. Use 0 for ephemeral IO-bound actors (e.g. writers)
+                  that shouldn't block on cluster capacity.
 
     Returns:
         A @ray.remote class with call() and stream_call() methods.
@@ -310,7 +310,7 @@ def make_actor(class_name, has_tools=False):
 
         _ToolActor.__name__ = class_name
         _ToolActor.__qualname__ = class_name
-        return ray.remote(num_cpus=ACTOR_CPU)(_ToolActor)
+        return ray.remote(num_cpus=num_cpus)(_ToolActor)
     else:
         class _Agent:
             def __init__(self, provider: str, model: str, system_prompt: str):
@@ -333,5 +333,5 @@ def make_actor(class_name, has_tools=False):
 
         _Agent.__name__ = class_name
         _Agent.__qualname__ = class_name
-        return ray.remote(num_cpus=ACTOR_CPU)(_Agent)
+        return ray.remote(num_cpus=num_cpus)(_Agent)
 

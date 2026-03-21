@@ -154,7 +154,10 @@ def query(ctx, text, workflow, thread, no_cache, provider, model, param):
             for line in resp.iter_lines():
                 if not line.startswith("data: "):
                     continue
-                event = json.loads(line[6:])
+                payload = line[6:]
+                if payload == "[DONE]":
+                    break
+                event = json.loads(payload)
                 current_node = _render_event(event, current_node, stream_console, known_nodes, hidden_nodes, prefix_styles)
             if current_node is not None:
                 stream_console.print()

@@ -40,9 +40,10 @@ spec:
               persistentVolumeClaim:
                 claimName: {{ include "langgraph-serve.fullname" . }}-data
             {{- range .Values.prompts.workflows }}
-            - name: prompts-{{ . }}
+            {{- $safe := replace "_" "-" . }}
+            - name: prompts-{{ $safe }}
               configMap:
-                name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ . }}
+                name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $safe }}
             {{- end }}
           containers:
             - name: ray-head
@@ -77,8 +78,9 @@ spec:
                 - name: data
                   mountPath: /data
                 {{- range .Values.prompts.workflows }}
-                - name: prompts-{{ . }}
-                  mountPath: /prompts/{{ . }}
+                {{- $safe := replace "_" "-" . }}
+                - name: prompts-{{ $safe }}
+                  mountPath: /prompts/{{ $safe }}
                 {{- end }}
               resources:
                 {{- toYaml .Values.head.resources | nindent 16 }}
@@ -108,9 +110,10 @@ spec:
                 persistentVolumeClaim:
                   claimName: {{ include "langgraph-serve.fullname" . }}-data
               {{- range .Values.prompts.workflows }}
-              - name: prompts-{{ . }}
+              {{- $safe := replace "_" "-" . }}
+              - name: prompts-{{ $safe }}
                 configMap:
-                  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ . }}
+                  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $safe }}
               {{- end }}
             containers:
               - name: ray-worker
@@ -145,8 +148,9 @@ spec:
                   - name: data
                     mountPath: /data
                   {{- range .Values.prompts.workflows }}
-                  - name: prompts-{{ . }}
-                    mountPath: /prompts/{{ . }}
+                  {{- $safe := replace "_" "-" . }}
+                  - name: prompts-{{ $safe }}
+                    mountPath: /prompts/{{ $safe }}
                   {{- end }}
                 resources:
                   {{- toYaml .Values.worker.resources | nindent 18 }}

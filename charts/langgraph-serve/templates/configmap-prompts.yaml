@@ -1,9 +1,10 @@
 {{- range .Values.prompts.workflows }}
 {{- $workflow := . }}
+{{- $safeName := replace "_" "-" $workflow }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $workflow }}
+  name: {{ include "langgraph-serve.fullname" $ }}-prompts-{{ $safeName }}
   labels:
     {{- include "langgraph-serve.labels" $ | nindent 4 }}
 data:

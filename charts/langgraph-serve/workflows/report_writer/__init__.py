@@ -16,9 +16,9 @@ _DEFAULT_ORCHESTRATOR = "You are a Report Orchestrator. Output a JSON array of s
 _DEFAULT_WRITER = "You are a Research Writer. Write the assigned section using your tools."
 _DEFAULT_EDITOR = "You are a Report Editor. Assemble sections into a polished report."
 
-ORCHESTRATOR_PROMPT = load_prompt("report_writer", "orchestrator", _DEFAULT_ORCHESTRATOR)
-WRITER_PROMPT = load_prompt("report_writer", "writer", _DEFAULT_WRITER)
-EDITOR_PROMPT = load_prompt("report_writer", "editor", _DEFAULT_EDITOR)
+ORCHESTRATOR_PROMPT = load_prompt("report-writer", "orchestrator", _DEFAULT_ORCHESTRATOR)
+WRITER_PROMPT = load_prompt("report-writer", "writer", _DEFAULT_WRITER)
+EDITOR_PROMPT = load_prompt("report-writer", "editor", _DEFAULT_EDITOR)
 
 _cached_tools = None
 

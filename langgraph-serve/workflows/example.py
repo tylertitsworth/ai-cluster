@@ -125,6 +125,8 @@ async def stream(base_url: str, model: str, query: str, thread_id: str, checkpoi
                 for msg in messages:
                     if not isinstance(msg, AIMessage):
                         continue
+                    if msg.content:
+                        yield {"node": node_name, "content": msg.content}
                     if msg.tool_calls:
                         yield {
                             "node": node_name,
@@ -133,8 +135,6 @@ async def stream(base_url: str, model: str, query: str, thread_id: str, checkpoi
                                 for tc in msg.tool_calls
                             ],
                         }
-                    elif msg.content:
-                        yield {"node": node_name, "content": msg.content}
     finally:
         for actor in actors:
             ray.kill(actor)

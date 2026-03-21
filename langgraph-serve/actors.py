@@ -1,9 +1,7 @@
-"""Ray actor sandboxes — ephemeral, per-request execution environments.
+"""Shared Ray actor base types — generic building blocks for any workflow.
 
-Each invocation spins up fresh actors that are killed after use.
-Actors use Ray's built-in logging (Python logging module configured via
-basicConfig in __init__) so logs appear in the Ray dashboard with actor
-metadata (actor_id, node_id, task_id).
+Each actor instance runs in its own Ray process. Workflow-specific actors
+should be defined in their own workflow package (e.g. workflows/service_debugger/actors.py).
 """
 
 import logging
@@ -14,7 +12,7 @@ from langchain_core.messages import SystemMessage, ToolMessage
 
 @ray.remote(num_cpus=0)
 class SummarizerActor:
-    """Distills user input into a clear task. Ephemeral — one per request."""
+    """LLM agent without tools. Ephemeral — one per request."""
 
     def __init__(self, base_url: str, model: str, system_prompt: str):
         logging.basicConfig(level=logging.INFO)
@@ -36,7 +34,7 @@ class SummarizerActor:
 
 @ray.remote(num_cpus=0)
 class ExecutorActor:
-    """Carries out tasks using tools. Ephemeral — one per request."""
+    """LLM agent with tools. Ephemeral — one per request."""
 
     def __init__(self, base_url: str, model: str, system_prompt: str, tools: list):
         logging.basicConfig(level=logging.INFO)
@@ -53,123 +51,21 @@ class ExecutorActor:
             [SystemMessage(content=self.system_prompt)] + messages
         )
         tokens = response.usage_metadata or {}
+        if response.content:
+            self.logger.info("tokens=%s\n%s", tokens, response.content)
         if response.tool_calls:
             calls = [{"name": tc["name"], "args": tc["args"]} for tc in response.tool_calls]
-            self.logger.info("tokens=%s tool_calls=%s", tokens, calls)
-        else:
-            self.logger.info("tokens=%s\n%s", tokens, response.content)
+            self.logger.info("tool_calls=%s", calls)
         return response
 
-
-# ---------------------------------------------------------------------------
-# Service Debugger actors
-# ---------------------------------------------------------------------------
-
-@ray.remote(num_cpus=0)
-class InvestigatorActor:
-    """Read-only K8s investigation. Ephemeral — one per request."""
-
-    def __init__(self, base_url: str, model: str, system_prompt: str, tools: list):
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger("InvestigatorActor")
-
-        from langchain_ollama import ChatOllama
-
-        llm = ChatOllama(base_url=base_url, model=model)
-        self.llm = llm.bind_tools(tools)
-        self.system_prompt = system_prompt
-
-    def call(self, messages: list):
-        response = self.llm.invoke(
-            [SystemMessage(content=self.system_prompt)] + messages
-        )
-        tokens = response.usage_metadata or {}
-        if response.tool_calls:
-            calls = [{"name": tc["name"], "args": tc["args"]} for tc in response.tool_calls]
-            self.logger.info("tokens=%s tool_calls=%s", tokens, calls)
-        else:
-            self.logger.info("tokens=%s\n%s", tokens, response.content)
-        return response
-
-
-@ray.remote(num_cpus=0)
-class FixerActor:
-    """Proposes K8s fix commands without executing them. Ephemeral — one per request."""
-
-    def __init__(self, base_url: str, model: str, system_prompt: str):
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger("FixerActor")
-
-        from langchain_ollama import ChatOllama
-
-        self.llm = ChatOllama(base_url=base_url, model=model)
-        self.system_prompt = system_prompt
-
-    def call(self, messages: list):
-        response = self.llm.invoke(
-            [SystemMessage(content=self.system_prompt)] + messages
-        )
-        tokens = response.usage_metadata or {}
-        self.logger.info("tokens=%s\n%s", tokens, response.content)
-        return response
-
-
-@ray.remote(num_cpus=0)
-class GuardrailsActor:
-    """Evaluates proposed commands for safety. Ephemeral — one per request."""
-
-    def __init__(self, base_url: str, model: str, system_prompt: str):
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger("GuardrailsActor")
-
-        from langchain_ollama import ChatOllama
-
-        self.llm = ChatOllama(base_url=base_url, model=model)
-        self.system_prompt = system_prompt
-
-    def call(self, messages: list):
-        response = self.llm.invoke(
-            [SystemMessage(content=self.system_prompt)] + messages
-        )
-        tokens = response.usage_metadata or {}
-        self.logger.info("tokens=%s\n%s", tokens, response.content)
-        return response
-
-
-@ray.remote(num_cpus=0)
-class K8sExecutorActor:
-    """Executes approved K8s commands via read-write MCP tools. Ephemeral — one per request."""
-
-    def __init__(self, base_url: str, model: str, system_prompt: str, tools: list):
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger("K8sExecutorActor")
-
-        from langchain_ollama import ChatOllama
-
-        llm = ChatOllama(base_url=base_url, model=model)
-        self.llm = llm.bind_tools(tools)
-        self.system_prompt = system_prompt
-
-    def call(self, messages: list):
-        response = self.llm.invoke(
-            [SystemMessage(content=self.system_prompt)] + messages
-        )
-        tokens = response.usage_metadata or {}
-        if response.tool_calls:
-            calls = [{"name": tc["name"], "args": tc["args"]} for tc in response.tool_calls]
-            self.logger.info("tokens=%s tool_calls=%s", tokens, calls)
-        else:
-            self.logger.info("tokens=%s\n%s", tokens, response.content)
-        return response
-
-
-# ---------------------------------------------------------------------------
-# Shared tool executor
-# ---------------------------------------------------------------------------
 
 @ray.remote(num_cpus=0)
 class ToolActor:
-    """Executes tool calls. Ephemeral — one per request."""
+    """Executes tool calls in a Ray actor. Ephemeral — one per request.
+
+    Only for tools that can survive Ray serialization (plain Python functions).
+    For MCP tools, use langgraph.prebuilt.ToolNode instead.
+    """
 
     def __init__(self, tools: list):
         logging.basicConfig(level=logging.INFO)

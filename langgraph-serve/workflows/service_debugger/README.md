@@ -8,11 +8,12 @@ agent runs as an ephemeral Ray actor with a dedicated role and toolset.
 ```mermaid
 stateDiagram-v2
     [*] --> Investigator
-    Investigator --> Fixer: STATUS: NEEDS_FIX
-    Investigator --> [*]: STATUS: FIXED
+    Investigator --> [*] : FIXED
+    Investigator --> [*] : UNFIXABLE
     Fixer --> Guardrails
-    Guardrails --> K8sExecutor: VERDICT: SAFE
-    Guardrails --> Investigator: VERDICT: UNSAFE + feedback
+    Investigator --> Fixer : NEEDS_FIX
+    Guardrails --> K8sExecutor : SAFE
+    Guardrails --> Investigator : UNSAFE
     K8sExecutor --> Investigator
 ```
 
@@ -29,7 +30,7 @@ stateDiagram-v2
 
 Conditional edges are driven by text markers in the agent responses:
 
-- **Investigator** ends each response with `STATUS: FIXED` or `STATUS: NEEDS_FIX`
+- **Investigator** ends each response with `STATUS: FIXED`, `STATUS: NEEDS_FIX`, or `STATUS: UNFIXABLE`
 - **Guardrails** ends each response with `VERDICT: SAFE` or `VERDICT: UNSAFE`
 
 The routing functions parse the last AI message content for these markers.

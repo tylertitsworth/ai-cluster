@@ -1,62 +1,91 @@
+import json
+import logging
 import os
+import uuid
 
-from fastapi import FastAPI
-from langchain_core.messages import HumanMessage
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from pydantic import BaseModel
 from ray import serve
 
-from graph import TOOLS, AgentActor, ToolActor, build_graph
+from workflows import WORKFLOWS
+
+logger = logging.getLogger("LangGraphService")
 
 OLLAMA_BASE_URL = os.environ.get(
     "OLLAMA_BASE_URL", "http://ollama.ollama.svc.cluster.local:11434"
 )
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "nemotron-3-nano-30b-full")
-
-SUMMARIZER_PROMPT = (
-    "You are a summarizer. Read the user's message and distill it into a clear, "
-    "concise task description for another agent to act on. Do not perform the task "
-    "yourself — just restate what needs to be done."
-)
-
-EXECUTOR_PROMPT = (
-    "You are an executor. Carry out the task described in the conversation using "
-    "your available tools (current time and math). Respond with the final answer."
-)
+CHECKPOINT_DB = os.environ.get("CHECKPOINT_DB", "/data/checkpoints.db")
 
 fastapi_app = FastAPI(title="LangGraph Agent")
 
 
 class InvokeRequest(BaseModel):
+    workflow: str = "example"
     query: str
+    thread_id: str | None = None
 
 
 class InvokeResponse(BaseModel):
+    workflow: str
+    thread_id: str
     response: str
+
+
+def _resolve(workflow_name: str):
+    entry = WORKFLOWS.get(workflow_name)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown workflow '{workflow_name}'. "
+                   f"Available: {list(WORKFLOWS.keys())}",
+        )
+    return entry
 
 
 @serve.deployment
 @serve.ingress(fastapi_app)
 class LangGraphService:
     def __init__(self):
-        summarizer = AgentActor.remote(
-            OLLAMA_BASE_URL, OLLAMA_MODEL, SUMMARIZER_PROMPT,
-        )
-        executor = AgentActor.remote(
-            OLLAMA_BASE_URL, OLLAMA_MODEL, EXECUTOR_PROMPT, tools=TOOLS,
-        )
-        tool_actor = ToolActor.remote(TOOLS)
-        self.graph = build_graph(summarizer, executor, tool_actor)
+        logging.basicConfig(level=logging.INFO)
+        self.base_url = OLLAMA_BASE_URL
+        self.model = OLLAMA_MODEL
+        self.checkpointer = AsyncSqliteSaver.from_conn_string(CHECKPOINT_DB)
 
     @fastapi_app.get("/health")
     def health(self):
         return {"status": "ok"}
 
+    @fastapi_app.get("/workflows")
+    def list_workflows(self):
+        return {"workflows": list(WORKFLOWS.keys())}
+
     @fastapi_app.post("/invoke")
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        result = await self.graph.ainvoke(
-            {"messages": [HumanMessage(content=request.query)]}
+        entry = _resolve(request.workflow)
+        thread_id = request.thread_id or str(uuid.uuid4())
+        logger.info(">>> workflow=%s thread=%s query=%s", request.workflow, thread_id, request.query)
+        response = await entry["run"](
+            self.base_url, self.model, request.query, thread_id, self.checkpointer,
         )
-        return InvokeResponse(response=result["messages"][-1].content)
+        logger.info("<<< workflow=%s thread=%s response=%s", request.workflow, thread_id, response)
+        return InvokeResponse(workflow=request.workflow, thread_id=thread_id, response=response)
+
+    @fastapi_app.post("/stream")
+    async def stream(self, request: InvokeRequest):
+        entry = _resolve(request.workflow)
+        thread_id = request.thread_id or str(uuid.uuid4())
+        logger.info(">>> stream workflow=%s thread=%s query=%s", request.workflow, thread_id, request.query)
+
+        async def event_generator():
+            async for chunk in entry["stream"](
+                self.base_url, self.model, request.query, thread_id, self.checkpointer,
+            ):
+                yield f"data: {json.dumps(chunk)}\n\n"
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 app = LangGraphService.bind()

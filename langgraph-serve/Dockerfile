@@ -6,4 +6,5 @@ ENV PYTHONPATH=/app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY graph.py serve.py ./
+COPY actors.py tools.py serve.py ./
+COPY workflows/ workflows/

@@ -26,6 +26,10 @@ spec:
         spec:
           nodeSelector:
             kubernetes.io/hostname: framework-desktop
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: langgraph-serve-data
           containers:
             - name: ray-head
               image: totalsundae/dev:langserve
@@ -35,6 +39,11 @@ spec:
                   value: "http://ollama.ollama.svc.cluster.local:11434"
                 - name: OLLAMA_MODEL
                   value: "nemotron-3-nano-30b-full"
+                - name: CHECKPOINT_DB
+                  value: "/data/checkpoints.db"
+              volumeMounts:
+                - name: data
+                  mountPath: /data
               resources:
                 limits:
                   cpu: "2"
@@ -61,6 +70,10 @@ spec:
           spec:
             nodeSelector:
               kubernetes.io/hostname: framework-desktop
+            volumes:
+              - name: data
+                persistentVolumeClaim:
+                  claimName: langgraph-serve-data
             containers:
               - name: ray-worker
                 image: totalsundae/dev:langserve
@@ -70,6 +83,11 @@ spec:
                     value: "http://ollama.ollama.svc.cluster.local:11434"
                   - name: OLLAMA_MODEL
                     value: "nemotron-3-nano-30b-full"
+                  - name: CHECKPOINT_DB
+                    value: "/data/checkpoints.db"
+                volumeMounts:
+                  - name: data
+                    mountPath: /data
                 resources:
                   limits:
                     cpu: "2"

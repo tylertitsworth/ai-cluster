@@ -2,8 +2,9 @@ langgraph
 langchain-ollama
 langchain-openai
 langchain-core
-langchain-community
+langchain-tavily
 langgraph-checkpoint-sqlite
 aiosqlite
 langchain-mcp-adapters
 tavily-python
+pyyaml

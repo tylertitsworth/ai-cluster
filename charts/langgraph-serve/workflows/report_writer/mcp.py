@@ -11,9 +11,9 @@ CONTEXT7_MCP_URL = os.environ.get(
 
 def load_search_tools():
     """Load Tavily web search as a LangChain tool."""
-    from langchain_community.tools.tavily_search import TavilySearchResults
+    from langchain_tavily import TavilySearch
 
-    return [TavilySearchResults(max_results=3)]
+    return [TavilySearch(max_results=3)]
 
 
 async def load_context7_tools():

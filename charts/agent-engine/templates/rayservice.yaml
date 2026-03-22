@@ -30,8 +30,11 @@ spec:
       rayStartParams:
         dashboard-host: "0.0.0.0"
         num-cpus: {{ .Values.head.cpus | quote }}
+        resources: '"{\"tier_default\": 100}"'
       template:
         spec:
+          securityContext:
+            fsGroup: 1000
           {{- with .Values.head.nodeSelector }}
           nodeSelector:
             {{- toYaml . | nindent 12 }}

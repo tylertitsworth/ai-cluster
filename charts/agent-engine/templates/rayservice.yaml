@@ -113,7 +113,7 @@ spec:
         minReplicas: {{ $tierConfig.minReplicas }}
         maxReplicas: {{ $tierConfig.maxReplicas }}
         rayStartParams:
-          resources: '{"{{ $resourceKey }}": 100}'
+          resources: '"{\"{{ $resourceKey }}\": 100}"'
         template:
           metadata:
             labels:

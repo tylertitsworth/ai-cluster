@@ -35,7 +35,7 @@ BASE_STYLES = {
 }
 console = Console(theme=Theme(BASE_STYLES))
 
-DEFAULT_URL = os.environ.get("AGENT_ENGINE_URL", "https://agent-engine.tail79a5c8.ts.net")
+DEFAULT_URL = os.environ.get("AGENT_ENGINE_URL", "https://agent-engine.tail79a5c8.ts.net/serve")
 
 AGENT_COLORS = [
     "bright_blue",

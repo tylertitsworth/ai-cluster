@@ -80,7 +80,7 @@ ingress:
     tailscale.com/proxy-class: control-plane
 
 serve:
-  routePrefix: /
+  routePrefix: /serve
   numReplicas: 1
   maxConcurrentQueries: 10
 

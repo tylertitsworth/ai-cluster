@@ -21,6 +21,13 @@ spec:
                   number: 8000
             path: {{ .Values.serve.routePrefix }}
             pathType: Prefix
+          - backend:
+              service:
+                name: {{ include "agent-engine.fullname" . }}-dashboard
+                port:
+                  number: 8265
+            path: /
+            pathType: Prefix
   tls:
     - hosts:
         - {{ .Values.ingress.host }}

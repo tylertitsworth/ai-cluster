@@ -1,6 +1,6 @@
 name: example
-description: Summarizer distills user input, executor carries out the task with tools.
-tier: default
+description: Summarizer distills user input, executor carries out the task using Kubernetes read-only tools.
+tier: k8s-access
 
 providers:
   openai:
@@ -12,8 +12,11 @@ providers:
     api_key: not-needed
     model: ${OLLAMA_MODEL}
 
-# TODO: get_current_time and calculate are simple Python tools; add MCP equivalents
-# when available.
+tools:
+  k8s-reader:
+    type: mcp
+    url: http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp
+    transport: streamable_http
 
 agents:
   summarizer:
@@ -23,6 +26,7 @@ agents:
   executor:
     provider: openai
     prompt: executor
+    tools: [k8s-reader]
 
 flow:
   - step: summarizer

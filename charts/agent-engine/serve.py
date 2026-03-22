@@ -2,13 +2,13 @@ import asyncio
 import logging
 import os
 import uuid
-from copy import deepcopy
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from ray import serve
 
+from engine.operators import apply_operators
 from engine.registry import WorkflowRegistry
 from engine.state import CheckpointStore
 from engine.stream import StreamWriter
@@ -18,87 +18,6 @@ logger = logging.getLogger("AgentEngine")
 CHECKPOINT_DB = os.environ.get("CHECKPOINT_DB", "/data/checkpoints.db")
 
 fastapi_app = FastAPI(title="Agent Engine")
-
-
-def _apply_operators(config: dict, operators: list) -> dict:
-    """Wrap a workflow config's flow in meta-operator primitives."""
-    if not operators:
-        return config
-
-    config = deepcopy(config)
-
-    for op in operators:
-        op_type = op.get("type")
-        if op_type == "review":
-            max_iter = op.get("max", 3)
-            config["flow"] = {
-                "loop": {
-                    "max": max_iter,
-                    "steps": [
-                        config["flow"],
-                        {"step": "_reviewer"},
-                        {
-                            "route": {
-                                "DONE": "end",
-                                "default": "continue",
-                            }
-                        },
-                    ],
-                }
-            }
-            # Add built-in reviewer agent if not present
-            if "_reviewer" not in config.get("agents", {}):
-                first_provider = next(iter(config.get("providers", {})), "openai")
-                criteria = op.get("judge_criteria", "DONE if the output is satisfactory")
-                config.setdefault("agents", {})["_reviewer"] = {
-                    "provider": first_provider,
-                    "prompt": "_reviewer",
-                }
-                config.setdefault("_prompts", {})["_reviewer"] = (
-                    f"You are a reviewer. Evaluate the previous output.\n"
-                    f"Criteria: {criteria}\n"
-                    f"If it meets criteria, respond with exactly 'DONE'.\n"
-                    f"If not, explain what needs improvement."
-                )
-
-        elif op_type == "race":
-            count = op.get("count", 3)
-            criteria = op.get("judge_criteria", "best overall quality")
-            config["flow"] = {
-                "race": {
-                    "count": count,
-                    "work": config["flow"],
-                    "resolve": {
-                        "strategy": "pick",
-                        "judge": "_judge",
-                        "criteria": criteria,
-                    },
-                }
-            }
-            if "_judge" not in config.get("agents", {}):
-                first_provider = next(iter(config.get("providers", {})), "openai")
-                config.setdefault("agents", {})["_judge"] = {
-                    "provider": first_provider,
-                    "prompt": "_judge",
-                }
-                config.setdefault("_prompts", {})["_judge"] = (
-                    f"You are a judge evaluating multiple responses.\n"
-                    f"Criteria: {criteria}\n"
-                    f"Select the best response and reproduce it in full."
-                )
-
-        elif op_type == "ralph":
-            max_tasks = op.get("max", 10)
-            done_signal = op.get("judge_criteria", "DONE")
-            config["flow"] = {
-                "ralph": {
-                    "max": max_tasks,
-                    "work": config["flow"],
-                    "done": done_signal,
-                }
-            }
-
-    return config
 
 
 class RunRequest(BaseModel):
@@ -165,7 +84,7 @@ class AgentEngine:
         if not config:
             raise HTTPException(404, f"Unknown workflow: {request.workflow}")
 
-        config = _apply_operators(config, request.operators)
+        config = apply_operators(config, request.operators)
 
         params, errors = self.registry.validate_params(request.workflow, request.params)
         if errors:
@@ -204,7 +123,7 @@ class AgentEngine:
         if not config:
             raise HTTPException(404, f"Unknown workflow: {request.workflow}")
 
-        config = _apply_operators(config, request.operators)
+        config = apply_operators(config, request.operators)
 
         params, errors = self.registry.validate_params(request.workflow, request.params)
         if errors:

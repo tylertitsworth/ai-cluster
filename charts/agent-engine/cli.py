@@ -110,8 +110,14 @@ def _parse_agent_overrides(agent_tuples: tuple) -> dict[str, str]:
     return overrides
 
 
-def _render_event(event: dict, current_agent: str | None, con: Console, color_map: dict) -> str | None:
-    """Render a streaming SSE event. Returns the current agent name for line continuity."""
+def _render_event(
+    event: dict,
+    current_agent: str | None,
+    con: Console,
+    color_map: dict,
+    has_streamed_tokens: bool,
+) -> tuple[str | None, bool]:
+    """Render a streaming SSE event. Returns (current_agent, has_streamed_tokens)."""
     event_type = event.get("type", "")
     agent = event.get("agent", event.get("node", "unknown"))
 
@@ -120,7 +126,7 @@ def _render_event(event: dict, current_agent: str | None, con: Console, color_ma
             con.print()
         color = _agent_color(agent, color_map)
         con.print(f"\n[{color}][{agent}][/{color}]")
-        return agent
+        return agent, has_streamed_tokens
 
     if event_type == "token":
         if agent != current_agent:
@@ -130,7 +136,7 @@ def _render_event(event: dict, current_agent: str | None, con: Console, color_ma
             con.print(f"[{color}][{agent}][/{color}] ", end="")
             current_agent = agent
         con.print(escape(event.get("token", "")), end="")
-        return current_agent
+        return current_agent, True
 
     if event_type == "researching":
         if current_agent is not None:
@@ -138,7 +144,7 @@ def _render_event(event: dict, current_agent: str | None, con: Console, color_ma
             current_agent = None
         queries = event.get("queries", [])
         con.print(f"  [dim]→ researching: {' | '.join(queries)}[/dim]")
-        return None
+        return None, has_streamed_tokens
 
     if event_type == "content":
         if current_agent is not None:
@@ -146,7 +152,7 @@ def _render_event(event: dict, current_agent: str | None, con: Console, color_ma
             current_agent = None
         color = _agent_color(agent, color_map)
         con.print(f"[{color}][{agent}][/{color}] {escape(event.get('content', ''))}")
-        return None
+        return None, True
 
     if event_type == "route":
         if current_agent is not None:
@@ -155,7 +161,7 @@ def _render_event(event: dict, current_agent: str | None, con: Console, color_ma
         matched = event.get("matched", "")
         next_node = event.get("next", "")
         con.print(f"  [dim]↳ route: {matched} → {next_node}[/dim]")
-        return None
+        return None, has_streamed_tokens
 
     if event_type == "loop_iteration":
         if current_agent is not None:
@@ -164,35 +170,36 @@ def _render_event(event: dict, current_agent: str | None, con: Console, color_ma
         iteration = event.get("iteration", "?")
         total = event.get("max", "?")
         con.print(f"  [dim]↳ loop: iteration {iteration}/{total}[/dim]")
-        return None
+        return None, has_streamed_tokens
 
     if event_type == "step_end":
-        return current_agent
+        return current_agent, has_streamed_tokens
 
     if event_type == "error":
         if current_agent is not None:
             con.print()
             current_agent = None
         con.print(f"  [error]✗ error: {escape(event.get('message', str(event)))}[/error]")
-        return None
+        return None, has_streamed_tokens
 
     if event_type == "complete":
         if current_agent is not None:
             con.print()
             current_agent = None
-        result = event.get("result", "")
-        if result:
-            color = _agent_color(agent, color_map)
-            con.print(f"\n[{color}][result][/{color}] {escape(result)}")
-        return None
+        if not has_streamed_tokens:
+            result = event.get("result", "")
+            if result:
+                con.print(f"\n{escape(result)}")
+        return None, has_streamed_tokens
 
-    return current_agent
+    return current_agent, has_streamed_tokens
 
 
 def _stream_sse(url: str, endpoint: str, payload: dict) -> None:
     """POST to an SSE endpoint and render events."""
     color_map: dict[str, str] = {}
     current_agent = None
+    has_streamed = False
     try:
         with httpx.stream(
             "POST",
@@ -209,7 +216,9 @@ def _stream_sse(url: str, endpoint: str, payload: dict) -> None:
                 if data == "[DONE]":
                     break
                 event = json.loads(data)
-                current_agent = _render_event(event, current_agent, console, color_map)
+                current_agent, has_streamed = _render_event(
+                    event, current_agent, console, color_map, has_streamed,
+                )
         if current_agent is not None:
             console.print()
     except httpx.HTTPStatusError as e:

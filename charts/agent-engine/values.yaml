@@ -47,7 +47,7 @@ tiers:
         cpu: "1"
         memory: 2Gi
   k8s-access:
-    minReplicas: 0
+    minReplicas: 1
     maxReplicas: 3
     resources:
       limits:

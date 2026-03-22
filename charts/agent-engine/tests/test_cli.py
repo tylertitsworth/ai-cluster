@@ -84,10 +84,11 @@ class TestRenderEvent:
         color_map = {}
 
         event = {"type": "token", "agent": "writer", "token": "hello world"}
-        _render_event(event, None, con, color_map)
+        _, streamed = _render_event(event, None, con, color_map, False)
 
         output = buf.getvalue()
         assert "hello world" in output
+        assert streamed is True
 
     def test_content_event_uses_content_key(self):
         from cli import _render_event
@@ -99,7 +100,37 @@ class TestRenderEvent:
         color_map = {}
 
         event = {"type": "content", "agent": "writer", "content": "full section"}
-        _render_event(event, None, con, color_map)
+        _render_event(event, None, con, color_map, False)
 
         output = buf.getvalue()
         assert "full section" in output
+
+    def test_complete_event_skipped_after_tokens(self):
+        from cli import _render_event
+        from rich.console import Console
+        from io import StringIO
+
+        buf = StringIO()
+        con = Console(file=buf, force_terminal=True)
+        color_map = {}
+
+        event = {"type": "complete", "result": "should not appear"}
+        _render_event(event, None, con, color_map, True)
+
+        output = buf.getvalue()
+        assert "should not appear" not in output
+
+    def test_complete_event_shown_when_no_tokens(self):
+        from cli import _render_event
+        from rich.console import Console
+        from io import StringIO
+
+        buf = StringIO()
+        con = Console(file=buf, force_terminal=True)
+        color_map = {}
+
+        event = {"type": "complete", "result": "final result"}
+        _render_event(event, None, con, color_map, False)
+
+        output = buf.getvalue()
+        assert "final result" in output

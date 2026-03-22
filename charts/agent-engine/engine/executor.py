@@ -139,26 +139,42 @@ class _ExecutionContext:
             self.tool_manager = ToolManager(tools_config)
             await self.tool_manager.connect_all()
 
-    async def setup_placement_group(self):
-        """Create a placement group for per-workflow pod isolation."""
+    async def setup_placement_group(self, timeout: int = 120):
+        """Create a placement group for per-workflow pod isolation.
+
+        Blocks until a worker pod with the right tier resources is available.
+        If no worker can satisfy the request within the timeout, the placement
+        group is removed and a RuntimeError is raised -- we do NOT fall back
+        to unsandboxed scheduling.
+        """
         tier = self.config.get("tier", "default")
         tier_resource_key = f"tier_{tier.replace('-', '_')}"
 
+        pg = ray.util.placement_group(
+            bundles=[{tier_resource_key: 0.01, "CPU": 0.1}],
+            strategy="STRICT_PACK",
+        )
+        logger.info("Waiting for placement group on tier '%s'...", tier)
+
+        loop = asyncio.get_event_loop()
         try:
-            self.placement_group = ray.util.placement_group(
-                bundles=[{tier_resource_key: 0.01, "CPU": 0.1}],
-                strategy="STRICT_PACK",
+            await asyncio.wait_for(
+                loop.run_in_executor(None, lambda: ray.get(pg.ready(), timeout=timeout)),
+                timeout=timeout + 5,
             )
-            ray.get(self.placement_group.ready(), timeout=120)
-            logger.info("Placement group ready for tier '%s'", tier)
         except Exception:
-            logger.warning(
-                "Failed to create placement group for tier '%s', "
-                "falling back to default scheduling",
-                tier,
-                exc_info=True,
+            try:
+                ray.util.remove_placement_group(pg)
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"No worker available for tier '{tier}' within {timeout}s. "
+                f"Ensure the '{tier}' worker group has minReplicas >= 1 or "
+                f"the autoscaler can provision a worker in time."
             )
-            self.placement_group = None
+
+        self.placement_group = pg
+        logger.info("Placement group ready for tier '%s'", tier)
 
     def get_tool_schemas_for_agent(self, agent_name: str) -> list[dict]:
         """Return only the tool schemas that this agent is authorized to use."""
@@ -481,19 +497,17 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
         branch_ctx.tool_manager = ctx.tool_manager
         branch_contexts.append(branch_ctx)
 
+        await branch_ctx.setup_placement_group()
+
         indexed_key = f"{agent_name}_{index}"
-        if indexed_key not in ctx.agents:
-            cfg = resolve_agent_config(agent_name, ctx.config, ctx.agent_overrides)
-            tool_schemas = ctx.get_tool_schemas_for_agent(agent_name)
-            options = {}
-            if ctx.placement_group:
-                options["placement_group"] = ctx.placement_group
-            actor = Agent.options(**options).remote(
-                cfg["provider_config"], cfg["system_prompt"], tool_schemas or None,
-            )
-            ctx.agents[indexed_key] = actor
-        else:
-            actor = ctx.agents[indexed_key]
+        cfg = resolve_agent_config(agent_name, ctx.config, ctx.agent_overrides)
+        tool_schemas = ctx.get_tool_schemas_for_agent(agent_name)
+        options = {}
+        if branch_ctx.placement_group:
+            options["placement_group"] = branch_ctx.placement_group
+        actor = Agent.options(**options).remote(
+            cfg["provider_config"], cfg["system_prompt"], tool_schemas or None,
+        )
         branch_ctx.agents[agent_name] = actor
 
         await _execute_step(
@@ -508,14 +522,18 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
             return_exceptions=True,
         )
     finally:
-        parent_actor_ids = {id(a) for a in ctx.agents.values()}
         for bctx in branch_contexts:
             for name, actor in bctx.agents.items():
-                if id(actor) not in parent_actor_ids:
-                    try:
-                        ray.kill(actor)
-                    except Exception:
-                        pass
+                try:
+                    ray.kill(actor)
+                except Exception:
+                    pass
+            bctx.agents.clear()
+            if bctx.placement_group:
+                try:
+                    ray.util.remove_placement_group(bctx.placement_group)
+                except Exception:
+                    pass
 
     parts = []
     for i, r in enumerate(results):
@@ -627,6 +645,7 @@ async def _execute_race(node: dict, ctx: _ExecutionContext) -> str | None:
         branch_ctx.tool_manager = ctx.tool_manager
         branch_contexts.append(branch_ctx)
 
+        await branch_ctx.setup_placement_group()
         await _execute(steps, branch_ctx, path=[])
         silent_stream.close()
         return _last_assistant_content(branch_state)
@@ -646,6 +665,11 @@ async def _execute_race(node: dict, ctx: _ExecutionContext) -> str | None:
                     except Exception:
                         pass
             bctx.agents.clear()
+            if bctx.placement_group:
+                try:
+                    ray.util.remove_placement_group(bctx.placement_group)
+                except Exception:
+                    pass
 
     branches = []
     for i, r in enumerate(results):
@@ -748,7 +772,7 @@ _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 
 def _strip_think_streaming(text: str) -> str:
-    return _THINK_RE.sub("", text).strip()
+    return _THINK_RE.sub("", text)
 
 
 def _resolve_count(count_value, params: dict) -> int:

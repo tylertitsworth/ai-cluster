@@ -123,6 +123,10 @@ spec:
               agent-tier: {{ $tierName }}
           spec:
             serviceAccountName: {{ include "agent-engine.fullname" $ }}-{{ $tierName }}
+            {{- with $.Values.head.nodeSelector }}
+            nodeSelector:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
             volumes:
               - name: workflows
                 configMap:

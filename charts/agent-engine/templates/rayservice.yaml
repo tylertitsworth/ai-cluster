@@ -18,6 +18,8 @@ spec:
             max_concurrent_queries: {{ .Values.serve.maxConcurrentQueries | default 10 }}
             ray_actor_options:
               num_cpus: 0
+              resources:
+                tier_default: 0.01
   rayClusterConfig:
     rayVersion: {{ .Values.rayVersion | quote }}
     {{- if .Values.autoscaler.enabled }}

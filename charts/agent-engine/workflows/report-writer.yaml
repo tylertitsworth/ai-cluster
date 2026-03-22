@@ -1,6 +1,7 @@
 name: report-writer
 description: Orchestrator decomposes a topic, parallel writers research each section, editor assembles the final report.
 tier: web-research
+isolation: per-invocation
 
 providers:
   openai:

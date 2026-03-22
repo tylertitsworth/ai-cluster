@@ -114,6 +114,11 @@ class WorkflowRegistry:
             if "prompt" not in agent_config:
                 errors.append(f"Agent '{agent_name}' missing required field: prompt")
 
+        # Validate isolation
+        isolation = config.get("isolation")
+        if isolation is not None and isolation not in ("per-invocation", "per-branch"):
+            errors.append(f"Invalid isolation mode: '{isolation}'. Must be 'per-invocation' or 'per-branch'.")
+
         # Validate params
         for param_name, param_config in config.get("params", {}).items():
             if "type" not in param_config:

@@ -150,10 +150,10 @@ class _ExecutionContext:
         tier = self.config.get("tier", "default")
         tier_resource_key = f"tier_{tier.replace('-', '_')}"
 
-        pg = ray.util.placement_group(
-            bundles=[{tier_resource_key: 0.01, "CPU": 0.1}],
-            strategy="STRICT_PACK",
-        )
+            pg = ray.util.placement_group(
+                bundles=[{tier_resource_key: 1, "CPU": 1}],
+                strategy="STRICT_PACK",
+            )
         logger.info("Waiting for placement group on tier '%s'...", tier)
 
         loop = asyncio.get_event_loop()
@@ -476,6 +476,7 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
     resolve_strategy = node.get("resolve", "concatenate")
     tool_loop = node.get("tool_loop", 0)
 
+    isolation = ctx.config.get("isolation", "per-invocation")
     branch_contexts: list[_ExecutionContext] = []
 
     async def run_branch(index: int):
@@ -497,9 +498,11 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
         branch_ctx.tool_manager = ctx.tool_manager
         branch_contexts.append(branch_ctx)
 
-        await branch_ctx.setup_placement_group()
+        if isolation == "per-branch":
+            await branch_ctx.setup_placement_group()
+        else:
+            branch_ctx.placement_group = ctx.placement_group
 
-        indexed_key = f"{agent_name}_{index}"
         cfg = resolve_agent_config(agent_name, ctx.config, ctx.agent_overrides)
         tool_schemas = ctx.get_tool_schemas_for_agent(agent_name)
         options = {}
@@ -529,7 +532,7 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
                 except Exception:
                     pass
             bctx.agents.clear()
-            if bctx.placement_group:
+            if isolation == "per-branch" and bctx.placement_group:
                 try:
                     ray.util.remove_placement_group(bctx.placement_group)
                 except Exception:
@@ -623,6 +626,7 @@ async def _execute_review(node: dict, ctx: _ExecutionContext) -> str | None:
 async def _execute_race(node: dict, ctx: _ExecutionContext) -> str | None:
     count = node.get("count", 3)
     steps = node.get("steps", node.get("work", []))
+    isolation = ctx.config.get("isolation", "per-invocation")
     branch_contexts: list[_ExecutionContext] = []
 
     async def run_race_branch(index: int):
@@ -645,7 +649,11 @@ async def _execute_race(node: dict, ctx: _ExecutionContext) -> str | None:
         branch_ctx.tool_manager = ctx.tool_manager
         branch_contexts.append(branch_ctx)
 
-        await branch_ctx.setup_placement_group()
+        if isolation == "per-branch":
+            await branch_ctx.setup_placement_group()
+        else:
+            branch_ctx.placement_group = ctx.placement_group
+
         await _execute(steps, branch_ctx, path=[])
         silent_stream.close()
         return _last_assistant_content(branch_state)
@@ -665,7 +673,7 @@ async def _execute_race(node: dict, ctx: _ExecutionContext) -> str | None:
                     except Exception:
                         pass
             bctx.agents.clear()
-            if bctx.placement_group:
+            if isolation == "per-branch" and bctx.placement_group:
                 try:
                     ray.util.remove_placement_group(bctx.placement_group)
                 except Exception:

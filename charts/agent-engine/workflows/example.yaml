@@ -1,6 +1,7 @@
 name: example
 description: Summarizer distills user input, executor carries out the task using Kubernetes read-only tools.
 tier: k8s-access
+isolation: per-invocation
 
 providers:
   openai:

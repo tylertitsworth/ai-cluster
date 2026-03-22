@@ -19,7 +19,7 @@ spec:
             ray_actor_options:
               num_cpus: 0
               resources:
-                tier_default: 0.01
+                serve_node: 0.01
   rayClusterConfig:
     rayVersion: {{ .Values.rayVersion | quote }}
     {{- if .Values.autoscaler.enabled }}
@@ -32,7 +32,7 @@ spec:
       rayStartParams:
         dashboard-host: "0.0.0.0"
         num-cpus: {{ .Values.head.cpus | quote }}
-        resources: '"{\"tier_default\": 100}"'
+        resources: '"{\"serve_node\": 1}"'
       template:
         spec:
           securityContext:
@@ -118,7 +118,8 @@ spec:
         minReplicas: {{ $tierConfig.minReplicas }}
         maxReplicas: {{ $tierConfig.maxReplicas }}
         rayStartParams:
-          resources: '"{\"{{ $resourceKey }}\": 100}"'
+          num-cpus: "1"
+          resources: '"{\"{{ $resourceKey }}\": 1}"'
         template:
           metadata:
             labels:

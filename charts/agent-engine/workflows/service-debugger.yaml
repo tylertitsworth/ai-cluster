@@ -1,6 +1,7 @@
 name: service-debugger
 description: Diagnose and fix broken Kubernetes services via a four-agent investigate-fix-validate-execute loop.
 tier: k8s-access
+isolation: per-invocation
 
 providers:
   openai:

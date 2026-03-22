@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agent-engine.fullname" . }}-workflows
+  labels:
+    {{- include "agent-engine.labels" . | nindent 4 }}
+data:
+  {{- range $path, $_ := .Files.Glob "workflows/*.yaml" }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+  {{- end }}

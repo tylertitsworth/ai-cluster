@@ -1,0 +1,52 @@
+name: report-writer
+description: Orchestrator decomposes a topic, parallel writers research each section, editor assembles the final report.
+tier: web-research
+
+providers:
+  openai:
+    base_url: ${OPENAI_BASE_URL}
+    api_key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL}
+  ollama:
+    base_url: ${OLLAMA_BASE_URL}
+    api_key: not-needed
+    model: ${OLLAMA_MODEL}
+
+tools:
+  tavily:
+    type: mcp
+    url: ${TAVILY_MCP_URL}
+    transport: streamable_http
+  context7:
+    type: mcp
+    url: https://mcp.context7.com/mcp
+    transport: streamable_http
+
+params:
+  num_sections:
+    type: integer
+    default: 3
+    description: Number of report sections to research and write in parallel (1–20).
+
+agents:
+  orchestrator:
+    provider: openai
+    prompt: orchestrator
+
+  writer:
+    provider: openai
+    prompt: writer
+    tools: [tavily, context7]
+
+  editor:
+    provider: openai
+    prompt: editor
+
+flow:
+  - step: orchestrator
+  - parallel:
+      agent: writer
+      count: "{num_sections}"
+      tool_loop: 5
+      resolve: concatenate
+  - step: editor

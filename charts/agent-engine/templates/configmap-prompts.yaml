@@ -1,0 +1,16 @@
+{{- range .Values.prompts.workflows }}
+{{- $workflow := . }}
+{{- $safeName := replace "_" "-" $workflow }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agent-engine.fullname" $ }}-prompts-{{ $safeName }}
+  labels:
+    {{- include "agent-engine.labels" $ | nindent 4 }}
+data:
+  {{- range $path, $_ := $.Files.Glob (printf "prompts/%s/*.txt" $workflow) }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+  {{- end }}
+---
+{{- end }}

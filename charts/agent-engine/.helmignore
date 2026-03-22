@@ -1,0 +1,9 @@
+*.py
+Dockerfile
+requirements.txt
+cli.py
+engine/
+# Note: workflows/ and prompts/ are intentionally NOT ignored here.
+# They are embedded into ConfigMaps via .Files.Glob during template
+# rendering. Adding them to .helmignore would exclude them from the
+# Files object and produce empty ConfigMaps.

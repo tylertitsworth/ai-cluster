@@ -1,0 +1,60 @@
+name: service-debugger
+description: Diagnose and fix broken Kubernetes services via a four-agent investigate-fix-validate-execute loop.
+tier: k8s-access
+
+providers:
+  openai:
+    base_url: ${OPENAI_BASE_URL}
+    api_key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL}
+  ollama:
+    base_url: ${OLLAMA_BASE_URL}
+    api_key: not-needed
+    model: ${OLLAMA_MODEL}
+
+tools:
+  k8s-reader:
+    type: mcp
+    url: http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp
+    transport: streamable_http
+  k8s-writer:
+    type: mcp
+    url: http://kubernetes-mcp-server-rw.kubernetes-mcp.svc.cluster.local:8080/mcp
+    transport: streamable_http
+
+agents:
+  investigator:
+    provider: openai
+    prompt: investigator
+    tools: [k8s-reader]
+
+  fixer:
+    provider: openai
+    prompt: fixer
+
+  guardrails:
+    provider: openai
+    prompt: guardrails
+
+  executor:
+    provider: openai
+    prompt: executor
+    tools: [k8s-writer]
+
+flow:
+  - loop:
+      max: 5
+      steps:
+        - step: investigator
+          tool_loop: 10
+        - route:
+            "STATUS: FIXED": end
+            "STATUS: UNFIXABLE": end
+            default: continue
+        - step: fixer
+        - review:
+            reviewer: guardrails
+            reject: "VERDICT: UNSAFE"
+            max_retries: 2
+        - step: executor
+          tool_loop: 10

@@ -1,0 +1,14 @@
+# NetworkPolicies for agent-engine worker tiers.
+#
+# Egress restrictions for worker pods are not applied here because LLM
+# provider endpoints are resolved via DNS (dynamic IPs), making IP-based
+# egress selectors impractical without an L7-aware policy engine.
+#
+# To add fine-grained egress control, consider:
+#   - CiliumNetworkPolicy with toFQDNs selectors (e.g. toFQDNs: [{matchName: "ai.tail79a5c8.ts.net"}])
+#   - An egress gateway (Istio, Cilium Egress Gateway) with IP-range allowlists
+#   - ServiceEntry + AuthorizationPolicy if using Istio
+#
+# Ingress NetworkPolicies for MCP tool pods (Tavily, Context7, etc.) should
+# be defined in those tools' own Helm charts, selecting worker pods by the
+# label agent-tier: <tier> set on each worker group.

@@ -1,0 +1,178 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: {{ include "agent-engine.fullname" . }}
+  labels:
+    {{- include "agent-engine.labels" . | nindent 4 }}
+spec:
+  serviceUnhealthySecondThreshold: 300
+  deploymentUnhealthySecondThreshold: 300
+  serveConfigV2: |
+    applications:
+      - name: agent-engine
+        route_prefix: {{ .Values.serve.routePrefix }}
+        import_path: serve:app
+        deployments:
+          - name: AgentEngine
+            num_replicas: {{ .Values.serve.numReplicas }}
+            max_concurrent_queries: {{ .Values.serve.maxConcurrentQueries | default 10 }}
+            ray_actor_options:
+              num_cpus: 0
+  rayClusterConfig:
+    rayVersion: {{ .Values.rayVersion | quote }}
+    {{- if .Values.autoscaler.enabled }}
+    enableInTreeAutoscaling: true
+    autoscalerOptions:
+      upscalingMode: {{ .Values.autoscaler.upscalingMode }}
+      idleTimeoutSeconds: {{ .Values.autoscaler.idleTimeoutSeconds }}
+    {{- end }}
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+        num-cpus: {{ .Values.head.cpus | quote }}
+      template:
+        spec:
+          {{- with .Values.head.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: {{ include "agent-engine.fullname" . }}-data
+            - name: workflows
+              configMap:
+                name: {{ include "agent-engine.fullname" . }}-workflows
+            {{- range .Values.prompts.workflows }}
+            {{- $safe := replace "_" "-" . }}
+            - name: prompts-{{ $safe }}
+              configMap:
+                name: {{ include "agent-engine.fullname" $ }}-prompts-{{ $safe }}
+            {{- end }}
+          containers:
+            - name: ray-head
+              image: {{ include "agent-engine.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              env:
+                - name: OLLAMA_BASE_URL
+                  value: {{ .Values.providers.ollama.baseUrl | quote }}
+                - name: OLLAMA_MODEL
+                  value: {{ .Values.providers.ollama.model | quote }}
+                - name: OPENAI_BASE_URL
+                  value: {{ .Values.providers.openai.baseUrl | quote }}
+                - name: OPENAI_MODEL
+                  value: {{ .Values.providers.openai.model | quote }}
+                - name: OPENAI_API_KEY
+                  value: {{ .Values.providers.openai.apiKey | quote }}
+                - name: ACTOR_CPU
+                  value: {{ .Values.actorCpu | quote }}
+                - name: CHECKPOINT_DB
+                  value: {{ .Values.checkpoint.path | quote }}
+                {{- with .Values.tavilyMcpUrl }}
+                - name: TAVILY_MCP_URL
+                  value: {{ . | quote }}
+                {{- end }}
+                {{- if .Values.apiKeys.secretName }}
+                - name: TAVILY_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.apiKeys.secretName }}
+                      key: TAVILY_API_KEY
+                - name: CONTEXT7_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.apiKeys.secretName }}
+                      key: CONTEXT7_API_KEY
+                {{- end }}
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: workflows
+                  mountPath: /workflows
+                {{- range .Values.prompts.workflows }}
+                {{- $safe := replace "_" "-" . }}
+                - name: prompts-{{ $safe }}
+                  mountPath: /prompts/{{ $safe }}
+                {{- end }}
+              resources:
+                {{- toYaml .Values.head.resources | nindent 16 }}
+              ports:
+                - containerPort: 6379
+                  name: gcs
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 10001
+                  name: client
+                - containerPort: 8000
+                  name: serve
+    workerGroupSpecs:
+      {{- range $tierName, $tierConfig := .Values.tiers }}
+      {{- $resourceKey := printf "tier_%s" (replace "-" "_" $tierName) }}
+      - groupName: {{ $tierName }}
+        replicas: 0
+        minReplicas: {{ $tierConfig.minReplicas }}
+        maxReplicas: {{ $tierConfig.maxReplicas }}
+        rayStartParams:
+          resources: '{"{{ $resourceKey }}": 100}'
+        template:
+          metadata:
+            labels:
+              agent-tier: {{ $tierName }}
+          spec:
+            serviceAccountName: {{ include "agent-engine.fullname" $ }}-{{ $tierName }}
+            volumes:
+              - name: workflows
+                configMap:
+                  name: {{ include "agent-engine.fullname" $ }}-workflows
+              {{- range $.Values.prompts.workflows }}
+              {{- $safe := replace "_" "-" . }}
+              - name: prompts-{{ $safe }}
+                configMap:
+                  name: {{ include "agent-engine.fullname" $ }}-prompts-{{ $safe }}
+              {{- end }}
+            containers:
+              - name: ray-worker
+                image: {{ include "agent-engine.image" $ }}
+                imagePullPolicy: {{ $.Values.image.pullPolicy }}
+                env:
+                  - name: OLLAMA_BASE_URL
+                    value: {{ $.Values.providers.ollama.baseUrl | quote }}
+                  - name: OLLAMA_MODEL
+                    value: {{ $.Values.providers.ollama.model | quote }}
+                  - name: OPENAI_BASE_URL
+                    value: {{ $.Values.providers.openai.baseUrl | quote }}
+                  - name: OPENAI_MODEL
+                    value: {{ $.Values.providers.openai.model | quote }}
+                  - name: OPENAI_API_KEY
+                    value: {{ $.Values.providers.openai.apiKey | quote }}
+                  - name: ACTOR_CPU
+                    value: {{ $.Values.actorCpu | quote }}
+                  - name: CHECKPOINT_DB
+                    value: {{ $.Values.checkpoint.path | quote }}
+                  {{- with $.Values.tavilyMcpUrl }}
+                  - name: TAVILY_MCP_URL
+                    value: {{ . | quote }}
+                  {{- end }}
+                  {{- if $.Values.apiKeys.secretName }}
+                  - name: TAVILY_API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ $.Values.apiKeys.secretName }}
+                        key: TAVILY_API_KEY
+                  - name: CONTEXT7_API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ $.Values.apiKeys.secretName }}
+                        key: CONTEXT7_API_KEY
+                  {{- end }}
+                volumeMounts:
+                  - name: workflows
+                    mountPath: /workflows
+                  {{- range $.Values.prompts.workflows }}
+                  {{- $safe := replace "_" "-" . }}
+                  - name: prompts-{{ $safe }}
+                    mountPath: /prompts/{{ $safe }}
+                  {{- end }}
+                resources:
+                  {{- toYaml $tierConfig.resources | nindent 18 }}
+      {{- end }}

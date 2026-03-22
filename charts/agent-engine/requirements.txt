@@ -1,0 +1,6 @@
+openai
+mcp
+aiosqlite
+httpx
+pyyaml
+watchfiles

@@ -1,0 +1,96 @@
+image:
+  repository: totalsundae/dev
+  tag: agent-engine
+  pullPolicy: Always
+
+rayVersion: "2.54.0"
+
+providers:
+  ollama:
+    baseUrl: "http://ollama.ollama.svc.cluster.local:11434/v1"
+    model: "nemotron-3-nano-30b-full"
+    apiKey: "not-needed"
+  openai:
+    baseUrl: "https://ai.tail79a5c8.ts.net/v1"
+    model: "gpt-5.4"
+    apiKey: "not-needed"
+
+tavilyMcpUrl: ""
+
+checkpoint:
+  storage: 2Gi
+  path: /data/checkpoints.db
+
+actorCpu: "0.1"
+
+head:
+  cpus: "2"
+  resources:
+    limits:
+      cpu: "2"
+      memory: 8Gi
+    requests:
+      cpu: "1"
+      memory: 4Gi
+  nodeSelector:
+    kubernetes.io/hostname: framework-desktop
+
+tiers:
+  default:
+    minReplicas: 0
+    maxReplicas: 5
+    resources:
+      limits:
+        cpu: "1"
+        memory: 4Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+  k8s-access:
+    minReplicas: 0
+    maxReplicas: 3
+    resources:
+      limits:
+        cpu: "1"
+        memory: 4Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+  web-research:
+    minReplicas: 0
+    maxReplicas: 10
+    resources:
+      limits:
+        cpu: "1"
+        memory: 8Gi
+      requests:
+        cpu: "1"
+        memory: 4Gi
+
+autoscaler:
+  enabled: true
+  upscalingMode: Default
+  idleTimeoutSeconds: 60
+
+ingress:
+  enabled: true
+  className: tailscale
+  host: agent-engine
+  labels:
+    tailscale.com/proxy-class: control-plane
+
+serve:
+  routePrefix: /
+  numReplicas: 1
+  maxConcurrentQueries: 10
+
+apiKeys:
+  secretName: agent-engine-api-keys
+
+# Prompt directories to mount as ConfigMaps (one per workflow).
+# Each entry corresponds to a directory under prompts/<workflow>/.
+prompts:
+  workflows:
+    - report-writer
+    - service-debugger
+    - example

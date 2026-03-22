@@ -1,0 +1,22 @@
+# Agent Engine — Config-driven workflow orchestration on Ray Serve
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agent-engine
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: agent-engine
+    path: charts/agent-engine
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agent-engine
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

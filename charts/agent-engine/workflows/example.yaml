@@ -1,0 +1,30 @@
+name: example
+description: Summarizer distills user input, executor carries out the task with tools.
+tier: default
+
+providers:
+  openai:
+    base_url: ${OPENAI_BASE_URL}
+    api_key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL}
+  ollama:
+    base_url: ${OLLAMA_BASE_URL}
+    api_key: not-needed
+    model: ${OLLAMA_MODEL}
+
+# TODO: get_current_time and calculate are simple Python tools; add MCP equivalents
+# when available.
+
+agents:
+  summarizer:
+    provider: openai
+    prompt: summarizer
+
+  executor:
+    provider: openai
+    prompt: executor
+
+flow:
+  - step: summarizer
+  - step: executor
+    tool_loop: 10

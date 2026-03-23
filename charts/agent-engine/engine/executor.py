@@ -9,6 +9,7 @@ Plus 3 meta-pattern shorthands: review, race, ralph.
 import asyncio
 import json
 import logging
+import random
 import re
 from copy import deepcopy
 from hashlib import md5
@@ -355,13 +356,30 @@ async def _call_agent_streaming(
 ) -> dict:
     """Stream tokens from agent, return the complete accumulated message."""
     final_message = None
+    in_think = False
     async for chunk_ref in actor.stream_execute.remote(messages):
         chunk = await asyncio.wait_for(chunk_ref, timeout=ACTOR_TIMEOUT)
         if chunk.get("type") == "delta" and chunk.get("content"):
             text = chunk["content"]
-            text = _strip_think_streaming(text)
-            if text:
-                stream.token(agent_name, text)
+            while text:
+                if in_think:
+                    end_idx = text.find("</think>")
+                    if end_idx != -1:
+                        text = text[end_idx + 8:]
+                        in_think = False
+                    else:
+                        break
+                else:
+                    start_idx = text.find("<think>")
+                    if start_idx != -1:
+                        before = text[:start_idx]
+                        if before:
+                            stream.token(agent_name, before)
+                        text = text[start_idx + 7:]
+                        in_think = True
+                    else:
+                        stream.token(agent_name, text)
+                        break
         elif chunk.get("type") == "message":
             final_message = chunk
 
@@ -473,11 +491,15 @@ async def _execute_route(routes: dict, ctx: _ExecutionContext) -> str | None:
 async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
     agent_names_list = node.get("agents")
     if agent_names_list:
+        agent_names_list = list(agent_names_list)
         count = len(agent_names_list)
     else:
         single_agent = node.get("agent")
         count = _resolve_count(node.get("count", 1), ctx.state.params)
         agent_names_list = [single_agent] * count
+
+    if node.get("shuffle", False):
+        random.shuffle(agent_names_list)
 
     resolve_strategy = node.get("resolve", "concatenate")
     tool_loop = node.get("tool_loop", 0)
@@ -491,6 +513,8 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
     isolation = ctx.config.get("isolation", "per-invocation")
     branch_contexts: list[_ExecutionContext] = []
 
+    context_filter = node.get("context_filter", "full")
+
     async def run_branch(index: int):
         branch_agent = agent_names_list[index]
         branch_state = State(
@@ -498,7 +522,13 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
             ctx.state.config_snapshot,
             ctx.state.params,
         )
-        branch_state.messages = list(ctx.state.messages)
+
+        if context_filter == "coordinator_only":
+            branch_state.messages = [
+                m for m in ctx.state.messages if not m.get("_parallel")
+            ]
+        else:
+            branch_state.messages = list(ctx.state.messages)
 
         if inject_context and branch_agent in branch_contexts_map:
             branch_state.add_message({
@@ -590,7 +620,7 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
             return None
 
     combined = "\n\n".join(parts) if parts else "All branches failed to produce content."
-    ctx.state.add_message({"role": "assistant", "content": combined})
+    ctx.state.add_message({"role": "assistant", "content": combined, "_parallel": True})
     return None
 
 

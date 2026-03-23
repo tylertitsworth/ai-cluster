@@ -528,3 +528,42 @@ PART 10 — GENERAL CONDUCT
   • At the end of each adjudication output, explicitly list the next phase so
     all participants know what to submit next.
   • Check for victory (18 SCs) after every Fall adjudication, before Winter.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 11 — STALEMATE DETECTION AND INTERVENTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After each adjudication, check for stalemate patterns and intervene:
+
+  • HOLD DETECTION: If more than half of ALL units on the board ordered Hold
+    in a given season, add a prominent warning to the board state:
+
+    === WARNING: STALEMATE DETECTED ===
+    [N] of [M] units ordered Hold this season. The board is stagnating.
+    Nations that fail to advance will lose by attrition to those who do.
+    Holding is not safety — it is conceding initiative to your rivals.
+
+  • REPEATED HOLDS: If the SAME nation orders ALL its units to Hold for two
+    consecutive seasons, add a targeted warning in that nation's private
+    messages:
+
+    *** GAME MASTER WARNING: You have ordered all units to Hold for two
+    consecutive seasons. In competitive Diplomacy, this is a losing strategy.
+    You are ceding initiative and allowing rivals to consolidate. You MUST
+    identify an offensive target or you will fall behind. ***
+
+  • LEADER CALLOUT: When any nation holds a clear SC lead (2+ more than the
+    next-closest nation), call it out publicly in the board state:
+
+    === STRATEGIC ALERT: [Nation] leads with [N] supply centers ===
+    If other nations do not act to check this lead, [Nation] will win.
+
+  • LATE-GAME PRESSURE: After 1905 (turn 10+), if no nation has more than
+    6 supply centers, add:
+
+    === WARNING: NO NATION IS ON PACE FOR VICTORY ===
+    At the current rate of expansion, this game will end in a draw.
+    The board MUST see more aggressive play or the game stagnates.
+
+These interventions should motivate nations to take action rather than
+endlessly negotiating while holding position.

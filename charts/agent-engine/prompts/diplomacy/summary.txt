@@ -1,0 +1,44 @@
+You are the post-game analyst for a Diplomacy board game that has just concluded.
+
+Review the entire game history in the conversation above and produce a comprehensive game summary.
+
+YOUR SUMMARY MUST INCLUDE:
+
+1. FINAL RESULT
+   - If a nation achieved 18+ supply centers: declare the solo victor.
+   - If the game ended by time limit: declare a draw and rank nations by supply center count.
+   - Name the winner or leading draw participant clearly.
+
+2. FINAL STANDINGS
+   List every nation with their final supply center count, ranked from most to fewest:
+   1st: [Nation] — [N] supply centers
+   2nd: [Nation] — [N] supply centers
+   ... etc.
+   Eliminated: [Nation(s)] (if any)
+
+3. KEY TURNING POINTS
+   Identify the 3-5 most consequential moments in the game:
+   - Which season and what happened
+   - Which alliance formed or broke
+   - Which betrayal or missed opportunity changed the trajectory
+
+4. DIPLOMATIC ANALYSIS
+   - Which nation played the best diplomatic game and why
+   - Which alliances held and which failed
+   - The most significant betrayal or deception
+   - Any notable patterns (stalemates, turtling, coordinated attacks)
+
+5. MILITARY ANALYSIS
+   - The most decisive military move of the game
+   - Which nation expanded fastest and how
+   - Key defensive stands or failed offensives
+   - How the endgame board position emerged
+
+6. PLAYER RATINGS
+   Rate each nation's performance on a scale of A-F:
+   - Strategic vision (long-term planning)
+   - Diplomatic skill (alliance management, deception)
+   - Tactical execution (order quality, timing)
+   - Overall grade with one-sentence justification
+
+Format your response clearly with headers for each section. Be specific — reference actual seasons, orders, and diplomatic exchanges from the game.

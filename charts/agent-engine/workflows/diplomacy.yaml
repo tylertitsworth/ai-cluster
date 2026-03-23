@@ -25,6 +25,9 @@ agents:
   game_master:
     provider: openai
     prompt: game_master
+  summary:
+    provider: openai
+    prompt: summary
   england:
     provider: openai
     prompt: england
@@ -55,13 +58,18 @@ flow:
         - parallel:
             agents: [england, france, germany, italy, austria, russia, turkey]
             inject_context: true
+            context_filter: coordinator_only
+            shuffle: true
             resolve: concatenate
         - step: game_master
         - parallel:
             agents: [england, france, germany, italy, austria, russia, turkey]
             inject_context: true
+            context_filter: coordinator_only
+            shuffle: true
             resolve: concatenate
         - step: game_master
         - route:
             "VICTORY:": end
             default: continue
+  - step: summary

@@ -1,0 +1,67 @@
+name: diplomacy
+description: Full 7-player Diplomacy board game with AI nations, private negotiation, simultaneous orders, and real adjudication rules.
+tier: default
+isolation: per-invocation
+
+providers:
+  openai:
+    base_url: ${OPENAI_BASE_URL}
+    api_key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL}
+  ollama:
+    base_url: ${OLLAMA_BASE_URL}
+    api_key: not-needed
+    model: ${OLLAMA_MODEL}
+
+params:
+  max_years:
+    type: integer
+    default: 10
+    description: Maximum game years (each year = 2 seasons). Game ends on victory or max years.
+    min: 1
+    max: 30
+
+agents:
+  game_master:
+    provider: openai
+    prompt: game_master
+  england:
+    provider: openai
+    prompt: england
+  france:
+    provider: openai
+    prompt: france
+  germany:
+    provider: openai
+    prompt: germany
+  italy:
+    provider: openai
+    prompt: italy
+  austria:
+    provider: openai
+    prompt: austria
+  russia:
+    provider: openai
+    prompt: russia
+  turkey:
+    provider: openai
+    prompt: turkey
+
+flow:
+  - step: game_master
+  - loop:
+      max: 20
+      steps:
+        - parallel:
+            agents: [england, france, germany, italy, austria, russia, turkey]
+            inject_context: true
+            resolve: concatenate
+        - step: game_master
+        - parallel:
+            agents: [england, france, germany, italy, austria, russia, turkey]
+            inject_context: true
+            resolve: concatenate
+        - step: game_master
+        - route:
+            "VICTORY:": end
+            default: continue

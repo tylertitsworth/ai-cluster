@@ -47,7 +47,7 @@ async def _make_ctx(config, tmp_db, initial_messages=None, params=None):
         agent_overrides={},
         registry=registry,
     )
-    from conftest import MockToolManager
+    from tests.conftest import MockToolManager
     ctx.tool_manager = MockToolManager(config.get("tools", {}))
     return ctx
 
@@ -376,6 +376,76 @@ async def test_resume_skips_completed(sample_workflow_config, tmp_db, mock_ray, 
 
     assistant_msgs = [m for m in ctx.state.messages if m.get("role") == "assistant"]
     assert len(assistant_msgs) == 2
+
+
+# ---------------------------------------------------------------------------
+# _parse_agent_sections helper
+# ---------------------------------------------------------------------------
+
+def test_parse_agent_sections_basic():
+    """Parses labeled sections and returns per-agent content."""
+    from engine.executor import _parse_agent_sections
+    text = "[AGENT_A]\nTask for A\n\n[AGENT_B]\nTask for B\n\n[AGENT_C]\nTask for C"
+    sections = _parse_agent_sections(text, ["agent_a", "agent_b", "agent_c"])
+    assert sections["agent_a"] == "Task for A"
+    assert sections["agent_b"] == "Task for B"
+    assert sections["agent_c"] == "Task for C"
+
+
+def test_parse_agent_sections_missing_agent():
+    """Agents with no matching section are omitted from the result."""
+    from engine.executor import _parse_agent_sections
+    text = "[AGENT_A]\nOnly A gets context"
+    sections = _parse_agent_sections(text, ["agent_a", "agent_b"])
+    assert "agent_a" in sections
+    assert "agent_b" not in sections
+
+
+def test_parse_agent_sections_empty_text():
+    """Empty text returns empty dict."""
+    from engine.executor import _parse_agent_sections
+    sections = _parse_agent_sections("", ["agent_a"])
+    assert sections == {}
+
+
+# ---------------------------------------------------------------------------
+# Parallel: agents list + inject_context
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_parallel_agents_list(sample_workflow_config, tmp_db, mock_ray, mock_agent_class, mock_tool_manager):
+    """parallel with agents: [agent_a, agent_b] runs 2 different agents, one per branch."""
+    ctx = await _make_ctx(sample_workflow_config, tmp_db, [{"role": "user", "content": "test"}])
+    parallel_node = {"agents": ["agent_a", "agent_b"], "resolve": "concatenate"}
+    await _execute_parallel(parallel_node, ctx)
+    events = _collect_stream_events(ctx.stream)
+    step_starts = [e for e in events if e.get("type") == "step_start"]
+    agents_started = {e["agent"] for e in step_starts}
+    assert "agent_a" in agents_started, f"agent_a not started, got: {agents_started}"
+    assert "agent_b" in agents_started, f"agent_b not started, got: {agents_started}"
+
+
+@pytest.mark.asyncio
+async def test_parallel_inject_context(sample_workflow_config, tmp_db, mock_ray, mock_agent_class, mock_tool_manager):
+    """inject_context routes [AGENT_NAME] sections to the matching branch."""
+    ctx = await _make_ctx(sample_workflow_config, tmp_db, [
+        {"role": "user", "content": "test"},
+        {"role": "assistant", "content": "[AGENT_A]\nPrivate task for A\n\n[AGENT_B]\nPrivate task for B"},
+    ])
+    parallel_node = {"agents": ["agent_a", "agent_b"], "inject_context": True, "resolve": "concatenate"}
+    await _execute_parallel(parallel_node, ctx)
+    last = _last_assistant_content(ctx.state)
+    assert len(last) > 0
+
+
+@pytest.mark.asyncio
+async def test_parallel_agents_list_with_single_agent_fallback(sample_workflow_config, tmp_db, mock_ray, mock_agent_class, mock_tool_manager):
+    """When agents is not set, falls back to agent + count (existing behavior)."""
+    ctx = await _make_ctx(sample_workflow_config, tmp_db, [{"role": "user", "content": "test"}])
+    parallel_node = {"agent": "agent_a", "count": 2, "resolve": "concatenate"}
+    await _execute_parallel(parallel_node, ctx)
+    last = _last_assistant_content(ctx.state)
+    assert len(last) > 0
 
 
 # ---------------------------------------------------------------------------

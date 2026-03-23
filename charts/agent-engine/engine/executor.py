@@ -471,21 +471,40 @@ async def _execute_route(routes: dict, ctx: _ExecutionContext) -> str | None:
 
 
 async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
-    agent_name = node.get("agent")
-    count = _resolve_count(node.get("count", 1), ctx.state.params)
+    agent_names_list = node.get("agents")
+    if agent_names_list:
+        count = len(agent_names_list)
+    else:
+        single_agent = node.get("agent")
+        count = _resolve_count(node.get("count", 1), ctx.state.params)
+        agent_names_list = [single_agent] * count
+
     resolve_strategy = node.get("resolve", "concatenate")
     tool_loop = node.get("tool_loop", 0)
+    inject_context = node.get("inject_context", False)
+
+    branch_contexts_map: dict[str, str] = {}
+    if inject_context:
+        last_msg = _last_assistant_content(ctx.state)
+        branch_contexts_map = _parse_agent_sections(last_msg, agent_names_list)
 
     isolation = ctx.config.get("isolation", "per-invocation")
     branch_contexts: list[_ExecutionContext] = []
 
     async def run_branch(index: int):
+        branch_agent = agent_names_list[index]
         branch_state = State(
             ctx.state.thread_id,
             ctx.state.config_snapshot,
             ctx.state.params,
         )
         branch_state.messages = list(ctx.state.messages)
+
+        if inject_context and branch_agent in branch_contexts_map:
+            branch_state.add_message({
+                "role": "user",
+                "content": f"[Private context for {branch_agent}]\n{branch_contexts_map[branch_agent]}",
+            })
 
         branch_ctx = _ExecutionContext(
             config=ctx.config,
@@ -503,18 +522,18 @@ async def _execute_parallel(node: dict, ctx: _ExecutionContext) -> str | None:
         else:
             branch_ctx.placement_group = ctx.placement_group
 
-        cfg = resolve_agent_config(agent_name, ctx.config, ctx.agent_overrides)
-        tool_schemas = ctx.get_tool_schemas_for_agent(agent_name)
+        cfg = resolve_agent_config(branch_agent, ctx.config, ctx.agent_overrides)
+        tool_schemas = ctx.get_tool_schemas_for_agent(branch_agent)
         options = {}
         if branch_ctx.placement_group:
             options["placement_group"] = branch_ctx.placement_group
         actor = Agent.options(**options).remote(
             cfg["provider_config"], cfg["system_prompt"], tool_schemas or None,
         )
-        branch_ctx.agents[agent_name] = actor
+        branch_ctx.agents[branch_agent] = actor
 
         await _execute_step(
-            {"step": agent_name, "tool_loop": tool_loop, "_parallel": True},
+            {"step": branch_agent, "tool_loop": tool_loop, "_parallel": True},
             branch_ctx,
         )
         return _last_assistant_content(branch_state)
@@ -790,6 +809,36 @@ def _resolve_count(count_value, params: dict) -> int:
         param_name = count_value[1:-1]
         return int(params.get(param_name, 1))
     return int(count_value)
+
+
+def _parse_agent_sections(text: str, agent_names: list[str]) -> dict[str, str]:
+    """Parse [AGENT_NAME] delimited sections from text for per-branch context injection.
+
+    Used by inject_context to route coordinator output to specific parallel branches.
+    Sections are delimited by [NAME] markers (case-insensitive match to agent names).
+    """
+    if not text:
+        return {}
+    sections: dict[str, str] = {}
+    markers = {name: f"[{name.upper()}]" for name in agent_names}
+
+    for name in agent_names:
+        marker = markers[name]
+        start = text.find(marker)
+        if start == -1:
+            continue
+        start += len(marker)
+        end_pos = len(text)
+        for other_name in agent_names:
+            if other_name == name:
+                continue
+            other_pos = text.find(markers[other_name], start)
+            if other_pos != -1 and other_pos < end_pos:
+                end_pos = other_pos
+        section = text[start:end_pos].strip()
+        if section:
+            sections[name] = section
+    return sections
 
 
 def _stable_counter_name(prefix: str, node: dict) -> str:

@@ -12,7 +12,7 @@ _SOURCE_DIR = Path(__file__).resolve().parent.parent
 def test_load_workflows_from_source_tree():
     registry = WorkflowRegistry()
     names = set(registry.workflows.keys())
-    assert names == {"example", "service-debugger", "report-writer"}
+    assert names == {"example", "service-debugger", "report-writer", "diplomacy"}
 
 
 def test_load_prompts():

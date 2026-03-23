@@ -9,14 +9,62 @@ import json
 import os
 import sys
 import tempfile
+import types
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 AGENT_ENGINE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(AGENT_ENGINE_ROOT))
+
+# ---------------------------------------------------------------------------
+# Install stub modules for ray, openai, mcp BEFORE any engine code imports.
+# These are replaced by proper mocks in fixtures, but the stubs prevent
+# ImportError at module load time.
+# ---------------------------------------------------------------------------
+
+if "ray" not in sys.modules:
+    _ray = types.ModuleType("ray")
+    _ray.remote = lambda *a, **kw: (lambda cls: cls) if not a else a[0]
+    _ray.kill = lambda *a, **kw: None
+    _ray.get = lambda ref, **kw: ref
+    _ray.ObjectRef = object
+    _ray_util = types.ModuleType("ray.util")
+    _ray_util.placement_group = lambda **kw: MagicMock()
+    _ray_util.remove_placement_group = lambda pg: None
+    _ray.util = _ray_util
+    sys.modules["ray"] = _ray
+    sys.modules["ray.util"] = _ray_util
+    _ray_serve = types.ModuleType("ray.serve")
+    _ray_serve.deployment = lambda *a, **kw: (lambda cls: cls)
+    _ray_serve.ingress = lambda app: (lambda cls: cls)
+    sys.modules["ray.serve"] = _ray_serve
+
+if "openai" not in sys.modules:
+    _openai = types.ModuleType("openai")
+    _openai.AsyncOpenAI = MagicMock
+    _openai.NOT_GIVEN = object()
+    _openai.RateLimitError = type("RateLimitError", (Exception,), {})
+    _openai.APITimeoutError = type("APITimeoutError", (Exception,), {})
+    _openai.APIConnectionError = type("APIConnectionError", (Exception,), {})
+    sys.modules["openai"] = _openai
+
+if "mcp" not in sys.modules:
+    _mcp = types.ModuleType("mcp")
+    _mcp.ClientSession = MagicMock
+    sys.modules["mcp"] = _mcp
+    _mcp_client = types.ModuleType("mcp.client")
+    sys.modules["mcp.client"] = _mcp_client
+    _mcp_http = types.ModuleType("mcp.client.streamable_http")
+    _mcp_http.streamablehttp_client = MagicMock
+    sys.modules["mcp.client.streamable_http"] = _mcp_http
+
+if "watchfiles" not in sys.modules:
+    _wf = types.ModuleType("watchfiles")
+    _wf.awatch = MagicMock
+    sys.modules["watchfiles"] = _wf
+
+import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -37,8 +85,49 @@ def _tool_call_response(name: str, arguments: str, call_id: str = "call_1"):
     }
 
 
+class _RemoteCall:
+    """Wraps an async method to support Ray's actor.method.remote() pattern.
+
+    In real Ray, actor.method.remote() returns an ObjectRef (awaitable).
+    This mock returns the coroutine directly so `await actor.execute.remote(msgs)` works.
+    """
+
+    def __init__(self, coro_func, instance):
+        self._func = coro_func
+        self._instance = instance
+
+    def remote(self, *args, **kwargs):
+        return self._func(self._instance, *args, **kwargs)
+
+
+async def _to_awaitable(value):
+    """Wrap a value in a coroutine so it can be awaited (mimics Ray ObjectRef)."""
+    return value
+
+
+class _RemoteStreamCall:
+    """Wraps an async generator to support Ray's actor.method.remote() pattern.
+
+    Ray streaming actors yield ObjectRefs that must be awaited.
+    This wrapper yields coroutines wrapping each value so `await chunk_ref` works.
+    """
+
+    def __init__(self, gen_func, instance):
+        self._func = gen_func
+        self._instance = instance
+
+    def remote(self, *args, **kwargs):
+        async def _wrap():
+            async for item in self._func(self._instance, *args, **kwargs):
+                yield _to_awaitable(item)
+        return _wrap()
+
+
 class MockAgent:
-    """Fake Agent actor that returns canned responses based on prompt keywords."""
+    """Fake Agent actor that returns canned responses based on prompt keywords.
+
+    Supports the Ray actor calling pattern: actor.execute.remote(messages)
+    """
 
     def __init__(self, provider_config, system_prompt, tool_schemas=None):
         self.provider_config = provider_config
@@ -46,13 +135,15 @@ class MockAgent:
         self.tool_schemas = tool_schemas
         self.call_count = 0
         self.messages_log: list[list[dict]] = []
+        self.execute = _RemoteCall(MockAgent._execute_impl, self)
+        self.stream_execute = _RemoteStreamCall(MockAgent._stream_execute_impl, self)
 
-    async def execute(self, messages):
+    async def _execute_impl(self, messages):
         self.call_count += 1
         self.messages_log.append(list(messages))
         return self._respond(messages)
 
-    async def stream_execute(self, messages):
+    async def _stream_execute_impl(self, messages):
         self.call_count += 1
         self.messages_log.append(list(messages))
         response = self._respond(messages)

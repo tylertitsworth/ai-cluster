@@ -150,10 +150,10 @@ class _ExecutionContext:
         tier = self.config.get("tier", "default")
         tier_resource_key = f"tier_{tier.replace('-', '_')}"
 
-            pg = ray.util.placement_group(
-                bundles=[{tier_resource_key: 1, "CPU": 1}],
-                strategy="STRICT_PACK",
-            )
+        pg = ray.util.placement_group(
+            bundles=[{tier_resource_key: 1, "CPU": 1}],
+            strategy="STRICT_PACK",
+        )
         logger.info("Waiting for placement group on tier '%s'...", tier)
 
         loop = asyncio.get_event_loop()

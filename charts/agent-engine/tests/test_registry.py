@@ -1,117 +1,132 @@
-"""Tests for WorkflowRegistry — loading, validation, and param handling."""
+"""Tests for engine.registry.WorkflowRegistry."""
 
-import os
+from pathlib import Path
 
-import pytest
+import yaml
 
+from engine.registry import WorkflowRegistry
 
-class TestWorkflowLoading:
-    def test_loads_workflows_from_directory(self, tmp_workflows_dir):
-        os.environ["WORKFLOWS_DIR"] = str(tmp_workflows_dir / "workflows")
-        os.environ["PROMPTS_DIR"] = str(tmp_workflows_dir / "prompts")
-
-        from engine.registry import WorkflowRegistry
-
-        registry = WorkflowRegistry()
-        assert "example" in registry.workflows
-
-    def test_loads_prompts_for_workflow(self, tmp_workflows_dir):
-        os.environ["WORKFLOWS_DIR"] = str(tmp_workflows_dir / "workflows")
-        os.environ["PROMPTS_DIR"] = str(tmp_workflows_dir / "prompts")
-
-        from engine.registry import WorkflowRegistry
-
-        registry = WorkflowRegistry()
-        config = registry.get("example")
-        assert config is not None
-        assert "summarizer" in config["_prompts"]
-        assert "summarize" in config["_prompts"]["summarizer"].lower()
-
-    def test_rejects_invalid_yaml(self, tmp_workflows_dir):
-        bad_file = tmp_workflows_dir / "workflows" / "bad.yaml"
-        bad_file.write_text("name: bad\n")  # missing agents and flow
-
-        os.environ["WORKFLOWS_DIR"] = str(tmp_workflows_dir / "workflows")
-        os.environ["PROMPTS_DIR"] = str(tmp_workflows_dir / "prompts")
-
-        from engine.registry import WorkflowRegistry
-
-        registry = WorkflowRegistry()
-        assert registry.get("bad") is None
-        assert "example" in registry.workflows  # valid one still loaded
-
-    def test_list_workflows_returns_metadata(self, tmp_workflows_dir):
-        os.environ["WORKFLOWS_DIR"] = str(tmp_workflows_dir / "workflows")
-        os.environ["PROMPTS_DIR"] = str(tmp_workflows_dir / "prompts")
-
-        from engine.registry import WorkflowRegistry
-
-        registry = WorkflowRegistry()
-        listing = registry.list_workflows()
-        assert "example" in listing
-        assert "description" in listing["example"]
-        assert "tier" in listing["example"]
-        assert "agents" in listing["example"]
+_SOURCE_DIR = Path(__file__).resolve().parent.parent
 
 
-class TestParamValidation:
-    def test_applies_defaults(self, sample_workflow_config):
-        from engine.registry import WorkflowRegistry
+def test_load_workflows_from_source_tree():
+    registry = WorkflowRegistry()
+    names = set(registry.workflows.keys())
+    assert names == {"example", "service-debugger", "report-writer"}
 
-        registry = WorkflowRegistry()
-        registry.workflows["test-workflow"] = sample_workflow_config
 
-        resolved, errors = registry.validate_params("test-workflow", {})
-        assert errors == []
-        assert resolved["count"] == 3
+def test_load_prompts():
+    registry = WorkflowRegistry()
+    wf = registry.get("report-writer")
+    assert wf is not None
+    prompts = wf.get("_prompts", {})
+    assert set(prompts.keys()) >= {"orchestrator", "writer", "editor"}
+    for key in ("orchestrator", "writer", "editor"):
+        assert prompts[key].strip()
 
-    def test_validates_integer_type(self, sample_workflow_config):
-        from engine.registry import WorkflowRegistry
 
-        registry = WorkflowRegistry()
-        registry.workflows["test-workflow"] = sample_workflow_config
+def test_validation_missing_name():
+    registry = WorkflowRegistry()
+    errors = registry._validate({}, Path("test.yaml"))
+    assert "Missing required field: name" in errors
 
-        resolved, errors = registry.validate_params("test-workflow", {"count": "5"})
-        assert errors == []
-        assert resolved["count"] == 5
-        assert isinstance(resolved["count"], int)
 
-    def test_rejects_out_of_range(self, sample_workflow_config):
-        from engine.registry import WorkflowRegistry
+def test_validation_missing_agents():
+    registry = WorkflowRegistry()
+    errors = registry._validate({"name": "x", "flow": []}, Path("test.yaml"))
+    assert "Missing required field: agents" in errors
 
-        registry = WorkflowRegistry()
-        registry.workflows["test-workflow"] = sample_workflow_config
 
-        _, errors = registry.validate_params("test-workflow", {"count": 99})
-        assert len(errors) > 0
-        assert "maximum" in errors[0].lower() or "above" in errors[0].lower()
+def test_validation_missing_flow():
+    registry = WorkflowRegistry()
+    errors = registry._validate({"name": "x", "agents": {}}, Path("test.yaml"))
+    assert "Missing required field: flow" in errors
 
-    def test_passes_through_extra_params(self, sample_workflow_config):
-        from engine.registry import WorkflowRegistry
 
-        registry = WorkflowRegistry()
-        registry.workflows["test-workflow"] = sample_workflow_config
+def test_validation_unknown_tool_ref():
+    registry = WorkflowRegistry()
+    config = {
+        "name": "bad-tools",
+        "agents": {
+            "agent1": {
+                "provider": "openai",
+                "prompt": "p1",
+                "tools": ["nonexistent"],
+            }
+        },
+        "flow": [],
+        "tools": {},
+    }
+    errors = registry._validate(config, Path("bad.yaml"))
+    assert any("unknown tool 'nonexistent'" in e for e in errors)
 
-        resolved, errors = registry.validate_params(
-            "test-workflow", {"count": 5, "provider": "ollama"}
-        )
-        assert errors == []
-        assert resolved["provider"] == "ollama"
 
-    def test_rejects_invalid_choices(self):
-        from engine.registry import WorkflowRegistry
+def test_validation_invalid_param_type():
+    registry = WorkflowRegistry()
+    config = {
+        "name": "bad-params",
+        "agents": {},
+        "flow": [],
+        "params": {"p": {"type": "invalid"}},
+    }
+    errors = registry._validate(config, Path("bad.yaml"))
+    assert any("invalid type" in e and "invalid" in e for e in errors)
 
-        registry = WorkflowRegistry()
-        registry.workflows["choice-test"] = {
-            "name": "choice-test",
-            "params": {
-                "depth": {
-                    "type": "string",
-                    "default": "overview",
-                    "choices": ["overview", "detailed"],
-                }
-            },
-        }
 
-        _, errors = registry.validate_params("choice-test", {"depth": "invalid"})
-        assert len(errors) > 0
+def test_validate_params_defaults():
+    registry = WorkflowRegistry()
+    resolved, errors = registry.validate_params("report-writer", {})
+    assert errors == []
+    assert resolved.get("num_sections") == 3
+
+
+def test_validate_params_type_coercion():
+    registry = WorkflowRegistry()
+    resolved, errors = registry.validate_params("report-writer", {"num_sections": "5"})
+    assert errors == []
+    assert resolved.get("num_sections") == 5
+    assert isinstance(resolved.get("num_sections"), int)
+
+
+def test_validate_params_range_check():
+    registry = WorkflowRegistry()
+    registry.workflows["_range_test"] = {
+        "name": "_range_test",
+        "params": {"n": {"type": "integer", "min": 1, "max": 20}},
+    }
+    resolved, errors = registry.validate_params("_range_test", {"n": 25})
+    assert any("above maximum" in e for e in errors)
+    assert resolved.get("n") == 25
+
+
+def test_validate_params_choices():
+    registry = WorkflowRegistry()
+    registry.workflows["_choices_test"] = {
+        "name": "_choices_test",
+        "params": {"pick": {"type": "string", "choices": ["a", "b"]}},
+    }
+    resolved, errors = registry.validate_params("_choices_test", {"pick": "c"})
+    assert any("must be one of" in e for e in errors)
+
+
+def test_list_workflows():
+    registry = WorkflowRegistry()
+    listing = registry.list_workflows()
+    for name in ("example", "service-debugger", "report-writer"):
+        assert name in listing
+        meta = listing[name]
+        assert "description" in meta
+        assert "tier" in meta
+        assert "params" in meta
+        assert "agents" in meta
+        assert isinstance(meta["agents"], list)
+
+
+def test_validation_with_tmp_path_yaml(tmp_path):
+    """Invalid YAML on disk: _validate via loaded dict mirrors file-driven errors."""
+    bad_file = tmp_path / "broken.yaml"
+    bad_file.write_text(yaml.dump({"flow": [], "agents": {}}))
+    config = yaml.safe_load(bad_file.read_text())
+    registry = WorkflowRegistry()
+    errors = registry._validate(config, bad_file)
+    assert "Missing required field: name" in errors

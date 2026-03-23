@@ -222,7 +222,12 @@ def _stream_sse(url: str, endpoint: str, payload: dict) -> None:
         if current_agent is not None:
             console.print()
     except httpx.HTTPStatusError as e:
-        console.print(f"\n[error]Request failed ({e.response.status_code}): {e.response.text}[/error]")
+        try:
+            e.response.read()
+            body = e.response.text
+        except Exception:
+            body = "(response body not available)"
+        console.print(f"\n[error]Request failed ({e.response.status_code}): {body}[/error]")
         sys.exit(1)
     except httpx.HTTPError as e:
         console.print(f"\n[error]Request failed: {e}[/error]")

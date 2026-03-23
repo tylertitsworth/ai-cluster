@@ -1,91 +1,101 @@
-"""Tests for provider resolution and agent config override priority."""
-
-import os
+"""Tests for engine.providers.resolve_provider and resolve_agent_config."""
 
 import pytest
 
+from engine.providers import resolve_agent_config, resolve_provider
 
-class TestProviderResolution:
-    def test_resolves_basic_provider(self, sample_workflow_config):
-        from engine.providers import resolve_provider
-
-        result = resolve_provider("openai", sample_workflow_config)
-        assert result["base_url"] == "http://localhost:8000/v1"
-        assert result["api_key"] == "test-key"
-        assert result["model"] == "test-model"
-
-    def test_raises_on_unknown_provider(self, sample_workflow_config):
-        from engine.providers import resolve_provider
-
-        with pytest.raises(ValueError, match="not found"):
-            resolve_provider("nonexistent", sample_workflow_config)
-
-    def test_applies_model_override(self, sample_workflow_config):
-        from engine.providers import resolve_provider
-
-        result = resolve_provider("openai", sample_workflow_config, {"model": "gpt-5"})
-        assert result["model"] == "gpt-5"
-
-    def test_expands_env_vars(self, sample_workflow_config):
-        os.environ["TEST_BASE_URL"] = "http://from-env:9999/v1"
-        sample_workflow_config["providers"]["openai"]["base_url"] = "${TEST_BASE_URL}"
-
-        from engine.providers import resolve_provider
-
-        result = resolve_provider("openai", sample_workflow_config)
-        assert result["base_url"] == "http://from-env:9999/v1"
-        del os.environ["TEST_BASE_URL"]
+SAMPLE_CONFIG = {
+    "providers": {
+        "openai": {"base_url": "http://api.example.com/v1", "api_key": "sk-test", "model": "gpt-4"},
+        "ollama": {"base_url": "http://ollama:11434/v1", "api_key": "none", "model": "llama3"},
+    },
+    "agents": {
+        "investigator": {"provider": "openai", "prompt": "investigator", "tools": ["k8s-reader"]},
+        "writer": {"provider": "ollama", "prompt": "writer"},
+    },
+    "_prompts": {
+        "investigator": "You are an investigator.",
+        "writer": "You are a writer.",
+    },
+}
 
 
-class TestAgentConfigResolution:
-    def test_resolves_agent_with_prompt(self, sample_workflow_config):
-        from engine.providers import resolve_agent_config
+def test_resolve_provider_basic():
+    cfg = resolve_provider("openai", SAMPLE_CONFIG)
+    assert cfg["base_url"] == "http://api.example.com/v1"
+    assert cfg["api_key"] == "sk-test"
+    assert cfg["model"] == "gpt-4"
 
-        result = resolve_agent_config("writer", sample_workflow_config)
-        assert result["system_prompt"] == "You are a writer."
-        assert result["provider_config"]["model"] == "test-model"
-        assert result["tool_names"] == []
 
-    def test_global_override_applies_to_all(self, sample_workflow_config):
-        from engine.providers import resolve_agent_config
-
-        result = resolve_agent_config(
-            "writer", sample_workflow_config, {"model": "override-model"}
-        )
-        assert result["provider_config"]["model"] == "override-model"
-
-    def test_agent_specific_override_wins(self, sample_workflow_config):
-        from engine.providers import resolve_agent_config
-
-        result = resolve_agent_config(
-            "writer",
-            sample_workflow_config,
-            {"model": "global-model", "writer:model": "specific-model"},
-        )
-        assert result["provider_config"]["model"] == "specific-model"
-
-    def test_agent_specific_doesnt_affect_other_agents(self, sample_workflow_config):
-        from engine.providers import resolve_agent_config
-
-        result = resolve_agent_config(
-            "reviewer",
-            sample_workflow_config,
-            {"writer:model": "writer-only-model"},
-        )
-        assert result["provider_config"]["model"] == "test-model"
-
-    def test_raises_on_unknown_agent(self, sample_workflow_config):
-        from engine.providers import resolve_agent_config
-
-        with pytest.raises(ValueError, match="not found"):
-            resolve_agent_config("nonexistent", sample_workflow_config)
-
-    def test_raises_on_missing_prompt(self, sample_workflow_config):
-        sample_workflow_config["agents"]["noprompt"] = {
-            "provider": "openai",
-            "prompt": "missing_prompt",
+def test_resolve_provider_env_expansion(monkeypatch):
+    monkeypatch.setenv("TEST_URL", "https://expanded.example/v1")
+    workflow = {
+        "providers": {
+            "custom": {
+                "base_url": "${TEST_URL}",
+                "api_key": "k",
+                "model": "m",
+            }
         }
-        from engine.providers import resolve_agent_config
+    }
+    cfg = resolve_provider("custom", workflow)
+    assert cfg["base_url"] == "https://expanded.example/v1"
 
-        with pytest.raises(ValueError, match="not found"):
-            resolve_agent_config("noprompt", sample_workflow_config)
+
+def test_resolve_provider_unknown():
+    with pytest.raises(ValueError, match="Provider 'nonexistent' not found"):
+        resolve_provider("nonexistent", SAMPLE_CONFIG)
+
+
+def test_resolve_provider_with_overrides():
+    cfg = resolve_provider("openai", SAMPLE_CONFIG, overrides={"model": "gpt-5"})
+    assert cfg["model"] == "gpt-5"
+    assert cfg["base_url"] == "http://api.example.com/v1"
+
+
+def test_resolve_agent_config_basic():
+    out = resolve_agent_config("investigator", SAMPLE_CONFIG)
+    assert out["provider_config"]["model"] == "gpt-4"
+    assert out["provider_config"]["base_url"] == "http://api.example.com/v1"
+    assert out["system_prompt"] == "You are an investigator."
+    assert out["tool_names"] == ["k8s-reader"]
+
+
+def test_resolve_agent_config_global_override():
+    out = resolve_agent_config(
+        "investigator",
+        SAMPLE_CONFIG,
+        overrides={"model": "override-model"},
+    )
+    assert out["provider_config"]["model"] == "override-model"
+
+
+def test_resolve_agent_config_agent_specific_override():
+    out_inv = resolve_agent_config(
+        "investigator",
+        SAMPLE_CONFIG,
+        overrides={"investigator:model": "special"},
+    )
+    out_writer = resolve_agent_config("writer", SAMPLE_CONFIG, overrides={"investigator:model": "special"})
+    assert out_inv["provider_config"]["model"] == "special"
+    assert out_writer["provider_config"]["model"] == "llama3"
+
+
+def test_resolve_agent_config_priority():
+    out = resolve_agent_config(
+        "investigator",
+        SAMPLE_CONFIG,
+        overrides={"model": "global", "investigator:model": "specific"},
+    )
+    assert out["provider_config"]["model"] == "specific"
+
+
+def test_resolve_agent_config_missing_prompt():
+    bad = {
+        **SAMPLE_CONFIG,
+        "agents": {
+            "broken": {"provider": "openai", "prompt": "nonexistent"},
+        },
+    }
+    with pytest.raises(ValueError, match="Prompt 'nonexistent' not found"):
+        resolve_agent_config("broken", bad)

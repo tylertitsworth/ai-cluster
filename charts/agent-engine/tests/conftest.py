@@ -1,147 +1,369 @@
-"""Shared fixtures for agent-engine tests.
+"""Shared fixtures for agent-engine integration tests.
 
-Tests run without Ray, without MCP servers, and without LLM providers.
-All external dependencies are mocked via fixtures.
+Mocks Ray actors, MCP tools, and placement groups so tests run locally
+without any infrastructure dependencies.
 """
 
+import asyncio
+import json
 import os
 import sys
 import tempfile
+from copy import deepcopy
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-ENGINE_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ENGINE_ROOT))
-
-os.environ.setdefault("WORKFLOWS_DIR", str(ENGINE_ROOT / "workflows"))
-os.environ.setdefault("PROMPTS_DIR", str(ENGINE_ROOT / "prompts"))
+AGENT_ENGINE_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(AGENT_ENGINE_ROOT))
 
 
-@pytest.fixture
-def sample_workflow_config():
-    """A minimal valid workflow config dict (as loaded by the registry)."""
+# ---------------------------------------------------------------------------
+# Mock Agent — simulates LLM responses based on system prompt keywords
+# ---------------------------------------------------------------------------
+
+def _tool_call_response(name: str, arguments: str, call_id: str = "call_1"):
     return {
-        "name": "test-workflow",
-        "description": "A test workflow",
-        "tier": "default",
-        "providers": {
-            "openai": {
-                "base_url": "http://localhost:8000/v1",
-                "api_key": "test-key",
-                "model": "test-model",
-            },
-        },
-        "tools": {},
-        "agents": {
-            "writer": {
-                "provider": "openai",
-                "prompt": "writer",
-                "tools": [],
-            },
-            "reviewer": {
-                "provider": "openai",
-                "prompt": "reviewer",
-                "tools": [],
-            },
-        },
-        "params": {
-            "count": {
-                "type": "integer",
-                "default": 3,
-                "min": 1,
-                "max": 10,
-            },
-        },
-        "flow": [{"step": "writer"}],
-        "_prompts": {
-            "writer": "You are a writer.",
-            "reviewer": "You are a reviewer.",
-        },
-        "_source": "test",
+        "role": "assistant",
+        "content": None,
+        "tool_calls": [
+            {
+                "id": call_id,
+                "type": "function",
+                "function": {"name": name, "arguments": arguments},
+            }
+        ],
     }
 
 
-@pytest.fixture
-def sample_workflow_with_tools():
-    """A workflow config with MCP tool groups."""
-    return {
-        "name": "tool-workflow",
-        "description": "Workflow with tools",
-        "tier": "default",
-        "providers": {
-            "openai": {
-                "base_url": "http://localhost:8000/v1",
-                "api_key": "test-key",
-                "model": "test-model",
-            },
-        },
-        "tools": {
-            "search": {"type": "mcp", "url": "http://search:8080"},
-            "k8s": {"type": "mcp", "url": "http://k8s:8080"},
-        },
-        "agents": {
-            "researcher": {
-                "provider": "openai",
-                "prompt": "researcher",
-                "tools": ["search"],
-            },
-            "admin": {
-                "provider": "openai",
-                "prompt": "admin",
-                "tools": ["search", "k8s"],
-            },
-            "writer": {
-                "provider": "openai",
-                "prompt": "writer",
-                "tools": [],
-            },
-        },
-        "params": {},
-        "flow": [{"step": "researcher"}],
-        "_prompts": {
-            "researcher": "You research things.",
-            "admin": "You admin things.",
-            "writer": "You write things.",
-        },
-        "_source": "test",
-    }
+class MockAgent:
+    """Fake Agent actor that returns canned responses based on prompt keywords."""
 
+    def __init__(self, provider_config, system_prompt, tool_schemas=None):
+        self.provider_config = provider_config
+        self.system_prompt = system_prompt or ""
+        self.tool_schemas = tool_schemas
+        self.call_count = 0
+        self.messages_log: list[list[dict]] = []
+
+    async def execute(self, messages):
+        self.call_count += 1
+        self.messages_log.append(list(messages))
+        return self._respond(messages)
+
+    async def stream_execute(self, messages):
+        self.call_count += 1
+        self.messages_log.append(list(messages))
+        response = self._respond(messages)
+        if response.get("content"):
+            yield {"type": "delta", "content": response["content"]}
+        yield {"type": "message", **response}
+
+    def _respond(self, messages):
+        prompt_lower = self.system_prompt.lower()
+        last_content = messages[-1].get("content", "") if messages else ""
+
+        if "investigator" in prompt_lower:
+            if self.call_count <= 1 and self.tool_schemas:
+                return _tool_call_response("get_pods", '{"namespace": "default"}')
+            if "STATUS: FIXED" in (last_content or ""):
+                return {"role": "assistant", "content": "Verified. STATUS: FIXED", "tool_calls": None}
+            return {"role": "assistant", "content": "Found issue. STATUS: NEEDS_FIX", "tool_calls": None}
+
+        if "fixer" in prompt_lower:
+            return {"role": "assistant", "content": "Proposed fix: scale replicas to 2", "tool_calls": None}
+
+        if "guardrails" in prompt_lower:
+            if hasattr(self, "_force_unsafe") and self._force_unsafe > 0:
+                self._force_unsafe -= 1
+                return {"role": "assistant", "content": "VERDICT: UNSAFE — risky operation", "tool_calls": None}
+            return {"role": "assistant", "content": "VERDICT: SAFE — non-destructive change", "tool_calls": None}
+
+        if "executor" in prompt_lower:
+            if self.call_count <= 1 and self.tool_schemas:
+                return _tool_call_response("apply_patch", '{"resource": "deployment/web"}')
+            return {"role": "assistant", "content": "Fix applied successfully. STATUS: FIXED", "tool_calls": None}
+
+        if "summarizer" in prompt_lower:
+            return {"role": "assistant", "content": "Summary: user wants to check pod status", "tool_calls": None}
+
+        if "orchestrator" in prompt_lower:
+            n = 3
+            for msg in messages:
+                c = msg.get("content", "")
+                if "num_sections" in c:
+                    try:
+                        n = int(c.split("num_sections")[1].strip().split()[0].strip("=:"))
+                    except (ValueError, IndexError):
+                        pass
+            sections = [{"title": f"Section {i+1}", "brief": f"Cover topic {i+1}"} for i in range(n)]
+            return {"role": "assistant", "content": json.dumps(sections), "tool_calls": None}
+
+        if "writer" in prompt_lower:
+            if self.call_count <= 1 and self.tool_schemas:
+                return _tool_call_response("tavily_search", '{"query": "test topic"}')
+            return {"role": "assistant", "content": "Researched section content with citations.", "tool_calls": None}
+
+        if "editor" in prompt_lower:
+            return {"role": "assistant", "content": "# Final Report\n\nEdited and assembled.", "tool_calls": None}
+
+        if "reviewer" in prompt_lower or "_reviewer" in prompt_lower:
+            return {"role": "assistant", "content": "DONE", "tool_calls": None}
+
+        if "judge" in prompt_lower or "_judge" in prompt_lower:
+            return {"role": "assistant", "content": "Branch 1 is best.\n\nReproduced content.", "tool_calls": None}
+
+        return {"role": "assistant", "content": f"Response from agent (call #{self.call_count})", "tool_calls": None}
+
+    @classmethod
+    def options(cls, **kwargs):
+        return cls
+
+    @classmethod
+    def remote(cls, provider_config, system_prompt, tool_schemas=None):
+        return cls(provider_config, system_prompt, tool_schemas)
+
+
+# ---------------------------------------------------------------------------
+# Mock ToolManager — returns predefined schemas and tool results
+# ---------------------------------------------------------------------------
+
+class MockToolManager:
+    """Fake ToolManager that returns canned tool results."""
+
+    def __init__(self, tools_config=None):
+        self._config = tools_config or {}
+        self._schemas = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_pods",
+                    "description": "List Kubernetes pods",
+                    "parameters": {"type": "object", "properties": {"namespace": {"type": "string"}}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "apply_patch",
+                    "description": "Apply a patch to a K8s resource",
+                    "parameters": {"type": "object", "properties": {"resource": {"type": "string"}}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "tavily_search",
+                    "description": "Web search",
+                    "parameters": {"type": "object", "properties": {"query": {"type": "string"}}},
+                },
+            },
+        ]
+        self._group_map = {
+            "k8s-reader": {"get_pods"},
+            "k8s-writer": {"apply_patch", "get_pods"},
+            "tavily": {"tavily_search"},
+            "context7": set(),
+        }
+        self.calls: list[dict] = []
+
+    async def connect_all(self):
+        pass
+
+    def get_schemas(self):
+        return list(self._schemas)
+
+    def get_function_names_for_groups(self, group_names):
+        result = set()
+        for g in group_names:
+            result.update(self._group_map.get(g, set()))
+        return result
+
+    async def execute(self, tool_calls):
+        results = []
+        for tc in tool_calls:
+            fn_name = tc.get("function", {}).get("name", "unknown")
+            self.calls.append(tc)
+            results.append({
+                "role": "tool",
+                "tool_call_id": tc.get("id", ""),
+                "content": f"Tool '{fn_name}' result: success",
+            })
+        return results
+
+    async def close(self):
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Mock Ray — no-op placement groups, kill, etc.
+# ---------------------------------------------------------------------------
+
+class MockPlacementGroup:
+    def ready(self):
+        return True
+
+
+class MockRay:
+    """Minimal mock of the ray module for executor tests."""
+
+    class util:
+        @staticmethod
+        def placement_group(**kwargs):
+            return MockPlacementGroup()
+
+        @staticmethod
+        def remove_placement_group(pg):
+            pass
+
+    @staticmethod
+    def get(ref, timeout=None):
+        return ref
+
+    @staticmethod
+    def kill(actor):
+        pass
+
+    ObjectRef = object
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def tmp_db(tmp_path):
-    """Path to a temporary SQLite database file."""
+    """Temporary SQLite database path for checkpoint tests."""
     return str(tmp_path / "test_checkpoints.db")
 
 
 @pytest.fixture
-def tmp_workflows_dir(tmp_path):
-    """A temporary directory with sample workflow YAML files."""
-    wf_dir = tmp_path / "workflows"
-    wf_dir.mkdir()
+def sample_workflow_config():
+    """Minimal workflow config for unit tests."""
+    return {
+        "name": "test-workflow",
+        "description": "Test workflow",
+        "tier": "default",
+        "isolation": "per-invocation",
+        "providers": {
+            "test": {
+                "base_url": "http://localhost:8000/v1",
+                "api_key": "test-key",
+                "model": "test-model",
+            }
+        },
+        "tools": {},
+        "agents": {
+            "agent_a": {"provider": "test", "prompt": "agent_a"},
+            "agent_b": {"provider": "test", "prompt": "agent_b"},
+        },
+        "params": {},
+        "_prompts": {
+            "agent_a": "You are agent A.",
+            "agent_b": "You are agent B.",
+        },
+        "flow": [
+            {"step": "agent_a"},
+            {"step": "agent_b"},
+        ],
+    }
 
-    (wf_dir / "example.yaml").write_text(
-        """
-name: example
-description: Test example
-tier: default
-providers:
-  openai:
-    base_url: http://localhost:8000/v1
-    api_key: test
-    model: test
-agents:
-  summarizer:
-    provider: openai
-    prompt: summarizer
-flow:
-  - step: summarizer
-"""
-    )
 
-    prompts_dir = tmp_path / "prompts" / "example"
-    prompts_dir.mkdir(parents=True)
-    (prompts_dir / "summarizer.txt").write_text("You summarize things.")
+@pytest.fixture
+def service_debugger_config():
+    """Config mimicking the service-debugger workflow for executor tests."""
+    return {
+        "name": "service-debugger",
+        "tier": "k8s-access",
+        "isolation": "per-invocation",
+        "providers": {
+            "openai": {"base_url": "http://fake:8000/v1", "api_key": "k", "model": "gpt-test"},
+        },
+        "tools": {
+            "k8s-reader": {"type": "mcp", "url": "http://fake:8080"},
+            "k8s-writer": {"type": "mcp", "url": "http://fake:8081"},
+        },
+        "agents": {
+            "investigator": {"provider": "openai", "prompt": "investigator", "tools": ["k8s-reader"]},
+            "fixer": {"provider": "openai", "prompt": "fixer"},
+            "guardrails": {"provider": "openai", "prompt": "guardrails"},
+            "executor": {"provider": "openai", "prompt": "executor", "tools": ["k8s-writer"]},
+        },
+        "params": {},
+        "_prompts": {
+            "investigator": "You are an investigator agent.",
+            "fixer": "You are a fixer agent.",
+            "guardrails": "You are a guardrails agent.",
+            "executor": "You are an executor agent.",
+        },
+        "flow": [
+            {"loop": {
+                "max": 5,
+                "steps": [
+                    {"step": "investigator", "tool_loop": 10},
+                    {"route": {"STATUS: FIXED": "end", "STATUS: UNFIXABLE": "end", "default": "continue"}},
+                    {"step": "fixer"},
+                    {"review": {"reviewer": "guardrails", "reject": "VERDICT: UNSAFE", "max_retries": 2}},
+                    {"step": "executor", "tool_loop": 10},
+                ],
+            }}
+        ],
+    }
 
-    return tmp_path
+
+@pytest.fixture
+def report_writer_config():
+    """Config mimicking the report-writer workflow for executor tests."""
+    return {
+        "name": "report-writer",
+        "tier": "web-research",
+        "isolation": "per-invocation",
+        "providers": {
+            "openai": {"base_url": "http://fake:8000/v1", "api_key": "k", "model": "gpt-test"},
+        },
+        "tools": {
+            "tavily": {"type": "mcp", "url": "http://fake:8082"},
+            "context7": {"type": "mcp", "url": "http://fake:8083"},
+        },
+        "agents": {
+            "orchestrator": {"provider": "openai", "prompt": "orchestrator"},
+            "writer": {"provider": "openai", "prompt": "writer", "tools": ["tavily", "context7"]},
+            "editor": {"provider": "openai", "prompt": "editor"},
+        },
+        "params": {
+            "num_sections": {"type": "integer", "default": 3, "min": 1, "max": 20},
+        },
+        "_prompts": {
+            "orchestrator": "You are an orchestrator agent.",
+            "writer": "You are a writer agent.",
+            "editor": "You are an editor agent.",
+        },
+        "flow": [
+            {"step": "orchestrator"},
+            {"parallel": {"agent": "writer", "count": "{num_sections}", "tool_loop": 5, "resolve": "concatenate"}},
+            {"step": "editor"},
+        ],
+    }
+
+
+@pytest.fixture
+def mock_ray():
+    """Patch ray module in executor with MockRay."""
+    mock = MockRay()
+    with patch("engine.executor.ray", mock):
+        yield mock
+
+
+@pytest.fixture
+def mock_agent_class():
+    """Patch Agent class in executor with MockAgent."""
+    with patch("engine.executor.Agent", MockAgent):
+        yield MockAgent
+
+
+@pytest.fixture
+def mock_tool_manager():
+    """Patch ToolManager in executor with MockToolManager."""
+    with patch("engine.executor.ToolManager", MockToolManager):
+        yield MockToolManager

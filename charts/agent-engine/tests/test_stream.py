@@ -1,94 +1,99 @@
-"""Tests for StreamWriter event emission."""
+"""Tests for engine.stream.StreamWriter."""
 
 import asyncio
 import json
 
 import pytest
 
+from engine.stream import StreamWriter
 
-class TestStreamWriter:
-    @pytest.mark.asyncio
-    async def test_emit_and_consume(self):
-        from engine.stream import StreamWriter
 
-        sw = StreamWriter()
-        sw.emit({"type": "token", "agent": "writer", "token": "hello"})
-        sw.close()
+async def _collect_sse(writer: StreamWriter) -> list[str]:
+    chunks: list[str] = []
+    async for line in writer.events():
+        chunks.append(line)
+    return chunks
 
-        events = []
-        async for event_str in sw.events():
-            events.append(event_str)
 
-        assert len(events) == 2
-        assert '"token"' in events[0]
-        assert events[1] == "data: [DONE]\n\n"
+def _drain_raw_events(writer: StreamWriter) -> list[dict]:
+    """Pop all pending dict events from the writer queue (no sentinel expected)."""
+    out: list[dict] = []
+    while True:
+        try:
+            item = writer._queue.get_nowait()
+        except asyncio.QueueEmpty:
+            break
+        assert item is not None, "unexpected stream sentinel while draining typed events"
+        out.append(item)
+    return out
 
-    @pytest.mark.asyncio
-    async def test_typed_helpers(self):
-        from engine.stream import StreamWriter
 
-        sw = StreamWriter()
-        sw.step_start("investigator")
-        sw.token("investigator", "Looking at the pods...")
-        sw.researching("investigator", ["get pods -n monitoring"])
-        sw.route("STATUS: FIXED", "end")
-        sw.loop_iteration(2, 5)
-        sw.content("writer", "Full section text")
-        sw.error("executor", "Timed out")
-        sw.complete("Final result")
+@pytest.mark.asyncio
+async def test_emit_and_consume():
+    writer = StreamWriter()
+    writer.emit({"seq": 1})
+    writer.emit({"seq": 2})
+    writer.close()
 
-        events = []
-        async for event_str in sw.events():
-            if event_str.startswith("data: [DONE]"):
-                break
-            data = json.loads(event_str.removeprefix("data: "))
-            events.append(data)
+    chunks = await _collect_sse(writer)
+    assert chunks[0] == f"data: {json.dumps({'seq': 1})}\n\n"
+    assert chunks[1] == f"data: {json.dumps({'seq': 2})}\n\n"
+    assert chunks[2] == "data: [DONE]\n\n"
 
-        types = [e["type"] for e in events]
-        assert types == [
-            "step_start",
-            "token",
-            "researching",
-            "route",
-            "loop_iteration",
-            "content",
-            "error",
-            "complete",
-        ]
 
-        assert events[0]["agent"] == "investigator"
-        assert events[1]["token"] == "Looking at the pods..."
-        assert events[2]["queries"] == ["get pods -n monitoring"]
-        assert events[3]["matched"] == "STATUS: FIXED"
-        assert events[4]["iteration"] == 2
-        assert events[5]["content"] == "Full section text"
-        assert events[6]["message"] == "Timed out"
-        assert events[7]["result"] == "Final result"
+@pytest.mark.asyncio
+async def test_close_produces_done():
+    writer = StreamWriter()
+    writer.close()
+    chunks = await _collect_sse(writer)
+    assert chunks == ["data: [DONE]\n\n"]
 
-    @pytest.mark.asyncio
-    async def test_complete_closes_stream(self):
-        from engine.stream import StreamWriter
 
-        sw = StreamWriter()
-        sw.complete("done")
+@pytest.mark.asyncio
+async def test_emit_after_close_dropped():
+    writer = StreamWriter()
+    writer.close()
+    writer.emit({"ignored": True})
+    chunks = await _collect_sse(writer)
+    assert chunks == ["data: [DONE]\n\n"]
 
-        events = []
-        async for event_str in sw.events():
-            events.append(event_str)
 
-        assert sw._closed
-        assert events[-1] == "data: [DONE]\n\n"
+def test_typed_helpers():
+    w = StreamWriter()
+    w.step_start("agent-a")
+    w.token("agent-a", "tok")
+    w.researching("agent-a", ["q1", "q2"])
+    w.content("agent-a", "body")
+    w.route("pat", "next_step")
+    w.loop_iteration(2, 5)
+    w.step_end("agent-a")
+    w.error("agent-a", "oops")
 
-    @pytest.mark.asyncio
-    async def test_emit_after_close_is_dropped(self):
-        from engine.stream import StreamWriter
+    assert _drain_raw_events(w) == [
+        {"type": "step_start", "agent": "agent-a"},
+        {"type": "token", "agent": "agent-a", "token": "tok"},
+        {"type": "researching", "agent": "agent-a", "queries": ["q1", "q2"]},
+        {"type": "content", "agent": "agent-a", "content": "body"},
+        {"type": "route", "matched": "pat", "next": "next_step"},
+        {"type": "loop_iteration", "iteration": 2, "max": 5},
+        {"type": "step_end", "agent": "agent-a"},
+        {"type": "error", "agent": "agent-a", "message": "oops"},
+    ]
 
-        sw = StreamWriter()
-        sw.close()
-        sw.emit({"type": "token", "token": "should be dropped"})
 
-        events = []
-        async for event_str in sw.events():
-            events.append(event_str)
+@pytest.mark.asyncio
+async def test_complete_closes_stream():
+    writer = StreamWriter()
+    writer.complete("final")
 
-        assert len(events) == 1  # only [DONE]
+    chunks = await _collect_sse(writer)
+    assert len(chunks) == 2
+    assert json.loads(chunks[0].removeprefix("data: ").strip()) == {
+        "type": "complete",
+        "result": "final",
+    }
+    assert chunks[1] == "data: [DONE]\n\n"
+
+    writer.emit({"after": "close"})
+    with pytest.raises(asyncio.QueueEmpty):
+        writer._queue.get_nowait()

@@ -1,17 +1,3 @@
-# Prerequisites:
-#
-# 1. Create the pihole-credentials Secret before syncing:
-#
-#    kubectl create namespace pihole
-#    kubectl create secret generic pihole-credentials \
-#      --namespace pihole \
-#      --from-literal=FTLCONF_webserver_api_password='your-password-here'
-#
-# 2. After deployment, configure Tailscale DNS (https://login.tailscale.com/admin/dns):
-#    - Add pihole.tail79a5c8.ts.net as a Global Nameserver
-#    - Check "Override local DNS" so tailnet clients use Pi-hole
-#    - Keep MagicDNS enabled (Tailscale splits *.ts.net queries automatically)
-
 app-template:
   controllers:
     pihole:

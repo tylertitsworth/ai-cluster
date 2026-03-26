@@ -1,18 +1,15 @@
 module device-plugin
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/golang/glog v1.2.5
 	github.com/kubevirt/device-plugin-manager v1.19.5
-	k8s.io/kubelet v0.33.1
+	k8s.io/kubelet v0.35.3
 )
 
 require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect

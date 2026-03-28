@@ -18,7 +18,7 @@ spec:
         valueFiles:
           - $values/apps/values/vcluster-dev-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: main
+      targetRevision: vcluster
       ref: values
   destination:
     server: https://kubernetes.default.svc

@@ -14,16 +14,16 @@ controlPlane:
       registry: ghcr.io
       repository: loft-sh/vcluster-oss
 
-  # Embedded etcd — lightweight, no external etcd cluster needed
+  # SQLite embedded database (etcd embedded is Pro-only)
   backingStore:
-    etcd:
+    database:
       embedded:
         enabled: true
 
   # Tailscale Ingress for API server access over the Tailnet
   ingress:
     enabled: true
-    host: vcluster-dev.ai.tail79a5c8.ts.net
+    host: vcluster-dev
     annotations:
       tailscale.com/proxy-class: "control-plane"
       # Clear default nginx annotations (not using nginx ingress)
@@ -32,6 +32,9 @@ controlPlane:
       nginx.ingress.kubernetes.io/ssl-redirect: null
     spec:
       ingressClassName: tailscale
+      tls:
+        - hosts:
+            - vcluster-dev
 
   # Add Tailscale FQDN to the API server TLS certificate SANs
   proxy:

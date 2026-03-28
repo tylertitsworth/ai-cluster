@@ -39,7 +39,7 @@ controlPlane:
   # Add Tailscale FQDN to the API server TLS certificate SANs
   proxy:
     extraSANs:
-      - vcluster-dev.ai.tail79a5c8.ts.net
+      - vcluster-dev.tail79a5c8.ts.net
 
 # Sync host nodes into the vcluster so device resources (GPU, NPU) are visible.
 # To restrict to specific hardware, uncomment and set selector.labels:

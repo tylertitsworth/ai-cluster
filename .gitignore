@@ -12,3 +12,4 @@ npu-device-plugin/pkg/
 files/
 docs/
 .claude/
+CLAUDE.md

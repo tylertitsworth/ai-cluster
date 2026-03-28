@@ -314,13 +314,47 @@ It was with Open WebUI where I originally found the ISCSI issue with the Nvidia 
 
 Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
 
-<!--
+## Virtual Clusters (vCluster)
 
-### [WikiJS](https://js.wiki/)
+[vCluster](https://www.vcluster.com/) provides isolated virtual Kubernetes clusters for multi-tenancy and dev/test isolation. Each vcluster runs as a StatefulSet in its own namespace, with a virtual API server accessible over Tailscale.
 
-TODO: Nathan
+### Deployed vclusters
 
--->
+| Name | Namespace | Tailscale FQDN | Device Access |
+|------|-----------|----------------|---------------|
+| dev | vcluster-dev | `vcluster-dev.ai.tail79a5c8.ts.net` | All (GPU + NPU) |
+
+### Connect to a vcluster
+
+```bash
+# Install the vcluster CLI
+curl -L -o vcluster "https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-linux-arm64"
+chmod +x vcluster && sudo mv vcluster /usr/local/bin/
+
+# Connect and get kubeconfig (requires Tailscale)
+vcluster connect vcluster-dev -n vcluster-dev \
+  --server=https://vcluster-dev.ai.tail79a5c8.ts.net \
+  --kube-config=./vcluster-dev.kubeconfig
+
+# Use it
+kubectl --kubeconfig=./vcluster-dev.kubeconfig get nodes
+```
+
+### Create a new vcluster
+
+1. Copy `apps/vcluster-dev.yaml` → `apps/vcluster-<name>.yaml`
+2. Copy `apps/values/vcluster-dev-values.yaml` → `apps/values/vcluster-<name>-values.yaml`
+3. Update the name, namespace, and Tailscale FQDN in both files
+4. Optionally restrict device access via `sync.fromHost.nodes.selector.labels`
+5. `kubectl apply -f apps/vcluster-<name>.yaml`
+
+### Delete a vcluster
+
+```bash
+kubectl delete -f apps/vcluster-<name>.yaml
+```
+
+ArgoCD will prune the namespace and all resources.
 
 ## Troubleshooting
 

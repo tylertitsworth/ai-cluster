@@ -1,0 +1,31 @@
+# vCluster "dev" — virtual Kubernetes cluster for dev/test isolation
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vcluster-dev
+  namespace: argocd
+  labels:
+    stack: infra
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.loft.sh
+      chart: vcluster
+      targetRevision: "0.33.1"
+      helm:
+        valueFiles:
+          - $values/apps/values/vcluster-dev-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vcluster-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

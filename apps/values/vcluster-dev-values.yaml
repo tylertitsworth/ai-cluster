@@ -1,0 +1,51 @@
+# vcluster "dev" — virtual cluster for dev/test isolation
+# Chart: loft/vcluster (https://charts.loft.sh)
+# Docs: https://www.vcluster.com/docs/vcluster/configure/vcluster-yaml/
+
+controlPlane:
+  # Use vanilla k8s distribution (k3s is deprecated in vcluster >=0.25)
+  distro:
+    k8s:
+      enabled: true
+
+  # OSS image — default is vcluster-pro, override to vcluster-oss
+  statefulSet:
+    image:
+      registry: ghcr.io
+      repository: loft-sh/vcluster-oss
+
+  # Embedded etcd — lightweight, no external etcd cluster needed
+  backingStore:
+    etcd:
+      embedded:
+        enabled: true
+
+  # Tailscale Ingress for API server access over the Tailnet
+  ingress:
+    enabled: true
+    host: vcluster-dev.ai.tail79a5c8.ts.net
+    annotations:
+      tailscale.com/proxy-class: "control-plane"
+      # Clear default nginx annotations (not using nginx ingress)
+      nginx.ingress.kubernetes.io/backend-protocol: null
+      nginx.ingress.kubernetes.io/ssl-passthrough: null
+      nginx.ingress.kubernetes.io/ssl-redirect: null
+    spec:
+      ingressClassName: tailscale
+
+  # Add Tailscale FQDN to the API server TLS certificate SANs
+  proxy:
+    extraSANs:
+      - vcluster-dev.ai.tail79a5c8.ts.net
+
+# Sync host nodes into the vcluster so device resources (GPU, NPU) are visible.
+# To restrict to specific hardware, uncomment and set selector.labels:
+#   node-type: jetson   → GPU-only (nvidia.com/gpu)
+#   node-type: npu      → NPU-only (rockchip.com/npu)
+sync:
+  fromHost:
+    nodes:
+      enabled: true
+      # selector:
+      #   labels:
+      #     node-type: jetson

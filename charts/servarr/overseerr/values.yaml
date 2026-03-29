@@ -76,4 +76,4 @@ app-template:
       enabled: true
       existingClaim: overseer-config
       globalMounts:
-        - path: /config
+        - path: /app/config

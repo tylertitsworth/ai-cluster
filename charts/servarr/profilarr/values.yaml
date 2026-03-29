@@ -9,7 +9,7 @@ app-template:
           image:
             repository: santiagosayshey/profilarr
             tag: beta  # Use beta for ARM64 support
-            pullPolicy: IfNotPresent
+            pullPolicy: Always
 
           env:
             TZ: America/Los_Angeles

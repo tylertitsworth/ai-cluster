@@ -9,7 +9,7 @@ app-template:
           image:
             repository: ghcr.io/pennydreadful/bookshelf
             tag: hardcover
-            pullPolicy: IfNotPresent
+            pullPolicy: Always
 
           env:
             TZ: America/Los_Angeles

@@ -9,7 +9,7 @@ app-template:
           image:
             repository: plexinc/pms-docker
             tag: latest
-            pullPolicy: IfNotPresent
+            pullPolicy: Always
 
           env:
             TZ: America/New_York

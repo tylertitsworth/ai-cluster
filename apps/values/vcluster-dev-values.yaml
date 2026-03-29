@@ -20,21 +20,16 @@ controlPlane:
       embedded:
         enabled: true
 
-  # Tailscale Ingress for API server access over the Tailnet
-  ingress:
-    enabled: true
-    host: vcluster-dev
+  # Tailscale LoadBalancer service for API server access over the Tailnet.
+  # LoadBalancer (L4) is required — Ingress (L7) terminates TLS and strips
+  # kubectl client certificates, causing "Forbidden" errors.
+  service:
+    spec:
+      type: LoadBalancer
+      loadBalancerClass: tailscale
     annotations:
       tailscale.com/proxy-class: "control-plane"
-      # Clear default nginx annotations (not using nginx ingress)
-      nginx.ingress.kubernetes.io/backend-protocol: null
-      nginx.ingress.kubernetes.io/ssl-passthrough: null
-      nginx.ingress.kubernetes.io/ssl-redirect: null
-    spec:
-      ingressClassName: tailscale
-      tls:
-        - hosts:
-            - vcluster-dev
+      tailscale.com/hostname: "vcluster-dev"
 
   # Add Tailscale FQDN to the API server TLS certificate SANs
   proxy:

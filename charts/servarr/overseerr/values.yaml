@@ -7,9 +7,9 @@ app-template:
       containers:
         main:
           image:
-            repository: lscr.io/linuxserver/overseerr
+            repository: ghcr.io/seerr-team/seerr
             tag: latest
-            pullPolicy: IfNotPresent
+            pullPolicy: Always
 
           env:
             TZ: America/Los_Angeles
@@ -76,4 +76,4 @@ app-template:
       enabled: true
       existingClaim: overseer-config
       globalMounts:
-        - path: /config
+        - path: /app/config

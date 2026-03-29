@@ -9,7 +9,7 @@ app-template:
           image:
             repository: ghcr.io/flaresolverr/flaresolverr
             tag: latest
-            pullPolicy: IfNotPresent
+            pullPolicy: Always
 
           env:
             TZ: America/Los_Angeles

@@ -65,7 +65,7 @@ spec:
           ingressClassName: tailscale
           url: plex
           annotations:
-            tailscale.com/proxy-class: "control-plane"
+            tailscale.com/proxy-class: "pin-framework-desktop"
           tls:
             - hosts:
                 - plex

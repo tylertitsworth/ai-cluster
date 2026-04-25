@@ -7,6 +7,8 @@ ingress:
   ingressClassName: tailscale
   tls: true
   tlsSecret:
+  annotations:
+    tailscale.com/proxy-class: pin-npu01
 metrics:
   serviceMonitor:
     enabled: true

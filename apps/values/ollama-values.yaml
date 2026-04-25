@@ -19,25 +19,17 @@ ollama:
       - glm-4.7-flash
       - nemotron-3-nano:30b
     create:
-      - name: qwen3.5-35b-full
+      - name: qwen3.6-35b-full
         template: |
-          FROM qwen3.5:35b
+          FROM qwen3.6:35b
           PARAMETER num_ctx 262144
-      - name: glm-4.7-flash-full
+      - name: gemma-4-31b-full
         template: |
-          FROM glm-4.7-flash
-          PARAMETER num_ctx 202752
-          PARAMETER temperature 0.7
-          PARAMETER top_p 0.95
-          PARAMETER presence_penalty 1.0
-      - name: nemotron-3-nano-30b-full
-        template: |
-          FROM nemotron-3-nano:30b
-          PARAMETER num_ctx 200000
+          FROM gemma4:31b
+          PARAMETER num_ctx 262144
     run:
-      # - glm-4.7-flash-full
-      # - qwen3.5-35b-full
-      - nemotron-3-nano-30b-full
+      # - genna4-31b-full
+      - qwen3.6-35b-full
     clean: true
 
 extraEnv:
@@ -80,7 +72,7 @@ ingress:
   enabled: true
   className: tailscale
   annotations:
-    tailscale.com/proxy-class: "control-plane"
+    tailscale.com/proxy-class: "pin-framework-desktop"
   hosts:
     - host: ollama
       paths:

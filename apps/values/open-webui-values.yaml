@@ -9,7 +9,7 @@ ingress:
   enabled: true
   host: open-webui
   extraLabels:
-    tailscale.com/proxy-class: "control-plane"
+    tailscale.com/proxy-class: "pin-npu01"
   tls: true
 nodeSelector:
   node-role.kubernetes.io/control-plane: "true"

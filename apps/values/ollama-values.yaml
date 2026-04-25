@@ -16,7 +16,6 @@ ollama:
     # Ensure model exists locally, then load it into memory at startup
     pull:
       - qwen3.5:35b
-      - glm-4.7-flash
       - nemotron-3-nano:30b
     create:
       - name: qwen3.6-35b-full

@@ -4,7 +4,7 @@ fullnameOverride: ollama
 image:
   repository: ollama/ollama
   # Pinned latest versioned ROCm image tag
-  tag: 0.17.7-rocm
+  tag: 0.21.2-rocm
   pullPolicy: Always
 
 ollama:

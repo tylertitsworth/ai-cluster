@@ -15,8 +15,8 @@ ollama:
   models:
     # Ensure model exists locally, then load it into memory at startup
     pull:
-      - qwen3.5:35b
-      - nemotron-3-nano:30b
+      - qwen3.6:35b
+      - gemma4:31b
     create:
       - name: qwen3.6-35b-full
         template: |

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: pihole
+description: Network-wide ad blocking via Pi-hole DNS
+type: application
+version: 1.0.0
+appVersion: "2026.02.0"
+dependencies:
+  - name: app-template
+    version: 3.5.1
+    repository: https://bjw-s-labs.github.io/helm-charts/

@@ -1,0 +1,77 @@
+app-template:
+  controllers:
+    pihole:
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: pihole/pihole
+            tag: "2026.02.0"
+            pullPolicy: IfNotPresent
+
+          env:
+            TZ: America/Los_Angeles
+            FTLCONF_dns_listeningMode: ALL
+
+          envFrom:
+            - secretRef:
+                name: pihole-credentials
+
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /admin/
+                  port: 80
+                initialDelaySeconds: 60
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /admin/
+                  port: 80
+                initialDelaySeconds: 30
+                periodSeconds: 10
+
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 50m
+            limits:
+              memory: 512Mi
+
+  service:
+    main:
+      controller: pihole
+      annotations:
+        tailscale.com/expose: "true"
+        tailscale.com/hostname: "pihole"
+      labels:
+        tailscale.com/proxy-class: "control-plane"
+      ports:
+        dns-tcp:
+          port: 53
+          protocol: TCP
+        dns-udp:
+          port: 53
+          protocol: UDP
+        http:
+          port: 80
+          protocol: TCP
+        https:
+          port: 443
+          protocol: TCP
+
+  persistence:
+    config:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      globalMounts:
+        - path: /etc/pihole

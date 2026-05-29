@@ -27,7 +27,7 @@ app-template:
       annotations:
         tailscale.com/expose: "true"
         tailscale.com/hostname: "terraria"
-        tailscale.com/proxy-class: "control-plane"
+        tailscale.com/proxy-class: "pin-framework-desktop"
       ports:
         game:
           port: 7777

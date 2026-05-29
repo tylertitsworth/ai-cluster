@@ -1,3 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  tailscale.server: |
+    ts.net:53 {
+      errors
+      cache 30
+      forward . 10.43.240.44
+    }
+---
 apiVersion: tailscale.com/v1alpha1
 kind: DNSConfig
 metadata:
@@ -16,7 +29,14 @@ spec:
   statefulSet:
     pod:
       nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
+        tailscale-ingress: "enabled"
+      topologySpreadConstraints:
+        - maxSkew: 2
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              tailscale.com/managed: "true"
   metrics:
     enable: true
     serviceMonitor:
@@ -33,19 +53,95 @@ spec:
   statefulSet:
     pod:
       nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
+        tailscale-ingress: "enabled"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              tailscale.com/managed: "true"
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true
+      labels:
+        prometheus: monitoring-kube-prometheus-prometheus
+        release: monitoring
+---
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: connector-host
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: framework-desktop
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true
+      labels:
+        prometheus: monitoring-kube-prometheus-prometheus
+        release: monitoring
+---
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: pin-npu01
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: npu01.local
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true
+      labels:
+        prometheus: monitoring-kube-prometheus-prometheus
+        release: monitoring
+---
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: pin-npu02
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: npu02.local
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true
+      labels:
+        prometheus: monitoring-kube-prometheus-prometheus
+        release: monitoring
+---
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: pin-framework-desktop
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: framework-desktop
 ---
 apiVersion: tailscale.com/v1alpha1
 kind: Connector
 metadata:
   name: control-plane
 spec:
-  proxyClass: control-plane
+  proxyClass: connector-host
   subnetRouter:
     advertiseRoutes:
       - "10.42.0.0/15"
       - "10.43.0.0/16"
-      - "192.168.0.64/27"
+      - "192.168.0.0/24"
+      - "192.168.0.245/32"
 ---
 apiVersion: tailscale.com/v1alpha1
 kind: ProxyGroup

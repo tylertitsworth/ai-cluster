@@ -1,0 +1,4 @@
+# Built by `helm dependency build` (and by ArgoCD at sync time). Not committed so
+# the "*" dependency tracks the latest published foundry-vtt version.
+charts/
+Chart.lock

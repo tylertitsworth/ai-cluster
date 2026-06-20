@@ -1,0 +1,11 @@
+apiVersion: v2
+name: foundry
+description: Foundry Virtual Tabletop (upstream foundry-vtt chart + Tailscale ingress)
+type: application
+version: 0.1.0
+appVersion: "13"
+dependencies:
+  # Upstream chart. "*" tracks the latest published version (HEAD).
+  - name: foundry-vtt
+    version: "*"
+    repository: https://hugoprudente.github.io/helm-charts/incubator/

@@ -11,16 +11,16 @@ metadata:
 spec:
   project: default
   sources:
-    # TODO: wire to the foundry-vtt chart after it is pushed upstream.
-    # Update repoURL/chart/targetRevision to the published chart location.
-    - repoURL: PLACEHOLDER_CHART_REPO
-      chart: foundry-vtt
-      targetRevision: 13.345.0
+    # Umbrella chart: pulls upstream foundry-vtt as a dependency and adds the
+    # Tailscale ingress template. The dependency is built by ArgoCD at sync time.
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: add-foundry-vtt
+      path: charts/foundry
       helm:
         valueFiles:
           - $values/apps/values/foundry-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: main
+      targetRevision: add-foundry-vtt
       ref: values
   destination:
     server: https://kubernetes.default.svc

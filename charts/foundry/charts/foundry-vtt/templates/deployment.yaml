@@ -30,6 +30,20 @@ spec:
       dnsConfig:
         {{- toYaml .Values.dnsConfig | nindent 8 }}
       {{- end }}
+      {{- if .Values.mtuFix.enabled }}
+      # MTU workaround: the path to api.foundryvtt.com (license signature server)
+      # has an effective PMTU below the cluster default (1450), so the TLS handshake
+      # blackholes from pods. Lower this pod's eth0 MTU so the license check works.
+      # Scoped to this pod only — no cluster-wide network change.
+      initContainers:
+      - name: mtu-fix
+        image: busybox:1.36
+        command: ["sh", "-c", "ip link set eth0 mtu {{ .Values.mtuFix.mtu }}"]
+        securityContext:
+          runAsUser: 0
+          capabilities:
+            add: ["NET_ADMIN"]
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:

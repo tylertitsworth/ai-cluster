@@ -380,3 +380,9 @@ cloudProviders:
     #   enabled: false
     #   roles:
     #     - ROLE
+
+# Added (vendored fork): lower this pod's eth0 MTU via an init container so TLS to
+# low-PMTU endpoints (e.g. api.foundryvtt.com license server) doesn't blackhole.
+mtuFix:
+  enabled: true
+  mtu: 1200

@@ -10,6 +10,12 @@ foundry-vtt:
     configSecretName: foundry
     hostname: foundry.tail79a5c8.ts.net
     cssTheme: foundry
+  # Longhorn-backed persistent volume for /data (worlds, modules, assets).
+  persistence:
+    storageClass: longhorn
+    dataDir:
+      enabled: true
+      size: 8Gi
 
 # Tailscale Ingress rendered by this chart's templates/ingress.yaml.
 ingress:

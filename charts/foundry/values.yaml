@@ -6,6 +6,8 @@
 foundry-vtt:
   foundryvtt:
     configSecretName: foundry
+    hostname: foundry.tail79a5c8.ts.net
+    cssTheme: foundry
 
 # Tailscale Ingress rendered by this chart's templates/ingress.yaml.
 ingress:

@@ -4,6 +4,8 @@
 
 # Values for the upstream foundry-vtt dependency are nested under its chart name.
 foundry-vtt:
+  # Names the Service/Deployment "foundry" so the ingress backend matches.
+  fullnameOverride: foundry
   foundryvtt:
     configSecretName: foundry
     hostname: foundry.tail79a5c8.ts.net

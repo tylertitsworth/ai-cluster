@@ -5,6 +5,8 @@
 
 # Upstream foundry-vtt dependency values are nested under its chart name.
 foundry-vtt:
+  # Names the Service/Deployment "foundry" so the ingress backend matches.
+  fullnameOverride: foundry
   foundryvtt:
     # Existing Secret with adminPassword/username/password/licenseKey/releaseUrl.
     configSecretName: foundry

@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "affinity": {
+      "properties": {},
+      "type": "object"
+    },
+    "certmanager": {
+      "properties": {
+        "version": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "cloudProviders": {
+      "properties": {
+        "aws": {
+          "properties": {},
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "container": {
+      "properties": {
+        "cache": {
+          "type": "string"
+        },
+        "gid": {
+          "type": "integer"
+        },
+        "patchUrls": {
+          "type": "array"
+        },
+        "patches": {
+          "type": "string"
+        },
+        "preserveConfig": {
+          "type": "boolean"
+        },
+        "preserveOwner": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "integer"
+        },
+        "verbose": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "dnsConfig": {
+      "type": "object"
+    },
+    "dnsPolicy": {
+      "type": "string"
+    },
+    "foundryvtt": {
+      "properties": {
+        "adminPassword": {
+          "type": "string"
+        },
+        "configSecretName": {
+          "type": "string"
+        },
+        "cssTheme": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "licenseKey": {
+          "type": "string"
+        },
+        "minifyStaticFiles": {
+          "type": "boolean"
+        },
+        "password": {
+          "type": "string"
+        },
+        "proxySSL": {
+          "type": "boolean"
+        },
+        "releaseUrl": {
+          "type": "string"
+        },
+        "s3": {
+          "properties": {
+            "accessKeyId": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "string"
+            },
+            "endpoint": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "secretAccessKey": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "upnp": {
+          "type": "boolean"
+        },
+        "username": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "world": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "image": {
+      "properties": {
+        "pullPolicy": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "imagePullSecrets": {
+      "type": "array"
+    },
+    "ingress": {
+      "properties": {
+        "annotations": {
+          "properties": {},
+          "type": "object"
+        },
+        "class": {
+          "type": "string"
+        },
+        "configurationSnippet": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "pathType": {
+          "type": "string"
+        },
+        "tls": {
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "secretName": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "letsEncrypt": {
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "environment": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "nodeSelector": {
+      "properties": {},
+      "type": "object"
+    },
+    "persistence": {
+      "properties": {
+        "bind": {
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "hostpath": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "dataDir": {
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "size": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "shared": {
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "mounts": {
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "storageClass": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "podSecurityContext": {
+      "properties": {},
+      "type": "object"
+    },
+    "resources": {
+      "properties": {
+        "limits": {
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "requests": {
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "securityContext": {
+      "properties": {},
+      "type": "object"
+    },
+    "selfsigned": {
+      "properties": {
+        "cert": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "service": {
+      "properties": {
+        "annotations": {
+          "properties": {},
+          "type": "object"
+        },
+        "externalTrafficPolicy": {
+          "type": "string"
+        },
+        "labels": {
+          "properties": {},
+          "type": "object"
+        },
+        "loadBalancerIP": {
+          "type": "null"
+        },
+        "loadBalancerSourceRanges": {
+          "type": "array"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "serviceType": {
+          "type": "string"
+        },
+        "tls": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "serviceAccount": {
+      "properties": {
+        "annotations": {
+          "properties": {},
+          "type": "object"
+        },
+        "create": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "null"
+        }
+      },
+      "type": "object"
+    },
+    "threadCount": {
+      "type": "string"
+    },
+    "tolerations": {
+      "type": "array"
+    }
+  },
+  "type": "object"
+}

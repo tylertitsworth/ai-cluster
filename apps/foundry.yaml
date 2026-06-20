@@ -14,13 +14,13 @@ spec:
     # Umbrella chart: pulls upstream foundry-vtt as a dependency and adds the
     # Tailscale ingress template. The dependency is built by ArgoCD at sync time.
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: add-foundry-vtt
+      targetRevision: main
       path: charts/foundry
       helm:
         valueFiles:
           - $values/apps/values/foundry-values.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: add-foundry-vtt
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

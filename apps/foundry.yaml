@@ -1,0 +1,30 @@
+# Foundry Virtual Tabletop
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: foundry
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # TODO: wire to the foundry-vtt chart after it is pushed upstream.
+    # Update repoURL/chart/targetRevision to the published chart location.
+    - repoURL: PLACEHOLDER_CHART_REPO
+      chart: foundry-vtt
+      targetRevision: 13.345.0
+      helm:
+        valueFiles:
+          - $values/apps/values/foundry-values.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: foundry
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

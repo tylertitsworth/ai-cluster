@@ -1,0 +1,27 @@
+# Tailscale Ingress for Foundry VTT.
+# The foundry-vtt chart's built-in ingress is gated to class nginx/contour/traefik
+# (ingress.class also sets ingressClassName from the same var), so it cannot emit a
+# tailscale-class Ingress. We disable the chart ingress and define it here instead.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: foundry
+  namespace: foundry
+  annotations:
+    tailscale.com/proxy-class: control-plane
+spec:
+  ingressClassName: tailscale
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: foundry
+                port:
+                  number: 80
+  tls:
+    # Short hostname only — Tailscale assigns the FQDN from the tailnet.
+    - hosts:
+        - foundry

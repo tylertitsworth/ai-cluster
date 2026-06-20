@@ -1,0 +1,34 @@
+# foundry-vtt chart values
+# NOTE: No credentials live here. License key / passwords are stored in the
+# pre-created Kubernetes Secret "foundry" (namespace: foundry) and referenced
+# via foundryvtt.configSecretName. Never inline secret values in this file.
+fullnameOverride: foundry
+
+image:
+  repository: felddy/foundryvtt
+  pullPolicy: IfNotPresent
+
+foundryvtt:
+  # Existing Secret holding adminPassword, username, password, licenseKey, releaseUrl.
+  # When set, all account settings from values are ignored.
+  configSecretName: foundry
+  hostname: foundry.tail79a5c8.ts.net
+  cssTheme: foundry
+
+# ClusterIP only — Tailscale Ingress (see manifests/foundry-ingress.yaml) handles
+# external exposure, so we don't consume a MetalLB LoadBalancer IP here.
+service:
+  serviceType: ClusterIP
+  port: 80
+  tls: false
+
+# This chart's built-in ingress only renders for class nginx/contour/traefik and
+# cannot emit a tailscale-class Ingress. Keep it disabled and use the standalone
+# manifest instead.
+ingress:
+  enabled: false
+
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 8Gi

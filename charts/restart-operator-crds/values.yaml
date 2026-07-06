@@ -1,0 +1,31 @@
+# Operator fires in UTC; times below are PT (UTC-7) converted to UTC.
+namespace: servarr
+
+schedules:
+  - name: qbittorrent-vpn
+    schedule: "0 */3 * * *"
+
+  - name: bazarr
+    schedule: "0 9 */3 * *"
+  - name: bookshelf
+    schedule: "15 9 */3 * *"
+  - name: fileflows
+    schedule: "30 9 */3 * *"
+  - name: flaresolverr
+    schedule: "45 9 */3 * *"
+  - name: kavita
+    schedule: "0 10 */3 * *"
+  - name: maintainerr
+    schedule: "15 10 */3 * *"
+  - name: overseerr
+    schedule: "30 10 */3 * *"
+  - name: profilarr
+    schedule: "45 10 */3 * *"
+  - name: prowlarr
+    schedule: "0 11 */3 * *"
+  - name: radarr
+    schedule: "15 11 */3 * *"
+  - name: sonarr
+    schedule: "30 11 */3 * *"
+  - name: tautulli
+    schedule: "45 11 */3 * *"

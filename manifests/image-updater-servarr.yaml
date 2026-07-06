@@ -1,0 +1,120 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: servarr
+  namespace: argocd
+spec:
+  namespace: argocd
+  writeBackConfig:
+    method: argocd
+  # Each app follows the mutable tag it already runs and redeploys when that
+  # tag's digest changes. The tag on imageName is the constraint digest needs.
+  applicationRefs:
+    - namePattern: bazarr
+      images:
+        - alias: bazarr
+          imageName: lscr.io/linuxserver/bazarr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.bazarr.containers.main.image.repository
+              tag: app-template.controllers.bazarr.containers.main.image.tag
+    - namePattern: sonarr
+      images:
+        - alias: sonarr
+          imageName: lscr.io/linuxserver/sonarr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.sonarr.containers.main.image.repository
+              tag: app-template.controllers.sonarr.containers.main.image.tag
+    - namePattern: maintainerr
+      images:
+        - alias: maintainerr
+          imageName: ghcr.io/maintainerr/maintainerr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.maintainerr.containers.main.image.repository
+              tag: app-template.controllers.maintainerr.containers.main.image.tag
+    - namePattern: flaresolverr
+      images:
+        - alias: flaresolverr
+          imageName: ghcr.io/flaresolverr/flaresolverr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.flaresolverr.containers.main.image.repository
+              tag: app-template.controllers.flaresolverr.containers.main.image.tag
+    - namePattern: overseerr
+      images:
+        - alias: overseerr
+          imageName: ghcr.io/seerr-team/seerr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.overseerr.containers.main.image.repository
+              tag: app-template.controllers.overseerr.containers.main.image.tag
+    - namePattern: profilarr
+      images:
+        - alias: profilarr
+          imageName: index.docker.io/santiagosayshey/profilarr:beta
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.profilarr.containers.main.image.repository
+              tag: app-template.controllers.profilarr.containers.main.image.tag
+    - namePattern: bookshelf
+      images:
+        - alias: bookshelf
+          imageName: ghcr.io/pennydreadful/bookshelf:hardcover
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.bookshelf.containers.main.image.repository
+              tag: app-template.controllers.bookshelf.containers.main.image.tag
+    - namePattern: fileflows
+      images:
+        - alias: fileflows
+          imageName: index.docker.io/revenz/fileflows:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.fileflows.containers.main.image.repository
+              tag: app-template.controllers.fileflows.containers.main.image.tag
+    - namePattern: kavita
+      images:
+        - alias: kavita
+          imageName: lscr.io/linuxserver/kavita:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.kavita.containers.main.image.repository
+              tag: app-template.controllers.kavita.containers.main.image.tag
+    - namePattern: prowlarr
+      images:
+        - alias: prowlarr
+          imageName: lscr.io/linuxserver/prowlarr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.prowlarr.containers.main.image.repository
+              tag: app-template.controllers.prowlarr.containers.main.image.tag
+    - namePattern: radarr
+      images:
+        - alias: radarr
+          imageName: lscr.io/linuxserver/radarr:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.radarr.containers.main.image.repository
+              tag: app-template.controllers.radarr.containers.main.image.tag
+    - namePattern: tautulli
+      images:
+        - alias: tautulli
+          imageName: lscr.io/linuxserver/tautulli:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.tautulli.containers.main.image.repository
+              tag: app-template.controllers.tautulli.containers.main.image.tag

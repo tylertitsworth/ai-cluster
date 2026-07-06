@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: restart-operator
+    targetRevision: main
     path: charts/restart-operator-crds
   destination:
     server: https://kubernetes.default.svc

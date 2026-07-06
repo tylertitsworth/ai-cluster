@@ -1,6 +1,12 @@
 # Operator fires in UTC; times below are PT (UTC-7) converted to UTC.
 namespace: servarr
 
+# ServiceAccount the restart-operator runs as (RBAC is bound to it here because
+# the upstream chart ships its RBAC as Helm hooks that ArgoCD doesn't apply).
+operator:
+  namespace: restart-operator
+  serviceAccountName: restart-operator
+
 schedules:
   - name: qbittorrent-vpn
     schedule: "0 */3 * * *"

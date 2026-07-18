@@ -58,7 +58,7 @@ spec:
     - namePattern: profilarr
       images:
         - alias: profilarr
-          imageName: index.docker.io/santiagosayshey/profilarr:beta
+          imageName: ghcr.io/dictionarry-hub/profilarr:latest
           commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
           manifestTargets:
             helm:

@@ -6,6 +6,16 @@ clientInfoSecret:
   name: synology-csi-client-info
 
 storageClasses:
+  # iSCSI is RWO-only (doesn't fit shared media-library/downloads volumes) and
+  # SMB breaks Sonarr/Radarr atomic-rename imports - disabled to avoid accidental use.
+  iscsi-delete:
+    disabled: true
+  iscsi-retain:
+    disabled: true
+  smb-delete:
+    disabled: true
+  smb-retain:
+    disabled: true
   nfs-delete:
     reclaimPolicy: Delete
     allowVolumeExpansion: true

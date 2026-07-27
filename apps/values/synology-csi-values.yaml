@@ -1,0 +1,28 @@
+# https://github.com/christian-schlichtherle/synology-csi-chart
+# Credentials live in a pre-created Secret (synology-csi-client-info, synology-csi ns),
+# not in git.
+clientInfoSecret:
+  create: false
+  name: synology-csi-client-info
+
+storageClasses:
+  nfs-delete:
+    reclaimPolicy: Delete
+    allowVolumeExpansion: true
+    mountOptions:
+      - vers=4.1
+      - noatime
+    parameters:
+      protocol: nfs
+      dsm: 10.0.0.181
+      location: /volume1/k3s
+  nfs-retain:
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    mountOptions:
+      - vers=4.1
+      - noatime
+    parameters:
+      protocol: nfs
+      dsm: 10.0.0.181
+      location: /volume1/k3s

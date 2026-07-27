@@ -26,6 +26,7 @@ storageClasses:
       protocol: nfs
       dsm: 10.0.0.181
       location: /volume1
+      mountPermissions: "0755"
   nfs-retain:
     reclaimPolicy: Retain
     allowVolumeExpansion: true
@@ -36,3 +37,4 @@ storageClasses:
       protocol: nfs
       dsm: 10.0.0.181
       location: /volume1
+      mountPermissions: "0755"

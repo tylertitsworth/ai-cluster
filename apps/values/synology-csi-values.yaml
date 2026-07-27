@@ -25,7 +25,7 @@ storageClasses:
     parameters:
       protocol: nfs
       dsm: 10.0.0.181
-      location: /volume1/k3s
+      location: /volume1
   nfs-retain:
     reclaimPolicy: Retain
     allowVolumeExpansion: true
@@ -35,4 +35,4 @@ storageClasses:
     parameters:
       protocol: nfs
       dsm: 10.0.0.181
-      location: /volume1/k3s
+      location: /volume1

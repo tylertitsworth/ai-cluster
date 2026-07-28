@@ -29,7 +29,7 @@ grafana:
     enabled: true
     size: 10Gi
   service:
-    type: ClusterIP
+    type: LoadBalancer
 kube-state-metrics:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"

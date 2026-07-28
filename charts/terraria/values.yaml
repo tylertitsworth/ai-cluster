@@ -23,7 +23,7 @@ app-template:
   service:
     main:
       controller: terraria
-      type: ClusterIP
+      type: LoadBalancer
       annotations:
         tailscale.com/expose: "true"
         tailscale.com/hostname: "terraria"

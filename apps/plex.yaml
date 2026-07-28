@@ -53,8 +53,11 @@ spec:
 
         # Service configuration
         service:
-          type: ClusterIP
+          type: LoadBalancer
           port: 32400
+          nodePort: 32400
+          externalTrafficPolicy: Local
+          loadBalancerIP: 192.168.0.89
 
         # Ingress configuration
         ingress:

@@ -17,7 +17,7 @@ ollama:
   enabled: false
   periodSeconds: 30
 service:
-  type: ClusterIP
+  type: LoadBalancer
 persistence:
   existingClaim: open-webui
 image:

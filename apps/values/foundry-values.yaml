@@ -22,6 +22,8 @@ foundry-vtt:
   mtuFix:
     enabled: true
     mtu: 1200
+  service:
+    serviceType: ClusterIP
 
 # Tailscale Ingress rendered by charts/foundry/templates/ingress.yaml.
 ingress:

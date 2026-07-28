@@ -37,7 +37,7 @@ app-template:
   service:
     main:
       controller: fileflows
-      type: LoadBalancer
+      type: ClusterIP
       ports:
         http:
           port: 5000

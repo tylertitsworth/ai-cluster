@@ -4,6 +4,12 @@ alertmanager:
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
 grafana:
+  # Bumped off chart-default 11.3.x: the DB schema was migrated by an 11.6.x Grafana
+  # (guid columns on alert_rule/alert_rule_version), but 11.3 doesn't populate guid at
+  # runtime -> Grafana-managed alert create/edit fails on UNIQUE guid. 11.6.16 owns the
+  # schema. Follow-up: bump the kube-prometheus-stack chart for a supported Grafana (12.4/13).
+  image:
+    tag: "11.6.16"
   assertNoLeakedSecrets: false
   grafana.ini:
     auth.anonymous:
@@ -29,7 +35,7 @@ grafana:
     enabled: true
     size: 10Gi
   service:
-    type: LoadBalancer
+    type: ClusterIP
 kube-state-metrics:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"

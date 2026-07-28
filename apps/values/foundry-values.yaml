@@ -16,8 +16,6 @@ foundry-vtt:
     dataDir:
       enabled: true
       size: 8Gi
-  service:
-    serviceType: ClusterIP
   # Pod-scoped MTU workaround: the api.foundryvtt.com (license server) path has an
   # effective PMTU below the cluster default 1450, so the TLS handshake blackholes.
   # An init container lowers this pod's eth0 MTU only — no cluster-wide change.

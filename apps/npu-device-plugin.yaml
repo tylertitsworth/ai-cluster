@@ -13,6 +13,7 @@ spec:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: main
     path: npu-device-plugin
+    kustomize: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

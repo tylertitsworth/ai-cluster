@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "foundry-vtt.fullname" . }}
+  labels:
+    app: {{ template "foundry-vtt.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"    
+    {{- include "foundry-vtt.labels" . | nindent 4 }}
+    {{- range $key, $value := .Values.service.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}    
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: {{ .Values.foundryvtt.hostname }}
+    {{- include "foundry-vtt.cloudProvider.aws.loadBalacer.annotations" . | indent 4 }}
+    {{- range $key, $value := .Values.service.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+{{- if (or (eq .Values.service.serviceType "ClusterIP") (empty .Values.service.serviceType)) }}
+  type: ClusterIP
+{{- else if eq .Values.service.serviceType "LoadBalancer" }}
+  type: {{ .Values.service.serviceType }}
+  {{- if .Values.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+  {{- end }}
+  {{- if .Values.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+{{ toYaml .Values.service.loadBalancerSourceRanges | indent 4 }}
+  {{- end -}}
+{{- else }}
+  type: {{ .Values.service.serviceType }}
+{{- end }}
+  {{- if and (.Values.service.externalTrafficPolicy) (not (eq .Values.service.serviceType "ClusterIP")) }}
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol:  {{ .Values.service.protocol }}
+      name: http
+    {{- if .Values.service.tls }}
+    - port: 443
+      targetPort: http
+      name: https
+    {{- end }}
+  selector:
+    {{- include "foundry-vtt.selectorLabels" . | nindent 4 }}

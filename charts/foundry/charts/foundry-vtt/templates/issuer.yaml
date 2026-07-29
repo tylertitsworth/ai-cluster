@@ -1,0 +1,25 @@
+{{- if and (.Values.ingress.tls.enabled) (eq .Values.ingress.tls.source "letsEncrypt") }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ template "foundry-vtt.fullname" . }}
+  labels:
+    app: {{ template "foundry-vtt.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  acme:
+    {{- if eq .Values.letsEncrypt.environment "production" }}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    {{- else }}
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    {{- end }}
+    email: {{ .Values.letsEncrypt.email }}
+    privateKeySecretRef:
+      name: letsencrypt-{{default "staging" ( .Values.letsEncrypt.environment ) }}
+    solvers:
+    - http01:
+        ingress:
+          class: {{ .Values.ingress.class }}
+{{- end -}}

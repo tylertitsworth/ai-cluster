@@ -1,0 +1,36 @@
+# Override values for the foundry umbrella chart (charts/foundry).
+# NOTE: No credentials live here. License key / passwords are stored in the
+# pre-created Kubernetes Secret "foundry" (namespace: foundry) and referenced
+# via configSecretName. Never inline secret values in this file.
+
+# Upstream foundry-vtt dependency values are nested under its chart name.
+foundry-vtt:
+  # Names the Service/Deployment "foundry" so the ingress backend matches.
+  fullnameOverride: foundry
+  foundryvtt:
+    # Existing Secret with adminPassword/username/password/licenseKey/releaseUrl.
+    configSecretName: foundry
+  # Longhorn-backed persistent volume for /data (worlds, modules, assets).
+  persistence:
+    storageClass: longhorn
+    dataDir:
+      enabled: true
+      size: 8Gi
+  # Pod-scoped MTU workaround: the api.foundryvtt.com (license server) path has an
+  # effective PMTU below the cluster default 1450, so the TLS handshake blackholes.
+  # An init container lowers this pod's eth0 MTU only — no cluster-wide change.
+  mtuFix:
+    enabled: true
+    mtu: 1200
+  service:
+    serviceType: ClusterIP
+
+# Tailscale Ingress rendered by charts/foundry/templates/ingress.yaml.
+ingress:
+  enabled: true
+  className: tailscale
+  host: foundry
+  proxyClass: control-plane
+  service:
+    name: foundry
+    port: 80

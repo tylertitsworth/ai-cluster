@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: restart-operator
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://archsyscall.github.io/restart-operator
+    chart: restart-operator
+    targetRevision: 0.1.1
+    helm:
+      releaseName: restart-operator
+      valuesObject:
+        rbac:
+          create: false
+        operator:
+          leaderElection:
+            enabled: false
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: restart-operator
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,55 @@
+{{- if and (eq .Values.ingress.enabled true) (eq .Values.ingress.class "nginx") }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ template "foundry-vtt.fullname" . }}
+  labels:
+    app: {{ template "foundry-vtt.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  annotations:
+{{- if .Values.ingress.configurationSnippet }}
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      {{- template "configurationSnippet" . }}
+{{- end }}
+{{- if not .Values.ingress.tls.enabled }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false" # turn off ssl redirect for external.
+{{- else }}
+  {{- if ne .Values.ingress.tls.source "secret" }}
+    {{- $certmanagerVer :=  split "." .Values.certmanager.version -}}
+    {{- if or (.Capabilities.APIVersions.Has "cert-manager.io/v1alpha2") (and (eq (int $certmanagerVer._0) 0) (ge (int $certmanagerVer._1) 11)) }}
+    cert-manager.io/issuer: {{ template "foundry-vtt.fullname" . }}
+    cert-manager.io/issuer-kind: Issuer
+    {{- else if or (.Capabilities.APIVersions.Has "certmanager.k8s.io/v1alpha1") (and (eq (int $certmanagerVer._0) 0) (lt (int $certmanagerVer._1) 11)) }}
+    certmanager.k8s.io/issuer: {{ template "foundry-vtt.fullname" . }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- if .Values.ingress.annotations }}
+{{ toYaml .Values.ingress.annotations | indent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.class}}
+  rules:
+  - host: {{ .Values.ingress.hostname }}
+    http:
+      paths:
+      - pathType: {{ .Values.ingress.pathType }}
+        path: {{ .Values.ingress.path }}
+        backend:
+          service:
+            name: {{ template "foundry-vtt.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- if and (.Values.ingress.tls.enabled) (not (eq .Values.ingress.tls.source "external")) }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.hostname }}
+    {{- if eq .Values.ingress.tls.source "secret" }}
+    secretName: {{ default (printf "%s-signed" (include "foundry-vtt.fullname" .)) .Values.ingress.tls.secretName }} 
+    {{- else }}
+    secretName: {{ template "foundry-vtt.fullname" . }}-ingress
+    {{- end}}
+{{- end }}
+{{- end }}

@@ -1,0 +1,326 @@
+---
+questions:
+  - variable: foundryvtt.version
+    label: Version
+    description: Version of foundry to run
+    default: "13.345"
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.hostname
+    label: Foundry hostname
+    description: Hostname that goes into the foundry config to generate invite links (can be different than the ingress hostname).
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.routePrefix
+    label: Url prefix
+    description: Path that is appended after the hostname before foundry (e.g. serving foundry from a subfolder of a domain)
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.cssTheme
+    group: Foundry
+    label: Theme
+    description: Theme for the Foundry instance
+    type: enum
+    default: "foundry"
+    options:
+      - "foundry"
+      - "fantasy"
+      - "scifi"
+
+  - variable: foundryvtt.language
+    label: Language
+    description: Language for foundry
+    default: en.core
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.minifyStaticFiles
+    label: Minify static files
+    description: Set to `true` to reduce network traffic by serving minified static JavaScript and CSS files.  Enabling this setting is recommended for most users, but module developers may wish to disable it.
+    default: true
+    type: boolean
+    group: Foundry
+
+  - variable: foundryvtt.proxySSL
+    label: Proxy SSL?
+    description: Indicates whether the software is running behind a reverse proxy that uses SSL. This allows invitation links and A/V functionality to work as if the Foundry Server had SSL configured directly.
+    default: false
+    type: boolean
+    group: Foundry
+
+  - variable: foundryvtt.proxyPort
+    label: Proxy Port
+    description: Inform the Foundry Server that the software is running behind a reverse proxy on some other port. This allows the invitation links created to the game to include the correct external port.
+    default:
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.upnp
+    label: Enable UPnP
+    description: Allow Universal Plug and Play to automatically request port forwarding for the Foundry VTT port to your local network address.
+    default: false
+    type: boolean
+    group: Foundry
+
+  - variable: foundryvtt.world
+    label: World
+    description: The world to start up at system start.
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.configSecretName
+    label: Config Secret
+    description: An existing secret to define the username, password, adminPassword, or licenceKey from (all keys must exist, even if empty).
+    type: secret
+    group: Foundry
+
+  - variable: foundryvtt.username
+    label: FoundryVTT.com Username
+    description: Account username or email address for foundryvtt.com. Required for downloading an application distribution.
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.password
+    label: FoundryVTT.com Password
+    description: Account password for foundryvtt.com. Required for downloading an application distribution.
+    type: password
+    group: Foundry
+
+  - variable: foundryvtt.releaseUrl
+    label: Release URL
+    description: A URL to download the install files from.  Either Foundry User/Pass or Release URL must be defined to download the installer.
+    type: string
+    group: Foundry
+
+  - variable: foundryvtt.licenseKey
+    label: License key
+    description: The license key to install (should be formatted like AAAA-BBBB-CCCC-DDDD-EEEE-FFFF).  If left blank, will either be populated when logging into the account, or will be requested when logging into the server after it starts.
+    type: password
+    group: Foundry
+
+  - variable: foundryvtt.adminPassword
+    label: Admin Password
+    description: Admin password for the Foundry instance
+    default: admin
+    type: password
+    group: Foundry
+
+  - variable: ingress.enabled
+    group: Ingress
+    label: Enable Ingress
+    type: boolean
+    default: true
+
+  - variable: ingress.tls.enabled
+    show_if: "ingress.enabled=true"
+    label: TLS
+    description: Will the Ingress use TLS?
+    group: Ingress
+    type: boolean
+
+  - variable: ingress.tls.source
+    show_if: "ingress.tls.enabled=true"
+    label: TLS Source
+    description: What is the source of the certificate?
+    group: Ingress
+    type: enum
+    options:
+      - "external"
+      - "secret"
+      - "letsEncrypt"
+
+  - variable: ingress.selfsigned.enabled
+    show_if: "ingress.tls.source=secret"
+    label: Use Self-Signed Cert
+    group: Ingress
+    type: boolean
+    show_subquestion_if: "true"
+    subquestions:
+      - variable: ingress.selfsigned.cert
+        label: "Certificate"
+        type: multiline
+      - variable: ingress.selfsigned.key
+        label: "Certificate"
+        type: multiline
+
+  - variable: ingress.tls.secretName
+    show_if: "ingress.tls.source=secret"
+    label: TLS Source
+    description: What is the name of the secret for the certificate? (Only change if selfsigned is disabled and you want a different secret name)
+    group: Ingress
+    type: secret
+    default: ""
+
+  - variable: ingress.letsEncrypt.enabled
+    show_if: "ingress.tls.source=letsEncrypt"
+    label: Enable Lets Encrypt
+    group: Ingress
+    type: boolean
+
+  - variable: ingress.letsEncrypt.environment
+    show_if: "ingress.letsEncrypt.enabled=true"
+    label: LetsEncrypt Environment
+    group: Ingress
+    type: enum
+    options:
+      - "staging"
+      - "production"
+    default: staging
+
+  - variable: ingress.letsEncrypt.environment
+    show_if: "ingress.letsEncrypt.enabled=true"
+    label: LetsEncrypt email
+    group: Ingress
+    type: string
+
+  - variable: ingress.class
+    show_if: "ingress.enabled=true"
+    label: Ingress Class
+    description: Either nginx, contour, or traefik.
+    group: Ingress
+    type: enum
+    options:
+      - "nginx"
+      - "contour"
+      - "traefik"
+
+  - variable: ingress.configurationSnippet
+    label: Configuration snippet
+    group: Ingress
+    description: Add additional Nginx configuration here.
+    show_if: "ingress.class=nginx"
+    type: multiline
+
+  - variable: ingress.hostname
+    show_if: "ingress.enabled=true"
+    label: Hostname
+    description: FQDN/Hostname that will allow connections to the Foundry instance (if using tls, must match a name in the certificate)
+    group: Ingress
+    type: string
+
+  - variable: ingress.pathType
+    show_if: "ingress.enabled=true"
+    label: Path Type
+    description: Type of Path
+    group: Ingress
+    type: enum
+    default: "Prefix"
+    options:
+      - "Prefix"
+      - "Exact"
+      - "ImplementationSpecific"
+
+  - variable: ingress.path
+    show_if: "ingress.enabled=true"
+    label: Path
+    description: Path to the Foundry instance
+    group: Ingress
+    type: string
+    default: "/"
+
+  - variable: image.repository
+    label: Image repository
+    default: felddy/foundryvtt
+    group: Image
+
+  - variable: image.tag
+    label: Release Tag
+    default: release
+    group: Image
+
+  - variable: image.pullPolicy
+    label: Pull Policy
+    default: IfNotPresent
+    type: enum
+    options:
+      - "IfNotPresent"
+      - "Always"
+      - "Never"
+    group: Image
+
+  - variable: container.cache
+    group: Container
+    label: Container cache
+    default: /data/container_cache
+
+  - variable: container.cacheSize
+    group: Container
+    label: Cache Size
+    default: 1
+    type: int
+
+  - variable: container.gid
+    group: Container
+    label: Group ID
+    default: 1000
+    type: int
+    min: 0
+    max: 65536
+
+  - variable: container.uid
+    group: Container
+    label: User ID
+    default: 1000
+    type: int
+    min: 0
+    max: 65536
+
+  - variable: container.preserveConfig
+    group: Container
+    label: Perserve Config
+    description: Normally new `options.json` and `admin.txt` files are generated by the container at each startup.  Setting this to `true` prevents the container from modifying these files when they exist.  If they do not exist, they will be created as normal.
+    default: false
+    type: boolean
+
+  - variable: persistence.bind.enabled
+    group: Storage Persistence
+    label: Bind Mount Enabled
+    default: false
+    type: boolean
+    show_subquestion_if: true
+    subquestions:
+      - variable: persistence.bind.hostpath
+        label: Host path
+        type: string
+
+  - variable: persistence.storageClass
+    group: Storage Persistence
+    label: Storage Class for dataDir
+    description: "Do not use this with bind mount"
+    type: storageclass
+
+  - variable: persistence.dataDir.enabled
+    group: Storage Persistence
+    label: Data Directory
+    default: false
+    type: boolean
+    show_subquestion_if: true
+    subquestions:
+      - variable: persistence.dataDir.size
+        label: Size
+        type: string
+        default: 5Gi
+
+  - variable: service.serviceType
+    label: Service Type
+    group: Service
+    type: enum
+    default: "ClusterIP"
+    options:
+      - "ClusterIP"
+      - "LoadBalancer"
+
+  - variable: service.port
+    label: Port
+    group: Service
+    type: int
+    default: 80
+
+  - variable: service.tls
+    label: TLS
+    group: Service
+    type: boolean
+    default: false

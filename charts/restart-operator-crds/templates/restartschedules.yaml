@@ -1,0 +1,17 @@
+{{- $ns := .Values.namespace -}}
+{{- range .Values.schedules }}
+---
+apiVersion: restart-operator.k8s/v1alpha1
+kind: RestartSchedule
+metadata:
+  name: {{ .name }}
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    app.kubernetes.io/part-of: restart-operator
+spec:
+  schedule: "{{ required "each schedule entry needs a cron `schedule`" .schedule }}"
+  targetRef:
+    kind: {{ default "Deployment" .kind }}
+    name: {{ default .name .target }}
+{{- end }}

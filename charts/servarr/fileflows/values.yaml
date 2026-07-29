@@ -37,7 +37,7 @@ app-template:
   service:
     main:
       controller: fileflows
-      type: LoadBalancer
+      type: ClusterIP
       ports:
         http:
           port: 5000
@@ -55,7 +55,7 @@ app-template:
                 identifier: main
                 port: http
       annotations:
-        tailscale.com/proxy-class: "control-plane"
+        tailscale.com/proxy-class: "pin-framework-desktop"
       tls:
         - hosts:
             - fileflows

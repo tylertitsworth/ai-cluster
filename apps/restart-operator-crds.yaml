@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: restart-operator-crds
+  namespace: argocd
+  labels:
+    stack: servarr
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: charts/restart-operator-crds
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: servarr
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

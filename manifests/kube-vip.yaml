@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-vip
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:kube-vip-role
+rules:
+  - apiGroups: [""]
+    resources: ["services", "services/status", "endpoints", "nodes", "pods"]
+    verbs: ["list", "get", "watch", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["list", "get", "watch", "update", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:kube-vip-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:kube-vip-role
+subjects:
+  - kind: ServiceAccount
+    name: kube-vip
+    namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-vip-ds
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: kube-vip-ds
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-vip-ds
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kube-vip-ds
+    spec:
+      serviceAccountName: kube-vip
+      hostNetwork: true
+      containers:
+        - name: kube-vip
+          image: ghcr.io/kube-vip/kube-vip:v0.9.0
+          imagePullPolicy: IfNotPresent
+          args: ["manager"]
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+          env:
+            - name: address
+              value: "10.0.0.253"
+            - name: port
+              value: "6443"
+            - name: vip_subnet
+              value: "32"
+            - name: cp_enable
+              value: "true"
+            - name: svc_enable
+              value: "false"
+            - name: vip_arp
+              value: "true"
+            - name: vip_leaderelection
+              value: "true"
+            - name: vip_leasename
+              value: "plndr-cp-lock"
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists

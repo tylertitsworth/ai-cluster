@@ -1,0 +1,67 @@
+{{- if and (.Values.ingress.enabled) (eq .Values.ingress.class "contour") -}}
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: {{ template "foundry-vtt.fullname" . }}
+  labels:
+    app: {{ template "foundry-vtt.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  annotations:
+{{- if .Values.ingress.annotations }}
+{{ toYaml .Values.ingress.annotations | indent 4 }}
+{{- end }}
+spec:
+  virtualhost:
+    fqdn: {{ .Values.ingress.hostname }}
+    {{- if and (.Values.ingress.tls.enabled) (not (eq .Values.ingress.tls.source "external")) }}
+    tls:
+      {{- if eq .Values.ingress.tls.source "secret" }}
+      secretName: {{ default (printf "%s-signed" (include "foundry-vtt.fullname" .)) .Values.ingress.tls.secretName }} 
+      {{- else }}
+      secretName: {{ template "foundry-vtt.fullname" . }}-ingress
+      {{- end}}
+    {{- end }}
+  routes:
+    - conditions:
+      - prefix: {{ .Values.ingress.path }}
+      services:
+        - name: {{ template "foundry-vtt.fullname" . }}
+          port: {{ .Values.service.port }}
+    - conditions:
+      - prefix: /socket.io
+      enableWebsockets: true  # Setting this to true enables websocket for all paths that match /websocket
+      services:
+        - name: {{ template "foundry-vtt.fullname" . }}
+          port: {{ .Values.service.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/issuer: {{ template "foundry-vtt.fullname" . }}
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/tls-acme: "true"
+  name: {{ template "foundry-vtt.fullname" . }}
+spec:
+  rules:
+  - host: {{ .Values.ingress.hostname }}
+    http:
+      paths:
+       - pathType: {{ .Values.ingress.pathType }}
+         path: {{ .Values.ingress.path }}
+         backend:
+           service:
+             name: {{ template "foundry-vtt.fullname" . }}
+             port:
+               number: {{ .Values.service.port }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.hostname }}
+    {{- if eq .Values.ingress.tls.source "secret" }}
+    secretName: {{ template "foundry-vtt.fullname" . }}-signed
+    {{- else }}
+    secretName: {{ template "foundry-vtt.fullname" . }}-ingress
+    {{- end}}
+{{- end }}

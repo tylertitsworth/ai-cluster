@@ -1,0 +1,331 @@
+# Per-node off-node etcd snapshot backups, one independent pipeline per etcd
+# member (npu01, npu02, orinnx01) so a single node's backup path failing
+# doesn't leave the cluster without an off-node copy. Each pipeline:
+#   1. rsyncs that node's local etcd snapshot dir onto its own small iSCSI PV
+#      on the NAS, pruning files older than 7 days
+#   2. takes a CSI VolumeSnapshot of that PV (Btrfs-level, point-in-time),
+#      pruning VolumeSnapshot objects older than 7 days
+#
+# Requires: synology-csi's iscsi-retain StorageClass and the
+# snapshot.storage.k8s.io CRDs + snapshot-controller (installed cluster-wide,
+# not tracked here) + synology-csi's VolumeSnapshotClass (synology-csi-retain).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: etcd-snapshot-backup
+  namespace: etcd-backup
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: etcd-snapshot-backup
+  namespace: etcd-backup
+rules:
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: etcd-snapshot-backup
+  namespace: etcd-backup
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: etcd-snapshot-backup
+subjects:
+  - kind: ServiceAccount
+    name: etcd-snapshot-backup
+    namespace: etcd-backup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: etcd-backup-npu01
+  namespace: etcd-backup
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: etcd-backup-npu02
+  namespace: etcd-backup
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: etcd-backup-orinnx01
+  namespace: etcd-backup
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: synology-csi-iscsi-retain
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-snapshot-backup-npu01
+  namespace: etcd-backup
+spec:
+  schedule: "0 1 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: etcd-snapshot-backup
+          restartPolicy: Never
+          nodeName: npu01.local
+          initContainers:
+            - name: rsync
+              image: alpine:3.19
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  apk add --no-cache rsync >/dev/null
+                  rsync -a /source/ /dest/
+                  find /dest/ -maxdepth 1 -type f -mtime +7 -delete
+              volumeMounts:
+                - name: source
+                  mountPath: /source
+                  readOnly: true
+                - name: dest
+                  mountPath: /dest
+          containers:
+            - name: snapshot
+              image: alpine/k8s:1.33.13
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  NAME="etcd-backup-npu01-$(date +%Y%m%d-%H%M%S)"
+                  kubectl apply -f - <<EOF
+                  apiVersion: snapshot.storage.k8s.io/v1
+                  kind: VolumeSnapshot
+                  metadata:
+                    name: $NAME
+                    namespace: etcd-backup
+                    labels:
+                      etcd-node: npu01
+                  spec:
+                    volumeSnapshotClassName: synology-csi-retain
+                    source:
+                      persistentVolumeClaimName: etcd-backup-npu01
+                  EOF
+                  for i in $(seq 1 24); do
+                    READY=$(kubectl get volumesnapshot "$NAME" -n etcd-backup -o jsonpath='{.status.readyToUse}' 2>/dev/null || echo "")
+                    [ "$READY" = "true" ] && break
+                    sleep 5
+                  done
+                  if [ "$READY" != "true" ]; then
+                    echo "ERROR: snapshot $NAME did not become ready in time" >&2
+                    exit 1
+                  fi
+                  echo "snapshot $NAME ready"
+                  CUTOFF=$(( $(date +%s) - 7*86400 ))
+                  kubectl get volumesnapshot -n etcd-backup -l etcd-node=npu01 -o go-template='{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | \
+                    while read -r snap_name snap_ts; do
+                      [ -z "$snap_name" ] && continue
+                      snap_t=$(date -D '%Y-%m-%dT%H:%M:%SZ' -d "$snap_ts" +%s)
+                      if [ "$snap_t" -lt "$CUTOFF" ]; then
+                        kubectl delete volumesnapshot "$snap_name" -n etcd-backup
+                      fi
+                    done
+          volumes:
+            - name: source
+              hostPath:
+                path: /var/lib/rancher/k3s/server/db/snapshots
+                type: Directory
+            - name: dest
+              persistentVolumeClaim:
+                claimName: etcd-backup-npu01
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-snapshot-backup-npu02
+  namespace: etcd-backup
+spec:
+  schedule: "10 1 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: etcd-snapshot-backup
+          restartPolicy: Never
+          nodeName: npu02.local
+          initContainers:
+            - name: rsync
+              image: alpine:3.19
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  apk add --no-cache rsync >/dev/null
+                  rsync -a /source/ /dest/
+                  find /dest/ -maxdepth 1 -type f -mtime +7 -delete
+              volumeMounts:
+                - name: source
+                  mountPath: /source
+                  readOnly: true
+                - name: dest
+                  mountPath: /dest
+          containers:
+            - name: snapshot
+              image: alpine/k8s:1.33.13
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  NAME="etcd-backup-npu02-$(date +%Y%m%d-%H%M%S)"
+                  kubectl apply -f - <<EOF
+                  apiVersion: snapshot.storage.k8s.io/v1
+                  kind: VolumeSnapshot
+                  metadata:
+                    name: $NAME
+                    namespace: etcd-backup
+                    labels:
+                      etcd-node: npu02
+                  spec:
+                    volumeSnapshotClassName: synology-csi-retain
+                    source:
+                      persistentVolumeClaimName: etcd-backup-npu02
+                  EOF
+                  for i in $(seq 1 24); do
+                    READY=$(kubectl get volumesnapshot "$NAME" -n etcd-backup -o jsonpath='{.status.readyToUse}' 2>/dev/null || echo "")
+                    [ "$READY" = "true" ] && break
+                    sleep 5
+                  done
+                  if [ "$READY" != "true" ]; then
+                    echo "ERROR: snapshot $NAME did not become ready in time" >&2
+                    exit 1
+                  fi
+                  echo "snapshot $NAME ready"
+                  CUTOFF=$(( $(date +%s) - 7*86400 ))
+                  kubectl get volumesnapshot -n etcd-backup -l etcd-node=npu02 -o go-template='{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | \
+                    while read -r snap_name snap_ts; do
+                      [ -z "$snap_name" ] && continue
+                      snap_t=$(date -D '%Y-%m-%dT%H:%M:%SZ' -d "$snap_ts" +%s)
+                      if [ "$snap_t" -lt "$CUTOFF" ]; then
+                        kubectl delete volumesnapshot "$snap_name" -n etcd-backup
+                      fi
+                    done
+          volumes:
+            - name: source
+              hostPath:
+                path: /var/lib/rancher/k3s/server/db/snapshots
+                type: Directory
+            - name: dest
+              persistentVolumeClaim:
+                claimName: etcd-backup-npu02
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-snapshot-backup-orinnx01
+  namespace: etcd-backup
+spec:
+  schedule: "20 1 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: etcd-snapshot-backup
+          restartPolicy: Never
+          nodeName: orinnx01.local
+          initContainers:
+            - name: rsync
+              image: alpine:3.19
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  apk add --no-cache rsync >/dev/null
+                  rsync -a /source/ /dest/
+                  find /dest/ -maxdepth 1 -type f -mtime +7 -delete
+              volumeMounts:
+                - name: source
+                  mountPath: /source
+                  readOnly: true
+                - name: dest
+                  mountPath: /dest
+          containers:
+            - name: snapshot
+              image: alpine/k8s:1.33.13
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  NAME="etcd-backup-orinnx01-$(date +%Y%m%d-%H%M%S)"
+                  kubectl apply -f - <<EOF
+                  apiVersion: snapshot.storage.k8s.io/v1
+                  kind: VolumeSnapshot
+                  metadata:
+                    name: $NAME
+                    namespace: etcd-backup
+                    labels:
+                      etcd-node: orinnx01
+                  spec:
+                    volumeSnapshotClassName: synology-csi-retain
+                    source:
+                      persistentVolumeClaimName: etcd-backup-orinnx01
+                  EOF
+                  for i in $(seq 1 24); do
+                    READY=$(kubectl get volumesnapshot "$NAME" -n etcd-backup -o jsonpath='{.status.readyToUse}' 2>/dev/null || echo "")
+                    [ "$READY" = "true" ] && break
+                    sleep 5
+                  done
+                  if [ "$READY" != "true" ]; then
+                    echo "ERROR: snapshot $NAME did not become ready in time" >&2
+                    exit 1
+                  fi
+                  echo "snapshot $NAME ready"
+                  CUTOFF=$(( $(date +%s) - 7*86400 ))
+                  kubectl get volumesnapshot -n etcd-backup -l etcd-node=orinnx01 -o go-template='{{range .items}}{{.metadata.name}} {{.metadata.creationTimestamp}}{{"\n"}}{{end}}' | \
+                    while read -r snap_name snap_ts; do
+                      [ -z "$snap_name" ] && continue
+                      snap_t=$(date -D '%Y-%m-%dT%H:%M:%SZ' -d "$snap_ts" +%s)
+                      if [ "$snap_t" -lt "$CUTOFF" ]; then
+                        kubectl delete volumesnapshot "$snap_name" -n etcd-backup
+                      fi
+                    done
+          volumes:
+            - name: source
+              hostPath:
+                path: /var/lib/rancher/k3s/server/db/snapshots
+                type: Directory
+            - name: dest
+              persistentVolumeClaim:
+                claimName: etcd-backup-orinnx01

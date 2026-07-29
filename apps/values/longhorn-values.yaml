@@ -7,6 +7,8 @@ ingress:
   ingressClassName: tailscale
   tls: true
   tlsSecret:
+  annotations:
+    tailscale.com/proxy-class: pin-npu01
 metrics:
   serviceMonitor:
     enabled: true
@@ -16,5 +18,5 @@ metrics:
   enabled: true
 service:
   ui:
-    type: LoadBalancer
-    loadBalancerIP: 192.168.0.81
+    # live Service patched directly via kubectl; do not sync this app
+    type: ClusterIP

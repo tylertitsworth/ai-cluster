@@ -7,12 +7,15 @@ app-template:
       containers:
         main:
           image:
-            repository: santiagosayshey/profilarr
-            tag: beta  # Use beta for ARM64 support
+            repository: ghcr.io/dictionarry-hub/profilarr
+            tag: latest
             pullPolicy: Always
 
           env:
             TZ: America/Los_Angeles
+            # profilarr 2.x CSRF-checks Origin; Tailscale terminates TLS and
+            # proxies over http, so it must be told the external https URL.
+            ORIGIN: https://profilarr.tail79a5c8.ts.net
 
           probes:
             liveness:
@@ -39,7 +42,7 @@ app-template:
               memory: 128Mi
               cpu: 50m
             limits:
-              memory: 512Mi
+              memory: 1Gi  # dictionarry-hub image OOMs at 512Mi on startup
 
 
   service:
@@ -62,7 +65,7 @@ app-template:
                 identifier: main
                 port: http
       annotations:
-        tailscale.com/proxy-class: "control-plane"
+        tailscale.com/proxy-class: "pin-framework-desktop"
       tls:
         - hosts:
             - profilarr

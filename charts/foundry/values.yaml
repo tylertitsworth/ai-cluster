@@ -1,0 +1,22 @@
+# Default values for the foundry umbrella chart.
+# NOTE: No credentials live here. License key / passwords are stored in the
+# pre-created Kubernetes Secret "foundry" and referenced via configSecretName.
+
+# Values for the upstream foundry-vtt dependency are nested under its chart name.
+foundry-vtt:
+  # Names the Service/Deployment "foundry" so the ingress backend matches.
+  fullnameOverride: foundry
+  foundryvtt:
+    configSecretName: foundry
+    hostname: foundry.tail79a5c8.ts.net
+    cssTheme: foundry
+  # Longhorn-backed persistent volume for /data (worlds, modules, assets).
+  persistence:
+    storageClass: longhorn
+    dataDir:
+      enabled: true
+      size: 8Gi
+
+# Tailscale Ingress rendered by this chart's templates/ingress.yaml.
+ingress:
+  enabled: false

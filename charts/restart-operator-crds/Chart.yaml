@@ -1,0 +1,12 @@
+apiVersion: v2
+name: restart-operator-crds
+description: RestartSchedule custom resources driving cron-based workload restarts
+type: application
+version: 1.0.0
+appVersion: 0.1.1
+keywords:
+  - restart
+  - cron
+  - servarr
+sources:
+  - https://github.com/archsyscall/restart-operator

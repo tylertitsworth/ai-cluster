@@ -23,11 +23,11 @@ app-template:
   service:
     main:
       controller: terraria
-      type: LoadBalancer
+      type: ClusterIP
       annotations:
         tailscale.com/expose: "true"
         tailscale.com/hostname: "terraria"
-        tailscale.com/proxy-class: "control-plane"
+        tailscale.com/proxy-class: "pin-framework-desktop"
       ports:
         game:
           port: 7777

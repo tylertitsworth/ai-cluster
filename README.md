@@ -102,9 +102,13 @@ I also needed to [uninstall](https://docs.k3s.io/installation/uninstall) k3s-age
 
 ### Networking
 
-After following the basic instructions to install [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) I added an address pool for `192.168.0.80-192.168.0.90` and then reserved all of those spaces on my router along with the turing nodes.
+I originally used [MetalLB](https://docs.turingpi.com/docs/turing-pi2-kubernetes-network-configuration#metallb) for a LoadBalancer IP pool so any app I wanted on the private network could just set `type: LoadBalancer` and get an address. That's gone now — see [Productionizing the Cluster](#productionizing-the-cluster) for why and what replaced it.
 
-Now whenever I have an application that I want to make available on the private network, I can set the service type to `LoadBalancer` and it'll automatically get an IP from that range. Additionally, storage is handled by Longhorn, which I intially added and then removed later in favor of managing with ArgoCD.
+### Storage
+
+[Longhorn](https://longhorn.io/) is the default StorageClass. I added it, removed it early on thinking ArgoCD-managed apps didn't need it, and quickly found out I was wrong — it's back as a proper [`Application`](./apps/longhorn-app.yaml) instead of whatever half-managed state it was in before.
+
+The second storage backend is a Synology NAS, added through the [synology-csi](https://github.com/SynologyOpenSource/synology-csi) driver. It provisions NFS volumes for anything that needs to be shared across pods/nodes (like the `media-library` PVC the [servarr stack](#the-servarr-stack) uses) and iSCSI volumes for anything single-node that benefits from Btrfs-level snapshots (the etcd backup volumes covered below). Both protocols run off the same DSM instance, just different StorageClasses (`synology-csi-nfs-retain`/`-delete`, `synology-csi-iscsi-retain`/`-delete`).
 
 ### Tailscale
 
@@ -181,6 +185,38 @@ spec:
       effect: "NoSchedule"
 ```
 
+## Productionizing the Cluster
+
+For a long time this cluster's entire state lived in a single SQLite file on npu01. That's fine for a homelab until it isn't — one bad SD card and everything ArgoCD, Longhorn, and every app config knows about the cluster is gone. It also never actually matched what I originally set out to build: both RK1s were supposed to be control-plane. When I finally went looking, I found npu02 had been running as a plain `k3s agent` the whole time, just wearing a `control-plane` label that nothing was actually enforcing.
+
+### From SQLite to Embedded etcd
+
+k3s can run its own embedded etcd instead of SQLite, which is what real HA needs — multiple members voting on cluster state instead of one file on one disk. The migration went in two phases.
+
+**Phase 1** converted npu01 alone to a single-member etcd datastore: add `cluster-init: true` to `/etc/rancher/k3s/config.yaml`, restart `k3s`. That's the whole migration — k3s moves the old `state.db` aside to `state.db.migrated` and starts writing to etcd on its own. I took a full local backup first (a plain tarball of `/var/lib/rancher/k3s/server/db`) since this touches the one thing every other piece of the cluster depends on.
+
+**Phase 2** promoted npu02 and orinnx01 from agents to full etcd members, going straight from 1 to 3 rather than stopping at 2 — 2 members buys you nothing, since etcd quorum needs a majority and you still only survive 0 failures. Promoting an agent to a server turned out simpler than expected: stop `k3s-agent`, point a new `k3s server` unit at the same node using its existing `K3S_URL`/`K3S_TOKEN`, and it joins as a voting member with no drain or re-add needed. The first attempt failed immediately with `critical configuration mismatched: disable-cloud-controller` — k3s enforces that certain flags (`--disable-cloud-controller`, `--disable local-storage`, `--disable traefik`, etc.) match exactly across every server member, and my first pass at the new unit was missing them. Copying npu01's exact flag set fixed it on the second try.
+
+Both migrations landed with zero pods evicted and the cluster's container-restart count essentially unchanged before/after, which was the actual bar I was trying to clear, not just "it came back up."
+
+### Losing MetalLB, Gaining kube-vip
+
+Once I actually looked at what MetalLB was doing for me, the answer was "not much" — every service that had a LoadBalancer IP from it also already had independent access through the Tailscale Operator (as an `Ingress`, or the `tailscale.com/expose` annotation for non-HTTP things like Terraria). Tailscale's proxies talk to a Service over its `ClusterIP` regardless of the Service's own `type`, so dropping `LoadBalancer` for `ClusterIP` on those services changed nothing about how they were actually reached.
+
+That left MetalLB doing exactly one useful thing: giving the API server a stable address that doesn't depend on which specific control-plane node happens to answer. [kube-vip](https://kube-vip.io/) does that one job directly, in **control-plane-only mode** (no `--services`, so it never touches the LoadBalancer role MetalLB used to have) — an ARP-advertised, leader-elected VIP at `10.0.0.253:6443` running as a DaemonSet across the 3 etcd nodes. Getting there needed each server's TLS cert extended with the VIP as a SAN (`tls-san` in `config.yaml`) before kube-vip could actually serve traffic for it, one node at a time so the other two kept quorum the whole time.
+
+With that in place, `K3S_URL` on every node that isn't npu01, npu02, or orinnx01 got repointed from a specific node's IP to the VIP — the whole reason for doing this in the first place. Before, if npu01 was down, no other node could ever rejoin the cluster; now it doesn't matter which member is up.
+
+### Backing Up etcd, Independently, Per Node
+
+k3s already takes local etcd snapshots on its own (00:00/12:00, keeping the last 5) — that part needed no work at all. The actual gap was that those snapshots sit on the same disk as the live data they're backing up. Lose that node's disk and you lose both copies together.
+
+Since all 3 etcd members hold identical Raft state, any single member's snapshot is already a complete backup of the whole cluster — so instead of one off-node copy job, each node runs its own, independently: a `CronJob` per node, pinned via `nodeName`, that rsyncs the local snapshot directory onto a small per-node iSCSI volume on the NAS, then takes a CSI `VolumeSnapshot` of that volume for a proper Btrfs-level point-in-time copy, pruning both the files and the snapshot objects past 7 days. Separate volumes per node instead of one shared one, since iSCSI is single-attach and I didn't want 3 nodes' CronJobs fighting over the same PV if their schedules ever overlapped.
+
+Building the actual container images for this turned into its own small tour of "which kubectl image actually works": `bitnami/kubectl` no longer publishes any tags at all, `rancher/kubectl` has no shell in it whatsoever (`exec: sh: executable file not found in $PATH`), and [`alpine/k8s`](https://github.com/alpine-docker/k8s) was the one that actually had both a shell and `kubectl`. Then the retention-pruning script broke on the very last piece — BusyBox's `date` doesn't understand GNU's `-d "7 days ago"` relative-date syntax, so that had to become plain arithmetic (`$(date +%s) - 7*86400`) instead.
+
+**What's not done yet**: the actual restore procedure (`k3s server --cluster-reset --cluster-reset-restore-path=<snapshot>`) hasn't been tested end-to-end. It's destructive enough that I'm not willing to run it against a live cluster just to prove it works, and I don't have a spare node to rehearse it on. Worth knowing before you actually need it.
+
 ## Applications
 
 Now that all of the cluster resources are abstracted, I can get rid of the need to SSH and start deploying applications on Kubernetes.
@@ -239,88 +275,41 @@ Because of how Prometheus is deployed, it's managed by a [`Prometheus`](https://
 
 Logs are aggregated by [Loki](https://grafana.com/docs/loki/latest/) with the [loki-stack](https://github.com/grafana/helm-charts/tree/main/charts/loki-stack) chart. The stack deploys [Promtail](https://grafana.com/docs/loki/latest/send-data/promtail/). Promtail is the metric aggregator for Loki, which then formats and forwards those logs to Grafana for viewing. To add Loki as a datasource in Grafana, simply add a new Loki datasource and it give it the the connection url `http://loki:3100`.
 
-We need Loki because we can add it as a logging linker in [Flyte](#flyte) to view the task logs without going and searching for them with `kubectl` and `k9s`.
+Grafana's Loki datasource makes it easy to pull up logs for anything running on the cluster without reaching for `kubectl` and `k9s` every time.
 
-### Flyte
+### Other Applications
 
-[Flyte](https://github.com/flyteorg/flyte) is an ML Orchestration application that I'm trialing at my workplace. It's intended to replace tools like [Argo Workflows](https://argoproj.github.io/workflows/) and uses postgres and s3 to be a completely stateless ML platform.
+A few smaller things that don't need their own full section:
 
-Deploying Flyte on anything other than AWS is very difficult, and I tried to leverage a community guide called [Flyte the Hard Way](https://github.com/davidmirror-ops/flyte-the-hard-way), but found that much of the instructions were inaccurate. After seeking further help in the community Slack I was eventually able to deploy Flyte.
+- **[Mealie](https://mealie.io/)** — a recipe manager with its own Postgres instance, mostly so household recipes don't live in a dozen browser tabs.
+- **[KubeRay](https://github.com/ray-project/kuberay)** — the Ray operator + API server, for running Ray clusters on top of k3s instead of standing up dedicated hardware for it.
+- **[kubernetes-mcp-server](https://github.com/containers/kubernetes-mcp-server)** — exposes an MCP server over Tailscale so an LLM client can query the cluster directly instead of me pasting `kubectl` output into a chat window.
+- **[restart-operator](https://archsyscall.github.io/restart-operator)** — a small third-party operator (amd64-only, so it only runs on framework-desktop) for scheduling pod restarts on a cron.
+- **[Foundry VTT](https://foundryvtt.com/)** — a virtual tabletop for running D&D-style games, deployed as an umbrella chart pulling in the upstream `foundry-vtt` chart plus a Tailscale ingress template.
+- **[Pi-hole](https://pi-hole.net/)** — network-wide ad blocking.
+- **[Terraria](https://terraria.org/)** — a dedicated game server, exposed directly over Tailscale via the `tailscale.com/expose` Service annotation instead of an `Ingress`, since it isn't HTTP.
 
-For those who are trying to deploy Flyte, and have search far and wide for solutions to their issues, here's the K3s solution:
+### The servarr Stack
 
-- Check out my `flyte` values file under `apps/values/` for the [flyte-binary](https://github.com/flyteorg/flyte/tree/master/charts/flyte-binary) chart
-- Create a config file at `~/.flyte/config` with the following:
+The bulk of what actually runs on this cluster day to day is a media-automation stack, commonly known by the loose "servarr" naming convention that describes most of it: [Sonarr](https://sonarr.tv/) and [Radarr](https://radarr.video/) for TV/movie management, [Prowlarr](https://prowlarr.com/) as the shared indexer manager for both, [Bazarr](https://www.bazarr.media/) for subtitles, [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a Cloudflare-bypass proxy some indexers need, [qBittorrent](https://www.qbittorrentofficial.com/) behind a VPN sidecar, [Plex](https://www.plex.tv/) as the actual media server, [Tautulli](https://tautulli.com/) for Plex stats, [Overseerr](https://overseerr.dev/) (now running the community "Seerr" fork, `ghcr.io/seerr-team/seerr`) for request management, [Maintainerr](https://github.com/jorenn92/Maintainerr) and [Profilarr](https://github.com/Dictionarry-Hub/profilarr) for library/quality-profile housekeeping, and [Kavita](https://www.kavitareader.com/)/[Bookshelf](https://www.audiobookshelf.org/) for comics/manga and audiobooks. [FileFlows](https://fileflows.com/) handles any transcoding/processing that needs to happen outside the individual apps. Every one of these is its own Helm chart under `charts/servarr/*`, its own `ArgoCD` `Application`, sharing one `servarr` namespace and a `stack: servarr` label.
 
-```yaml
-admin:
-  endpoint: dns:///flyte.k3s
-  authType: Pkce
-  insecure: false
-  caCertFilePath: /home/<username>/.flyte/ca.crt
-```
+It didn't arrive all at once, and not everything I tried stuck. [Kapowarr](https://github.com/Casvt/Kapowarr) and [Kaizoku](https://github.com/oae/kaizoku) (comic and manga tracking, respectively) both went in and came back out again — neither was worth the maintenance for how little I actually used them.
 
-> You will need to create `ca.crt`
+A few things grew up around the stack once it was clear it wasn't going anywhere:
 
-#### Distributed Training on NVIDIA Jetsons
+- **ArgoCD Image Updater** (`manifests/image-updater-servarr.yaml`) tracks the latest image digest for every servarr app so they stay current without me manually bumping tags.
+- **An SMB share** (`manifests/samba-shares.yaml`) exposes the shared media library over the network for anything that isn't running in the cluster.
+- **A `RestartSchedule` CRD** (`charts/restart-operator-crds/`, using the [restart-operator](#other-applications) above) handles the handful of apps that just need a periodic kick — qBittorrent-VPN every 3 hours to keep its VPN connection healthy, Plex weekly on Sunday mornings.
 
-The standard use-case for a Jetson, or any Edge AI device is inference. We know this to be true, however, the kinds of devices that are designed for training AI models are prohibitively expensive. If you are a homelabber, and want to train AI models, you aren't going to be using ARM in the present year.
-
-The obvious aside, I'm going to still scale on two Jetsons. And I'm going to do it on Flyte so the process is reproducable. Here's what I did:
-
-1. Create a docker image based on `dustynv/l4t-pytorch:r36.4.0`
-   1. I discovered that we can't use the flyte `ImageSpec` to create containers in python because it uses `uv`, and `uv` refuses to install anything whose dependencies don't come from the same index
-   2. I created a [builder](https://docs.docker.com/build/builders/) in k3s so that my images would be built on ARM by ARM
-   3. I pushed this image to a public dockerhub repository at the tag `totalsundae/ai-cluster:jetson-flyte`
-2. Deploy the [KubeFlow Training Operator](https://github.com/kubeflow/training-operator)
-   1. Despite having pytorch plugin configured in my flyte values file, Flyte doesn't have the permissions to create or modify the `PyTorchJob` CRD that's used to do the distributed training so we need to modify its cluster role:
-
-      ```yaml
-      - apiGroups:
-        - kubeflow.org
-      resources:
-        - pytorchjobs
-      verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      ```
-
-3. Run the existing [PyTorch Lightning Distributed Training Example](https://docs.flyte.org/en/latest/flytesnacks/examples/kfpytorch_plugin/pytorch_lightning_mnist_autoencoder.html).
-   1. This workflow does not work out of the box on a Jetson, namely we get the error `nvmlDeviceGetP2PStatus(0,0,NVML_P2P_CAPS_INDEX_READ) failed: Not Supported`. This means that we can't use the `nccl` backend because nvidia didn't add support for P2P on the Jetson. Instead we'll just use `gloo`.
-   2. When you make a change to your container, the pods deployed don't have `imagePullPolicy: Always`, so we need to create a [`PodTemplate`](./jetson-flyte/train.py#L27-49)
-   3. At the same time, these pods are not using the same shared storage, so I created a [`pvc`](./manifests/flyte-extras.yaml) that is always used in my `PodTemplate`.
-
-After doing these steps I noticed that the Jetsons were barely being used by the benchmark along with a bunch of other small issues I saw. So I intended to remake the benchmark training ResNet50 on CIFAR100. This would ensure that the time between epochs is still small enough to sit down and watch, while still being long enough to hear the Jetson fans spin.
-
-![usage-graphs](https://github.com/user-attachments/assets/a70e8290-3195-46b1-b7db-f25fb116e9f1)
-> K3s Dashboard Output in Grafana showing the utilization of the [Flyte Training Workflow](./jetson-flyte/train.py)
-
-#### Logging Workflows
-
-Further configuration like metrics and logging came when I was developing the [`train.py`](./jetson-flyte/train.py), subsequent workflow iterations were a nightmare to debug, and there's this very convenient `Logs` header in the task view that seemed to indicate that the Pod logs could be aggregated, however, the [documentation](https://docs.flyte.org/en/latest/user_guide/productionizing/configuring_logging_links_in_the_ui.html) for logging both on the workflow side and the deployment side are either not obvious enough, or completely absent. Flyte either can't, or doesn't aggregate kubernetes logs like you can with `kubectl`. Instead, it needs a log aggregator and it has this function where you can configure the deployment to use one like [Cloudwatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html).
-
-If you're not using AWS though, you can use Loki for this, and flyte will generate a URL using some templating for each run. This means that we can link to Grafana using the Loki datasource and get the live output of the target task's logs from kubernetes.
+And since Plex needed real hardware for transcoding, the cluster grew a fifth node for it: `framework-desktop`, an amd64 box with an AMD GPU, running the [ROCm device plugin](https://rocm.github.io/k8s-device-plugin) so Plex (and qBittorrent-VPN, for networking reasons) can actually use it. It's the only non-ARM node in the cluster.
 
 ### Open WebUI
 
-[Open WebUI](https://github.com/open-webui/open-webui) is a playground for Large Language Models and is primarily used in conjunction with [Ollama](https://ollama.com/). I've deployed [Chroma](https://www.trychroma.com/) separately to manage the database separate of Open WebUI as I'm not very impressed with Open WebUI as a cloud native tool.
+[Open WebUI](https://github.com/open-webui/open-webui) is a playground for Large Language Models and is primarily used in conjunction with [Ollama](https://ollama.com/).
 
 It was with Open WebUI where I originally found the ISCSI issue with the Nvidia Jetson node because I wanted to add Persistence to Ollama since I was testing out models and if the container failed with an OOM error I wouldn't have to re-download everything all over again.
 
 Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
-
-<!--
-
-### [WikiJS](https://js.wiki/)
-
-TODO: Nathan
-
--->
 
 ## Troubleshooting
 

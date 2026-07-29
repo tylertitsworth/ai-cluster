@@ -1,0 +1,25 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  writeBackConfig:
+    method: argocd
+  applicationRefs:
+    - namePattern: npu-device-plugin
+      images:
+        - alias: npu-device-plugin
+          imageName: ghcr.io/tylertitsworth/npu-device-plugin:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            kustomize:
+              name: ghcr.io/tylertitsworth/npu-device-plugin
+    - namePattern: jetson-exporter
+      images:
+        - alias: jetson-exporter
+          imageName: ghcr.io/tylertitsworth/jetson-exporter:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            kustomize:
+              name: ghcr.io/tylertitsworth/jetson-exporter

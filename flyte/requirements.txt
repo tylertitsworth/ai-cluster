@@ -1,6 +1,0 @@
-flytekit
-flytekitplugins-kfpytorch
-kubernetes
-lightning
-torch
-torchvision

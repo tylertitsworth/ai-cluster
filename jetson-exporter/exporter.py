@@ -123,7 +123,9 @@ class CustomCollector(object):
             #
             g = GaugeMetricFamily("jetson_usage_cpu", "CPU % schedutil", labels=["cpu"])
             for idx, cpu in enumerate(self._jetson.cpu["cpu"]):
-                g.add_metric([f"cpu_{idx}"], cpu["system"])
+                if not cpu.get("online", False):
+                    continue
+                g.add_metric([f"cpu_{idx}"], cpu.get("system", 0))
             yield g
 
             #

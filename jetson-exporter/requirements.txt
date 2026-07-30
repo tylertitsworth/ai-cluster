@@ -1,2 +1,4 @@
 prometheus-client
-jetson-stats==4.3.1
+# jetson-stats intentionally not pinned here: the base image already ships a
+# version, and entrypoint.sh replaces it at container start with whatever
+# exact version the node's host jtop.service actually requires.

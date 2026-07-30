@@ -6,6 +6,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r /tmp/requirements.txt
 
-COPY exporter.py /app/exporter.py
+COPY exporter.py probe_version.py entrypoint.sh /app/
+RUN chmod +x /app/entrypoint.sh
 
-CMD ["python3", "exporter.py", "--port", "8000"]
+CMD ["/app/entrypoint.sh"]

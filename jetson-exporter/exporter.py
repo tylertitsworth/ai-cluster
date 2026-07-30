@@ -102,7 +102,8 @@ class CustomCollector(object):
             # NV power mode
             #
             i = InfoMetricFamily("jetson_nvpmode", "NV power mode", labels=["nvpmode"])
-            i.add_metric(["mode"], {"mode": self._jetson.nvpmodel.name})
+            nvpmodel = self._jetson.nvpmodel
+            i.add_metric(["mode"], {"mode": nvpmodel.name if nvpmodel else "unknown"})
             yield i
 
             #
@@ -131,8 +132,11 @@ class CustomCollector(object):
             #
             # GPU usage
             #
+            # GPU dict key is the device's own name (sysfs devicetree label or
+            # NVML device name), not a fixed literal - varies by board/backend.
             g = GaugeMetricFamily("jetson_usage_gpu", "GPU % schedutil", labels=["gpu"])
-            g.add_metric(["val"], self._jetson.gpu["gpu"]["status"]["load"])
+            gpu_data = next(iter(self._jetson.gpu.values()), None)
+            g.add_metric(["val"], gpu_data["status"]["load"] if gpu_data else 0)
             yield g
 
             #
@@ -159,9 +163,15 @@ class CustomCollector(object):
             #
             # Fan usage
             #
+            # Fan dict key is the hwmon device's own name (kernel-driver
+            # controlled, e.g. "pwmfan"), not a fixed literal. rpm is only
+            # present when a tach sensor is paired with the PWM device.
             g = GaugeMetricFamily("jetson_usage_fan", "Fan usage", labels=["fan"])
-            g.add_metric(["speed"], self._jetson.fan["pwmfan"]["speed"][0])
-            g.add_metric(["rpm"], self._jetson.fan["pwmfan"]["rpm"][0])
+            fan_data = next(iter(self._jetson.fan.values()), None)
+            speed = fan_data.get("speed") if fan_data else None
+            rpm = fan_data.get("rpm") if fan_data else None
+            g.add_metric(["speed"], speed[0] if speed else 0)
+            g.add_metric(["rpm"], rpm[0] if rpm else 0)
             yield g
 
             #
@@ -195,15 +205,17 @@ class CustomCollector(object):
             #
             # Power
             #
+            # Rail names are board-model specific (e.g. differ between Orin
+            # and Xavier), not guaranteed present on every board.
             g = GaugeMetricFamily("jetson_usage_power", "Power usage", labels=["power"])
-            g.add_metric(["total_curr"], self._jetson.power["tot"]["curr"])
+            power = self._jetson.power
+            rails = power.get("rail", {})
+            g.add_metric(["total_curr"], power.get("tot", {}).get("curr", 0))
             g.add_metric(
                 ["VDD_CPU_GPU_CV_curr"],
-                self._jetson.power["rail"]["VDD_CPU_GPU_CV"]["curr"],
+                rails.get("VDD_CPU_GPU_CV", {}).get("curr", 0),
             )
-            g.add_metric(
-                ["VDD_SOC_curr"], self._jetson.power["rail"]["VDD_SOC"]["curr"]
-            )
+            g.add_metric(["VDD_SOC_curr"], rails.get("VDD_SOC", {}).get("curr", 0))
             yield g
 
 

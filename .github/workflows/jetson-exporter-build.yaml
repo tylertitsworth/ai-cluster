@@ -8,6 +8,11 @@ on:
       - 'jetson-exporter/Dockerfile'
       - 'jetson-exporter/exporter.py'
       - 'jetson-exporter/requirements.txt'
+  pull_request:
+    paths:
+      - 'jetson-exporter/Dockerfile'
+      - 'jetson-exporter/exporter.py'
+      - 'jetson-exporter/requirements.txt'
 
 jobs:
   build:
@@ -33,7 +38,7 @@ jobs:
         with:
           context: jetson-exporter
           file: ./jetson-exporter/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/arm64

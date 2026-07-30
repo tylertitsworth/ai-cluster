@@ -1,0 +1,56 @@
+# https://github.com/christian-schlichtherle/synology-csi-chart
+# Credentials live in a pre-created Secret (synology-csi-client-info, synology-csi ns),
+# not in git.
+clientInfoSecret:
+  create: false
+  name: synology-csi-client-info
+
+storageClasses:
+  # iSCSI is RWO-only (doesn't fit shared media-library/downloads volumes) and
+  # SMB breaks Sonarr/Radarr atomic-rename imports - disabled to avoid accidental use.
+  # iscsi-retain re-enabled below for per-node etcd snapshot backups (RWO is fine there).
+  iscsi-delete:
+    disabled: true
+  iscsi-retain:
+    disabled: false
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    parameters:
+      protocol: iscsi
+      dsm: 10.0.0.181
+      location: /volume1
+  smb-delete:
+    disabled: true
+  smb-retain:
+    disabled: true
+  nfs-delete:
+    reclaimPolicy: Delete
+    allowVolumeExpansion: true
+    mountOptions:
+      - vers=4.1
+      - noatime
+    parameters:
+      protocol: nfs
+      dsm: 10.0.0.181
+      location: /volume1
+      mountPermissions: "0755"
+  nfs-retain:
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    mountOptions:
+      - vers=4.1
+      - noatime
+    parameters:
+      protocol: nfs
+      dsm: 10.0.0.181
+      location: /volume1
+      mountPermissions: "0755"
+
+# Requires the snapshot.storage.k8s.io CRDs + snapshot-controller to be installed
+# cluster-wide (not part of this chart) - done manually, not tracked here.
+volumeSnapshotClasses:
+  delete:
+    disabled: true
+  retain:
+    disabled: false
+    deletionPolicy: Retain

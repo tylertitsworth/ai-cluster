@@ -8,6 +8,11 @@ on:
       - 'npu-device-plugin/*.go'
       - 'npu-device-plugin/Dockerfile'
       - 'npu-device-plugin/go.*'
+  pull_request:
+    paths:
+      - 'npu-device-plugin/*.go'
+      - 'npu-device-plugin/Dockerfile'
+      - 'npu-device-plugin/go.*'
 
 jobs:
   build:
@@ -33,7 +38,7 @@ jobs:
         with:
           context: .
           file: ./npu-device-plugin/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/arm64

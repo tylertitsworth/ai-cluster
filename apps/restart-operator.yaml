@@ -16,6 +16,9 @@ spec:
     helm:
       releaseName: restart-operator
       valuesObject:
+        # upstream image is amd64-only; ARM nodes fail with "exec format error"
+        nodeSelector:
+          kubernetes.io/arch: amd64
         rbac:
           create: false
         operator:

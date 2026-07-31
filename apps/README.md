@@ -1,6 +1,6 @@
 # ArgoCD App and Values Files
 
-This folder contains ArgoCD `Application` manifests. Chart values used by multi-source applications are stored under `apps/values/`.
+This folder contains ArgoCD `Application` manifests, one subdirectory per `stack` label (`ai/`, `games/`, `gpu/`, `home/`, `monitoring/`, `platform/`, `servarr/`). Chart values used by multi-source applications live in that stack's `values/` subdirectory, named after the app (e.g. `apps/ai/values/ollama.yaml` for `apps/ai/ollama.yaml`).
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}
 Apply all ArgoCD `Application` and `ApplicationSet` manifests in this folder:
 
 ```sh
-rg -l '^kind:\s*(Application|ApplicationSet)$' apps/*.yaml | xargs -r -n1 kubectl apply -f
+rg -l '^kind:\s*(Application|ApplicationSet)$' apps --glob '*.yaml' | xargs -r -n1 kubectl apply -f
 ```
 
 Each values file pairs with an application configuration. The title of the values file corresponds to the application name, and sometimes also the namespace.

@@ -7,7 +7,7 @@
 *.crt
 *.pem
 **__pycache__**
-apps/tailscale.yaml
+apps/platform/tailscale.yaml
 npu-device-plugin/bin/
 npu-device-plugin/pkg/
 .cursor/

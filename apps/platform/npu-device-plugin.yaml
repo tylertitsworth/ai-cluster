@@ -1,0 +1,24 @@
+# NPU Device Plugin (Rockchip)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: npu-device-plugin
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: npu-device-plugin
+    kustomize: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

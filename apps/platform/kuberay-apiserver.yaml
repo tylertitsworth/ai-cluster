@@ -1,0 +1,23 @@
+# KubeRay API server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kuberay-apiserver
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kuberay
+  source:
+    repoURL: https://ray-project.github.io/kuberay-helm/
+    chart: kuberay-apiserver
+    targetRevision: 1.5.1
+    helm:
+      valuesObject:
+        cors:
+          allowOrigin: "*"

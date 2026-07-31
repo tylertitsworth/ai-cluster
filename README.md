@@ -230,7 +230,7 @@ One of the first orders of business is to replace the existing longhorn configur
 
 > The ArgoCD Dashboard
 
-Each values file associated with each application is stored in the [apps values folder](./apps/values/). Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
+Each application's manifest lives under [apps/](./apps/), grouped into one subdirectory per `stack` label (`ai/`, `games/`, `gpu/`, `home/`, `monitoring/`, `platform/`, `servarr/`); its values file, if it has one, lives in that stack's `values/` subdirectory named after the app. Adding a new application is just about finding a helm chart and customizing to fit the cluster before deploying it using ArgoCD's UI. Once we've completed the deployment and like our configuration, we can modify the application manifest to use the file in this repo as a values file for the application:
 
 ```yaml
 # from source: to
@@ -240,7 +240,7 @@ sources:
     targetRevision: main
     helm:
       valueFiles:
-        - $values/apps/values/<application-name>.yaml
+        - $values/apps/<stack>/values/<application-name>.yaml
   - repoURL: https://github.com/tylertitsworth/ai-cluster
     targetRevision: main
     ref: values
@@ -251,7 +251,7 @@ Then we can enable automatic updates, self healing, and pruning.
 Apply all Argo CD `Application` and `ApplicationSet` manifests after pushing to `main`:
 
 ```sh
-rg -l '^kind:\s*(Application|ApplicationSet)$' apps/*.yaml | xargs -r -n1 kubectl apply -f
+rg -l '^kind:\s*(Application|ApplicationSet)$' apps --glob '*.yaml' | xargs -r -n1 kubectl apply -f
 ```
 
 ### Monitoring

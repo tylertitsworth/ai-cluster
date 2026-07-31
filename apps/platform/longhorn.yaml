@@ -1,0 +1,28 @@
+# Longhorn
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn
+  sources:
+    - repoURL: https://charts.longhorn.io
+      chart: longhorn
+      targetRevision: 1.10.1
+      helm:
+        valueFiles:
+          - $values/apps/platform/values/longhorn.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

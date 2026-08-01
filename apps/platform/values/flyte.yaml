@@ -30,10 +30,11 @@ configuration:
       k8s:
         default-pod-template-name: flyte-default-pod-template
       ray:
-        # SidecarMode requires a submissionMode config field that only exists on our own
-        # custom-built image (deployment.image below) - see the flyteorg/flyte fork commit
-        # this was built from, not yet upstream/released.
-        submissionMode: SidecarMode
+        # submissionMode requires our custom-built image (deployment.image below) - see the
+        # flyteorg/flyte fork commit this was built from, not yet upstream/released.
+        # SidecarMode is broken on KubeRay v1.6.2 (ray-project/kuberay#4945, confirmed via a
+        # bare kubectl-applied RayJob with no Flyte involved) - testing HTTPMode instead.
+        submissionMode: HTTPMode
 
 deployment:
   # Custom build carrying plugins.ray.submissionMode support (not yet in an upstream release).

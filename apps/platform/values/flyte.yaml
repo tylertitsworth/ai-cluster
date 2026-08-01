@@ -2,7 +2,7 @@
 configuration:
   database:
     postgres:
-      host: postgres.flyte-postgres.svc.cluster.local
+      host: flyte-postgres.flyte-postgres.svc.cluster.local
       port: 5432
       dbname: flyte
       username: flyte

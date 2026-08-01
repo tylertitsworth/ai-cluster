@@ -21,6 +21,10 @@ spec:
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: main
       ref: values
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      path: manifests/flyte-default-pod-template
+      kustomize: {}
   destination:
     server: https://kubernetes.default.svc
     # Namespace must be "flyte" - the chart hardcodes it as the default for

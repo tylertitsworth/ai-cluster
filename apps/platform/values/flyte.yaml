@@ -22,6 +22,13 @@ configuration:
         authType: accesskey
         accessKey: "ae36f62600f82eda4e870d3c624d8917"
         secretKeyPath: /etc/secrets/r2/secretKey
+  # Task pods (not the control-plane binary) use a separate FLYTE_AWS_* env-var
+  # convention for their own storage client - injected via manifests/flyte-default-pod-template,
+  # referenced here by name.
+  inline:
+    plugins:
+      k8s:
+        default-pod-template-name: flyte-default-pod-template
 
 deployment:
   extraVolumes:

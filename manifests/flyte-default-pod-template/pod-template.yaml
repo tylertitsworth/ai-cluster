@@ -11,7 +11,11 @@ metadata:
 template:
   spec:
     containers:
+      # image is required by the K8s PodTemplate API but never actually used -
+      # flyteplugins only reads env from the "default" container and merges it
+      # into each task's own container (which keeps its own real image).
       - name: default
+        image: busybox
         env:
           - name: FLYTE_AWS_ENDPOINT
             value: "https://34826bc885b7bc472873b2c47a7b8f91.r2.cloudflarestorage.com"

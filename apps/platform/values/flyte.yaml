@@ -1,0 +1,83 @@
+# Values for the flyte-binary chart (https://github.com/flyteorg/flyte/tree/main/charts/flyte-binary)
+configuration:
+  database:
+    postgres:
+      host: postgres.flyte-postgres.svc.cluster.local
+      port: 5432
+      dbname: flyte
+      username: flyte
+      # Password is not a literal here - see deployment.extraVolumes/extraVolumeMounts below.
+      passwordPath: /etc/secrets/db/password
+  storage:
+    # Cloudflare R2 bucket, same account historyserver uses.
+    metadataContainer: flyte-data
+    provider: s3
+    providerConfig:
+      s3:
+        region: auto
+        disableSSL: false
+        v2Signing: false
+        endpoint: "https://34826bc885b7bc472873b2c47a7b8f91.r2.cloudflarestorage.com"
+        # Default authType is "iam" - R2 needs "accesskey".
+        authType: accesskey
+        accessKey: "ae36f62600f82eda4e870d3c624d8917"
+        secretKeyPath: /etc/secrets/r2/secretKey
+
+deployment:
+  extraVolumes:
+    - name: db-password
+      secret:
+        secretName: flyte-postgres-auth
+    - name: r2-credentials
+      secret:
+        secretName: flyte-r2-credentials
+  extraVolumeMounts:
+    - name: db-password
+      mountPath: /etc/secrets/db
+      readOnly: true
+    - name: r2-credentials
+      mountPath: /etc/secrets/r2
+      readOnly: true
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+console:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+ingress:
+  create: true
+  host: flyte
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - flyte
+
+# Ray plugin - creates RayJob CRs (embedded RayClusterSpec), reconciled by the
+# already-deployed KubeRay operator. No separate Ray-side component needed.
+rbac:
+  extraRules:
+    - apiGroups: ["ray.io"]
+      resources: ["rayjobs"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+enabled_plugins:
+  tasks:
+    task-plugins:
+      enabled-plugins:
+        - container
+        - sidecar
+        - connector-service
+        - echo
+        - ray
+      default-for-task-types:
+        container: container
+        sidecar: sidecar
+        container_array: k8s-array
+        ray: ray

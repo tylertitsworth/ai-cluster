@@ -29,8 +29,17 @@ configuration:
     plugins:
       k8s:
         default-pod-template-name: flyte-default-pod-template
+      ray:
+        # SidecarMode requires a submissionMode config field that only exists on our own
+        # custom-built image (deployment.image below) - see the flyteorg/flyte fork commit
+        # this was built from, not yet upstream/released.
+        submissionMode: SidecarMode
 
 deployment:
+  # Custom build carrying plugins.ray.submissionMode support (not yet in an upstream release).
+  image:
+    repository: ghcr.io/tylertitsworth/flyte-binary
+    tag: 1743b91
   extraVolumes:
     - name: db-password
       secret:

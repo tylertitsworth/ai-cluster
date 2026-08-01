@@ -60,22 +60,10 @@ spec:
         persistence:
           data:
             enabled: true
-            existingClaim: flyte-postgres-data
+            accessMode: ReadWriteOnce
+            size: 20Gi
             globalMounts:
               - path: /var/lib/postgresql/data
-
-        extraObjects:
-          - apiVersion: v1
-            kind: PersistentVolumeClaim
-            metadata:
-              name: flyte-postgres-data
-              namespace: flyte-postgres
-            spec:
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 20Gi
   destination:
     server: https://kubernetes.default.svc
     namespace: flyte-postgres

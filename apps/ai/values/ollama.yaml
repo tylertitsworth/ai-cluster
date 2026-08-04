@@ -27,8 +27,8 @@ ollama:
           FROM gemma4:31b
           PARAMETER num_ctx 262144
     run:
-      # - genna4-31b-full
-      - qwen3.6-35b-full
+      - gemma4-31b-full
+      # - qwen3.6-35b-full
     clean: true
 
 extraEnv:

@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     targetRevision: opencode
-    path: apps/ai/opencode-manifests.yaml
+    path: apps/ai/opencode
   destination:
     server: https://kubernetes.default.svc
     namespace: opencode

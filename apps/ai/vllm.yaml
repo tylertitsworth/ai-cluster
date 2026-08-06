@@ -1,0 +1,28 @@
+# vLLM inference server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: vllm
+      path: charts/vllm
+      helm:
+        valueFiles:
+          - $values/apps/ai/values/vllm.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: vllm
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ollama
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

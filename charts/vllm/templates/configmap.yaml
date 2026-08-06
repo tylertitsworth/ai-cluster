@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-kwargs
+  namespace: {{ .Release.Namespace }}
+data:
+  run: |
+{{ toYaml .Values.kwargs | nindent 4 }}

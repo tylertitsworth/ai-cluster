@@ -1,0 +1,7 @@
+# Override values for the vllm chart (charts/vllm).
+# Full structure: https://github.com/bjw-s-labs/helm-charts/tree/main/charts/app-template
+
+app-template:
+  controllers:
+    vllm:
+      fullnameOverride: vllm

@@ -3,17 +3,7 @@
 #   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
 # Config + sessions persist in /root/.opencode (mounted PVC).
 # Workspace seeded by init container cloning ai-cluster.
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: opencode-secret
-  namespace: opencode
-type: Opaque
-stringData:
-  password: ""
-  # Change this: OPENCODE_SERVER_USERNAME is "opencode" by default
-  # username: opencode
+# Default provider/model: vLLM via k8s DNS (vllm-server.ollama.svc.cluster.local:8000)
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -40,6 +30,32 @@ spec:
   resources:
     requests:
       storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-config
+  namespace: opencode
+data:
+  opencode.json: |
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "model": "vllm/cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit",
+      "provider": {
+        "vllm": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "vLLM",
+          "options": {
+            "baseURL": "http://vllm-server.ollama.svc.cluster.local:8000/v1"
+          },
+          "models": {
+            "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit": {
+              "name": "Qwen3.6-35B-A3B-AWQ-4bit"
+            }
+          }
+        }
+      }
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -69,7 +85,8 @@ spec:
             - -c
             - |
               mkdir -p /workspace
-              if [ -z "$(ls -A /workspace)" ]; then
+              rm -rf /workspace/lost+found
+              if [ ! -d /workspace/.git ]; then
                 echo "Cloning ai-cluster into /workspace..."
                 git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /workspace
                 echo "Done."
@@ -92,6 +109,7 @@ spec:
         - name: opencode
           image: ghcr.io/anomalyco/opencode:latest
           imagePullPolicy: Always
+          workingDir: /workspace
           command:
             - opencode
             - serve
@@ -115,6 +133,10 @@ spec:
               mountPath: /workspace
             - name: opencode-data
               mountPath: /root/.opencode
+            - name: config
+              mountPath: /root/.config/opencode/opencode.json
+              subPath: opencode.json
+              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -141,6 +163,9 @@ spec:
         - name: opencode-data
           persistentVolumeClaim:
             claimName: opencode-data
+        - name: config
+          configMap:
+            name: opencode-config
 ---
 apiVersion: v1
 kind: Service

@@ -23,7 +23,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: synology-csi-nfs-retain
+  storageClassName: longhorn
   resources:
     requests:
       storage: 20Gi
@@ -36,7 +36,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: synology-csi-nfs-retain
+  storageClassName: longhorn
   resources:
     requests:
       storage: 5Gi

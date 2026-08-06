@@ -1,7 +1,7 @@
 # OpenCode headless server — access via Tailscale from VS Code / phone
 # Multi-session: client creates sessions via POST /session.
 #   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
-# Config + sessions persist in /root/.opencode (mounted PVC).
+# Config + sessions persist in /root/.local/share/opencode (mounted PVC).
 # Workspace seeded by init container cloning ai-cluster.
 # Default provider/model: vLLM via k8s DNS (vllm-server.ollama.svc.cluster.local:8000)
 ---
@@ -41,6 +41,18 @@ data:
     {
       "$schema": "https://opencode.ai/config.json",
       "model": "vllm/qwen3.6-35b-a3b-awq",
+      "mcp": {
+        "kubernetes-ro": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "kubernetes-rw": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server-rw.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        }
+      },
       "provider": {
         "vllm": {
           "npm": "@ai-sdk/openai-compatible",
@@ -130,7 +142,7 @@ spec:
             - name: workspace
               mountPath: /workspace
             - name: opencode-data
-              mountPath: /root/.opencode
+              mountPath: /root/.local/share/opencode
             - name: config
               mountPath: /root/.config/opencode/opencode.json
               subPath: opencode.json

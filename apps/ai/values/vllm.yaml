@@ -4,4 +4,4 @@
 app-template:
   controllers:
     vllm:
-      fullnameOverride: vllm
+      nameOverride: vllm

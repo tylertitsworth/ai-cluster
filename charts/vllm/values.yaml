@@ -1,9 +1,9 @@
 app-template:
   controllers:
     vllm:
+      type: deployment
       replicas: 1
       strategy: Recreate
-      podAnnotations: {}
 
       containers:
         main:
@@ -42,13 +42,15 @@ app-template:
           probes:
             readiness:
               enabled: true
-              type: http
-              path: /v1/models
-              port: 8000
-              initialDelaySeconds: 30
-              periodSeconds: 15
-              timeoutSeconds: 5
-              failureThreshold: 6
+              custom: true
+              spec:
+                httpGet:
+                  path: /v1/models
+                  port: 8000
+                initialDelaySeconds: 30
+                periodSeconds: 15
+                timeoutSeconds: 5
+                failureThreshold: 6
 
   service:
     main:

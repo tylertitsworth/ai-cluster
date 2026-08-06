@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-debug
+  namespace: ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: vllm-server
+  template:
+    metadata:
+      labels:
+        app: vllm-server
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: framework-desktop
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - exec vllm serve cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit --host 0.0.0.0 --port 8000 --tensor-parallel-size 1 --max-num-seqs 5 --max-model-len 262144 --gpu-memory-utilization 0.80 --dtype auto --trust-remote-code --attention-backend TRITON_ATTN --mm-encoder-attn-backend TRITON_ATTN --enable-auto-tool-choice --tool-call-parser qwen3_xml --reasoning-parser qwen3
+        env:
+        - name: LD_PRELOAD
+          value: /root/.cache/huggingface/hip_mem_override.so
+        - name: PYTORCH_CUDA_ALLOC_CONF
+          value: expandable_segments:True
+        - name: HF_HUB_OFFLINE
+          value: "1"
+        - name: VLLM_USE_TRITON_AWQ
+          value: "1"
+        - name: VLLM_DISABLE_COMPILE_CACHE
+          value: "1"
+        image: docker.io/kyuz0/vllm-therock-gfx1151:latest
+        imagePullPolicy: Always
+        name: vllm
+        readinessProbe:
+          httpGet:
+            path: /v1/models
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 6
+        resources:
+          limits:
+            amd.com/gpu: "1"
+          requests:
+            amd.com/gpu: "1"
+        volumeMounts:
+        - mountPath: /root/.cache/huggingface
+          name: hf-cache
+      volumes:
+      - name: hf-cache
+        persistentVolumeClaim:
+          claimName: vllm-hf-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-server
+  namespace: ollama
+spec:
+  type: ClusterIP
+  selector:
+    app: vllm-server
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vllm
+  namespace: ollama
+  annotations:
+    tailscale.com/proxy-class: "pin-framework-desktop"
+spec:
+  ingressClassName: tailscale
+  rules:
+  - host: vllm
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vllm-server
+            port:
+              number: 8000
+  tls:
+  - hosts:
+    - vllm

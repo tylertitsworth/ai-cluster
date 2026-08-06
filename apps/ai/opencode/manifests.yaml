@@ -183,3 +183,6 @@ spec:
                 name: opencode
                 port:
                   number: 4096
+  tls:
+    - hosts:
+        - opencode

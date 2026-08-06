@@ -74,13 +74,13 @@ app-template:
             - vllm
 
   persistence:
-    vllmConfig:
+    vllm-config:
       enabled: true
       type: configMap
       name: vllm-config
       globalMounts:
         - path: /vllm/config
-    hfCache:
+    hf-cache:
       enabled: true
       type: persistentVolumeClaim
       existingClaim: vllm-hf-cache

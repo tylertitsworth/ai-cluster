@@ -111,14 +111,11 @@ spec:
           imagePullPolicy: Always
           workingDir: /workspace
           command:
-            - opencode
-            - serve
-            - --hostname=0.0.0.0
-            - --port=4096
-            - --cors=https://open-vsx.org
-            - --cors=vscode
-            - --cors=http://127.0.0.1:4096
-            - --cors=http://localhost:4096
+            - sh
+            - -c
+            - |
+              apk add --no-cache git >/dev/null 2>&1
+              exec opencode serve --hostname=0.0.0.0 --port=4096 --cors=https://open-vsx.org --cors=vscode --cors=http://127.0.0.1:4096 --cors=http://localhost:4096
           ports:
             - containerPort: 4096
               name: http

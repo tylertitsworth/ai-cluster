@@ -1,0 +1,185 @@
+# OpenCode headless server — access via Tailscale from VS Code / phone
+# Multi-session: client creates sessions via POST /session.
+#   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
+# Config + sessions persist in /root/.opencode (mounted PVC).
+# Workspace seeded by init container cloning ai-cluster.
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opencode-secret
+  namespace: opencode
+type: Opaque
+stringData:
+  password: ""
+  # Change this: OPENCODE_SERVER_USERNAME is "opencode" by default
+  # username: opencode
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencode-workspace
+  namespace: opencode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: synology-csi-nfs-retain
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencode-data
+  namespace: opencode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: synology-csi-nfs-retain
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencode
+  template:
+    metadata:
+      labels:
+        app: opencode
+        stack: ai
+    spec:
+      nodeName: framework-desktop
+      initContainers:
+        - name: clone-repos
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /workspace
+              if [ -z "$(ls -A /workspace)" ]; then
+                echo "Cloning ai-cluster into /workspace..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /workspace
+                echo "Done."
+              else
+                echo "Workspace already seeded, skipping clone."
+              fi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          securityContext:
+            runAsUser: 0
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+      containers:
+        - name: opencode
+          image: ghcr.io/anomalyco/opencode:latest
+          imagePullPolicy: Always
+          command:
+            - opencode
+            - serve
+            - --hostname=0.0.0.0
+            - --port=4096
+            - --cors=https://open-vsx.org
+            - --cors=vscode
+            - --cors=http://127.0.0.1:4096
+            - --cors=http://localhost:4096
+          ports:
+            - containerPort: 4096
+              name: http
+          env:
+            - name: OPENCODE_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: password
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: opencode-data
+              mountPath: /root/.opencode
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /global/health
+              port: 4096
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /global/health
+              port: 4096
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: opencode-workspace
+        - name: opencode-data
+          persistentVolumeClaim:
+            claimName: opencode-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+spec:
+  type: ClusterIP
+  selector:
+    app: opencode
+  ports:
+    - port: 4096
+      targetPort: 4096
+      name: http
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+  annotations:
+    tailscale.com/proxy-class: pin-framework-desktop
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: opencode
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opencode
+                port:
+                  number: 4096

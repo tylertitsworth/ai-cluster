@@ -35,17 +35,23 @@ app-template:
                 periodSeconds: 15
                 timeoutSeconds: 5
                 failureThreshold: 6
+          resources:
+            requests:
+              amd.com/gpu: "1"
+            limits:
+              amd.com/gpu: "1"
 
-      # Pin to the node with the GPU (mirrors the original deployment nodeSelector)
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - framework-desktop
+      pod:
+        # Pin to the node with the GPU (mirrors the original deployment nodeSelector)
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: In
+                      values:
+                        - framework-desktop
 
   service:
     main:
@@ -86,12 +92,6 @@ app-template:
       existingClaim: vllm-hf-cache
       globalMounts:
         - path: /root/.cache/huggingface
-
-  resources:
-    requests:
-      amd.com/gpu: "1"
-    limits:
-      amd.com/gpu: "1"
 
 # -- vLLM serve configuration, rendered to config.yaml and loaded via `vllm serve --config`.
 # Long-form arg names: https://docs.vllm.ai/en/stable/configuration/serve_args/

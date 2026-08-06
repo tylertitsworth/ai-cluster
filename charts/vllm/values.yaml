@@ -15,24 +15,8 @@ app-template:
             - /bin/bash
             - -c
             - |-
-              set -a
-              source /vllm/kwargs/run
-              set +a
               exec vllm serve \
-                "${MODEL}" \
-                --host "${HOST}" \
-                --port "${PORT}" \
-                --tensor-parallel-size "${TENSOR_PARALLEL_SIZE}" \
-                --max-num-seqs "${MAX_NUM_SEQS}" \
-                --max-model-len "${MAX_MODEL_LEN}" \
-                --gpu-memory-utilization "${GPU_MEMORY_UTILIZATION}" \
-                --dtype "${DTYPE}" \
-                --trust-remote-code \
-                --attention-backend "${ATTENTION_BACKEND}" \
-                --mm-encoder-attn-backend "${MM_ENCODER_ATTN_BACKEND}" \
-                --enable-auto-tool-choice \
-                --tool-call-parser "${TOOL_CALL_PARSER}" \
-                --reasoning-parser "${REASONING_PARSER}"
+                --config /vllm/config/config.yaml
           env:
             LD_PRELOAD: /root/.cache/huggingface/hip_mem_override.so
             PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
@@ -51,6 +35,17 @@ app-template:
                 periodSeconds: 15
                 timeoutSeconds: 5
                 failureThreshold: 6
+
+      # Pin to the node with the GPU (mirrors the original deployment nodeSelector)
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - framework-desktop
 
   service:
     main:
@@ -79,12 +74,12 @@ app-template:
             - vllm
 
   persistence:
-    kwargs:
+    vllmConfig:
       enabled: true
       type: configMap
-      name: vllm-kwargs
+      name: vllm-config
       globalMounts:
-        - path: /vllm/kwargs
+        - path: /vllm/config
     hfCache:
       enabled: true
       type: persistentVolumeClaim
@@ -98,17 +93,20 @@ app-template:
     limits:
       amd.com/gpu: "1"
 
-# -- kwargs for the vllm serve command, rendered to a ConfigMap
-kwargs:
-  MODEL: cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit
-  HOST: "0.0.0.0"
-  PORT: "8000"
-  TENSOR_PARALLEL_SIZE: "1"
-  MAX_NUM_SEQS: "5"
-  MAX_MODEL_LEN: "262144"
-  GPU_MEMORY_UTILIZATION: "0.80"
-  DTYPE: auto
-  ATTENTION_BACKEND: TRITON_ATTN
-  MM_ENCODER_ATTN_BACKEND: TRITON_ATTN
-  TOOL_CALL_PARSER: qwen3_xml
-  REASONING_PARSER: qwen3
+# -- vLLM serve configuration, rendered to config.yaml and loaded via `vllm serve --config`.
+# Long-form arg names: https://docs.vllm.ai/en/stable/configuration/serve_args/
+config:
+  model: cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit
+  host: 0.0.0.0
+  port: 8000
+  tensor-parallel-size: 1
+  max-num-seqs: 5
+  max-model-len: 262144
+  gpu-memory-utilization: 0.80
+  dtype: auto
+  trust-remote-code: true
+  attention-backend: TRITON_ATTN
+  mm-encoder-attn-backend: TRITON_ATTN
+  enable-auto-tool-choice: true
+  tool-call-parser: qwen3_xml
+  reasoning-parser: qwen3

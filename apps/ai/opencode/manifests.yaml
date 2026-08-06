@@ -1,8 +1,10 @@
 # OpenCode headless server — access via Tailscale from VS Code / phone
 # Multi-session: client creates sessions via POST /session.
 #   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
+# Workspace lives in the home dir /root so the web UI (which scopes its
+#   folder picker / home to the server home dir) sees the project directly.
+#   Repo seeded by init container cloning ai-cluster into /root.
 # Config + sessions persist in /root/.opencode (mounted PVC).
-# Workspace seeded by init container cloning ai-cluster.
 # Default provider/model: vLLM via k8s DNS (vllm-server.ollama.svc.cluster.local:8000)
 ---
 apiVersion: v1
@@ -85,18 +87,18 @@ spec:
             - sh
             - -c
             - |
-              mkdir -p /workspace
-              rm -rf /workspace/lost+found
-              if [ ! -d /workspace/.git ]; then
-                echo "Cloning ai-cluster into /workspace..."
-                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /workspace
+              mkdir -p /root
+              rm -rf /root/lost+found
+              if [ ! -d /root/.git ]; then
+                echo "Cloning ai-cluster into /root..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /root
                 echo "Done."
               else
                 echo "Workspace already seeded, skipping clone."
               fi
           volumeMounts:
             - name: workspace
-              mountPath: /workspace
+              mountPath: /root
           securityContext:
             runAsUser: 0
           resources:
@@ -110,7 +112,7 @@ spec:
         - name: opencode
           image: ghcr.io/anomalyco/opencode:latest
           imagePullPolicy: Always
-          workingDir: /workspace
+          workingDir: /root
           command:
             - sh
             - -c
@@ -126,9 +128,17 @@ spec:
                 secretKeyRef:
                   name: opencode-secret
                   key: password
+            - name: HOME
+              value: /root
+            - name: XDG_CACHE_HOME
+              value: /tmp/xdg-cache
+            - name: XDG_DATA_HOME
+              value: /tmp/xdg-data
+            - name: XDG_STATE_HOME
+              value: /tmp/xdg-state
           volumeMounts:
             - name: workspace
-              mountPath: /workspace
+              mountPath: /root
             - name: opencode-data
               mountPath: /root/.opencode
             - name: config

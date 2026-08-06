@@ -145,15 +145,25 @@ spec:
               cpu: 1000m
               memory: 1Gi
           readinessProbe:
-            httpGet:
-              path: /global/health
-              port: 4096
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  B64=$(printf '%s' "$AUTH" | busybox base64)
+                  wget --spider -q -O /dev/null --header="Authorization: Basic $B64" http://127.0.0.1:4096/global/health
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /global/health
-              port: 4096
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  B64=$(printf '%s' "$AUTH" | busybox base64)
+                  wget --spider -q -O /dev/null --header="Authorization: Basic $B64" http://127.0.0.1:4096/global/health
             initialDelaySeconds: 15
             periodSeconds: 20
       volumes:

@@ -3,7 +3,7 @@
 #   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
 # Config + sessions persist in /root/.local/share/opencode (mounted PVC).
 # Workspace seeded by init container cloning ai-cluster.
-# Default provider/model: vLLM via k8s DNS (vllm-server.ollama.svc.cluster.local:8000)
+# Default provider/model: vLLM via k8s DNS (vllm.ollama.svc.cluster.local:8000)
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -67,7 +67,7 @@ data:
           "npm": "@ai-sdk/openai-compatible",
           "name": "vLLM",
           "options": {
-            "baseURL": "http://vllm-server.ollama.svc.cluster.local:8000/v1"
+            "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
           },
           "models": {
             "qwen3.6-35b-a3b-awq": {

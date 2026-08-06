@@ -40,7 +40,7 @@ data:
   opencode.json: |
     {
       "$schema": "https://opencode.ai/config.json",
-      "model": "vllm/cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit",
+      "model": "vllm/qwen3.6-35b-a3b-awq",
       "provider": {
         "vllm": {
           "npm": "@ai-sdk/openai-compatible",
@@ -49,8 +49,9 @@ data:
             "baseURL": "http://vllm-server.ollama.svc.cluster.local:8000/v1"
           },
           "models": {
-            "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit": {
-              "name": "Qwen3.6-35B-A3B-AWQ-4bit"
+            "qwen3.6-35b-a3b-awq": {
+              "name": "Qwen3.6-35B-A3B-AWQ-4bit",
+              "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
             }
           }
         }

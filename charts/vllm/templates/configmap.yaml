@@ -6,4 +6,5 @@ metadata:
 data:
   # vLLM serve configuration file: https://docs.vllm.ai/en/stable/configuration/serve_args/
   config.yaml: |
-{{ toYaml .Values.config | indent 4 }}
+{{ range .Values.config }}    {{ .key }}: {{ .value }}
+{{ end }}

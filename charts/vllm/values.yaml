@@ -14,15 +14,24 @@ app-template:
           command:
             - /bin/bash
             - -c
-            - |-
-              exec vllm serve \
-                --config /vllm/config/config.yaml
+            - python /root/.cache/huggingface/patch_rocm.py && exec vllm serve --config /vllm/config/config.yaml
           env:
-            LD_PRELOAD: /root/.cache/huggingface/hip_mem_override.so
-            PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
-            HF_HUB_OFFLINE: "1"
-            VLLM_USE_TRITON_AWQ: "1"
-            VLLM_DISABLE_COMPILE_CACHE: "1"
+            - name: HF_HUB_OFFLINE
+              value: "1"
+            - name: LD_PRELOAD
+              value: /root/.cache/huggingface/hip_mem_override.so
+            - name: PYTORCH_CUDA_ALLOC_CONF
+              value: expandable_segments:True
+            - name: VLLM_DISABLE_COMPILE_CACHE
+              value: "1"
+            - name: VLLM_USE_TRITON_AWQ
+              value: "1"
+            - name: VLLM_ROCM_USE_AITER
+              value: "1"
+            - name: GPU_ARCHS
+              value: native
+            - name: VLLM_TUNED_CONFIG_FOLDER
+              value: /root/.cache/huggingface/moe-tuned
           probes:
             readiness:
               enabled: true
@@ -95,18 +104,37 @@ app-template:
 
 # -- vLLM serve configuration, rendered to config.yaml and loaded via `vllm serve --config`.
 # Long-form arg names: https://docs.vllm.ai/en/stable/configuration/serve_args/
+# Order is significant: matches the live ConfigMap so a sync is a no-op.
 config:
-  model: cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit
-  host: 0.0.0.0
-  port: 8000
-  tensor-parallel-size: 1
-  max-num-seqs: 5
-  max-model-len: 262144
-  gpu-memory-utilization: 0.80
-  dtype: auto
-  trust-remote-code: true
-  attention-backend: TRITON_ATTN
-  mm-encoder-attn-backend: TRITON_ATTN
-  enable-auto-tool-choice: true
-  tool-call-parser: qwen3_xml
-  reasoning-parser: qwen3
+  - key: attention-backend
+    value: ROCM_ATTN
+  - key: enable-prefix-caching
+    value: true
+  - key: enable-chunked-prefill
+    value: true
+  - key: dtype
+    value: auto
+  - key: enable-auto-tool-choice
+    value: true
+  - key: gpu-memory-utilization
+    value: 0.8
+  - key: host
+    value: 0.0.0.0
+  - key: max-model-len
+    value: 262144
+  - key: max-num-seqs
+    value: 4
+  - key: mm-encoder-attn-backend
+    value: TRITON_ATTN
+  - key: model
+    value: cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit
+  - key: port
+    value: 8000
+  - key: reasoning-parser
+    value: qwen3
+  - key: tensor-parallel-size
+    value: 1
+  - key: tool-call-parser
+    value: qwen3_xml
+  - key: trust-remote-code
+    value: true

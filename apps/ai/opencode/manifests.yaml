@@ -166,6 +166,8 @@ spec:
                   key: token
             - name: GIT_CONFIG_GLOBAL
               value: /home/opencode/.local/share/opencode/.gitconfig
+            - name: OPENCODE_PORT
+              value: "4096"
           volumeMounts:
             - name: workspace
               mountPath: /home/opencode/workspace

@@ -1,7 +1,8 @@
-# OpenCode headless server — access via Tailscale from VS Code / phone
-# Multi-session: client creates sessions via POST /session.
-#   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
-# Config + sessions persist in /root/.local/share/opencode (mounted PVC).
+# OpenCode headless server — access via Tailscale from browser / phone
+# Image: sprisa/opencode (Ubuntu, unprivileged uid 1000, tini, env-driven serve config).
+#   Server runs `opencode serve` from /home/opencode/workspace (the workdir); all state
+#   lives under /home/opencode (config, sessions DB, logs, tools).
+# Config + sessions persist in /home/opencode/.local/share/opencode (mounted PVC).
 # Workspace seeded by init container cloning ai-cluster.
 # Default provider/model: vLLM via k8s DNS (vllm.ollama.svc.cluster.local:8000)
 ---
@@ -99,27 +100,45 @@ spec:
         stack: ai
     spec:
       nodeName: framework-desktop
+      securityContext:
+        fsGroup: 1000
       initContainers:
-        - name: clone-repos
+        - name: init
           image: alpine/git:latest
           command:
             - sh
             - -c
             - |
-              mkdir -p /workspace
-              rm -rf /workspace/lost+found
-              if [ ! -d /workspace/.git ]; then
-                echo "Cloning ai-cluster into /workspace..."
-                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /workspace
-                echo "Done."
+              set -e
+              mkdir -p /home/opencode/workspace /home/opencode/.local/share/opencode
+              rm -rf /home/opencode/workspace/lost+found /home/opencode/.local/share/opencode/lost+found
+              if [ ! -d /home/opencode/workspace/.git ]; then
+                echo "Cloning ai-cluster into /home/opencode/workspace..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /home/opencode/workspace
               else
                 echo "Workspace already seeded, skipping clone."
               fi
+              cat > /home/opencode/.local/share/opencode/.gitconfig <<'EOF'
+              [user]
+                      name = tylertitsworth
+                      email = tylertitsworth@users.noreply.github.com
+              [credential]
+                      helper = !f() { echo username=tylertitsworth; echo password=$GITHUB_TOKEN; }; f
+              [safe]
+                      directory = /home/opencode/workspace
+              EOF
+              chown -R 1000:1000 /home/opencode/workspace /home/opencode/.local/share/opencode
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-github
+                  key: token
           volumeMounts:
             - name: workspace
-              mountPath: /workspace
-          securityContext:
-            runAsUser: 0
+              mountPath: /home/opencode/workspace
+            - name: opencode-data
+              mountPath: /home/opencode/.local/share/opencode
           resources:
             requests:
               cpu: 100m
@@ -129,21 +148,8 @@ spec:
               memory: 512Mi
       containers:
         - name: opencode
-          image: ghcr.io/anomalyco/opencode:latest
-          imagePullPolicy: Always
-          workingDir: /workspace
-          command:
-            - sh
-            - -c
-            - |
-              apk add --no-cache git >/dev/null 2>&1
-              git config --global user.name "tylertitsworth"
-              git config --global user.email "tylertitsworth@users.noreply.github.com"
-              git config --global credential.helper '!f() { echo username=tylertitsworth; echo password=$GITHUB_TOKEN; }; f'
-              git config --global --add safe.directory /workspace
-              git config --local user.name "tylertitsworth"
-              git config --local user.email "tylertitsworth@users.noreply.github.com"
-              exec opencode serve --hostname=0.0.0.0 --port=4096 --cors=https://open-vsx.org --cors=vscode --cors=http://127.0.0.1:4096 --cors=http://localhost:4096
+          image: sprisa/opencode:1.18.15
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4096
               name: http
@@ -159,14 +165,14 @@ spec:
                   name: opencode-github
                   key: token
             - name: GIT_CONFIG_GLOBAL
-              value: /root/.local/share/opencode/.gitconfig
+              value: /home/opencode/.local/share/opencode/.gitconfig
           volumeMounts:
             - name: workspace
-              mountPath: /workspace
+              mountPath: /home/opencode/workspace
             - name: opencode-data
-              mountPath: /root/.local/share/opencode
+              mountPath: /home/opencode/.local/share/opencode
             - name: config
-              mountPath: /root/.config/opencode/opencode.json
+              mountPath: /home/opencode/.config/opencode/opencode.json
               subPath: opencode.json
               readOnly: true
           resources:
@@ -183,8 +189,7 @@ spec:
                 - -c
                 - |
                   AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
-                  B64=$(printf '%s' "$AUTH" | busybox base64)
-                  wget --spider -q -O /dev/null --header="Authorization: Basic $B64" http://127.0.0.1:4096/global/health
+                  curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
@@ -194,8 +199,7 @@ spec:
                 - -c
                 - |
                   AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
-                  B64=$(printf '%s' "$AUTH" | busybox base64)
-                  wget --spider -q -O /dev/null --header="Authorization: Basic $B64" http://127.0.0.1:4096/global/health
+                  curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
             initialDelaySeconds: 15
             periodSeconds: 20
       volumes:
@@ -227,107 +231,6 @@ spec:
       name: http
       protocol: TCP
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: opencode-router
-  namespace: opencode
-  labels:
-    app: opencode-router
-    stack: ai
-data:
-  nginx.conf: |
-    events {}
-    http {
-      map $http_upgrade $connection_upgrade {
-        default upgrade;
-        '' close;
-      }
-      server {
-        listen 80;
-        server_name _;
-        absolute_redirect off;
-        location = / {
-          return 302 /L3dvcmtzcGFjZQ;
-        }
-        location = /index.html {
-          return 302 /L3dvcmtzcGFjZQ;
-        }
-        location = /healthz {
-          return 200 "ok";
-        }
-        location / {
-          proxy_pass http://opencode.opencode.svc.cluster.local:4096;
-          proxy_http_version 1.1;
-          proxy_set_header Host $host;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          proxy_set_header Upgrade $http_upgrade;
-          proxy_set_header Connection $connection_upgrade;
-          proxy_buffering off;
-        }
-      }
-    }
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: opencode-router
-  namespace: opencode
-  labels:
-    app: opencode-router
-    stack: ai
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: opencode-router
-  template:
-    metadata:
-      labels:
-        app: opencode-router
-        stack: ai
-    spec:
-      nodeName: framework-desktop
-      containers:
-        - name: nginx
-          image: nginx:alpine
-          ports:
-            - containerPort: 80
-          volumeMounts:
-            - name: conf
-              mountPath: /etc/nginx/nginx.conf
-              subPath: nginx.conf
-              readOnly: true
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 80
-            initialDelaySeconds: 3
-            periodSeconds: 5
-      volumes:
-        - name: conf
-          configMap:
-            name: opencode-router
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: opencode-router
-  namespace: opencode
-  labels:
-    app: opencode-router
-    stack: ai
-spec:
-  type: ClusterIP
-  selector:
-    app: opencode-router
-  ports:
-    - port: 80
-      targetPort: 80
-      name: http
-      protocol: TCP
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -348,12 +251,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: opencode-router
+                name: opencode
                 port:
-                  number: 80
-  tls:
-    - hosts:
-        - opencode
+                  number: 4096
   tls:
     - hosts:
         - opencode

@@ -1,0 +1,359 @@
+# OpenCode headless server — access via Tailscale from VS Code / phone
+# Multi-session: client creates sessions via POST /session.
+#   VS Code + OpenCode IDE extension, browser (phone), curl, any HTTP client.
+# Config + sessions persist in /root/.local/share/opencode (mounted PVC).
+# Workspace seeded by init container cloning ai-cluster.
+# Default provider/model: vLLM via k8s DNS (vllm.ollama.svc.cluster.local:8000)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencode-workspace
+  namespace: opencode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencode-data
+  namespace: opencode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-config
+  namespace: opencode
+data:
+  opencode.json: |
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "model": "vllm/qwen3.6-35b-a3b-awq",
+      "mcp": {
+        "kubernetes-ro": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "kubernetes-rw": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server-rw.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "github": {
+          "type": "remote",
+          "url": "https://api.githubcopilot.com/mcp/",
+          "enabled": true,
+          "oauth": false,
+          "headers": {
+            "Authorization": "Bearer {env:GITHUB_TOKEN}"
+          }
+        }
+      },
+      "provider": {
+        "vllm": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "vLLM",
+          "options": {
+            "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
+          },
+          "models": {
+            "qwen3.6-35b-a3b-awq": {
+              "name": "Qwen3.6-35B-A3B-AWQ-4bit",
+              "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
+            }
+          }
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencode
+  template:
+    metadata:
+      labels:
+        app: opencode
+        stack: ai
+    spec:
+      nodeName: framework-desktop
+      initContainers:
+        - name: clone-repos
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /workspace
+              rm -rf /workspace/lost+found
+              if [ ! -d /workspace/.git ]; then
+                echo "Cloning ai-cluster into /workspace..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /workspace
+                echo "Done."
+              else
+                echo "Workspace already seeded, skipping clone."
+              fi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          securityContext:
+            runAsUser: 0
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+      containers:
+        - name: opencode
+          image: ghcr.io/anomalyco/opencode:latest
+          imagePullPolicy: Always
+          workingDir: /workspace
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache git >/dev/null 2>&1
+              git config --global user.name "tylertitsworth"
+              git config --global user.email "tylertitsworth@users.noreply.github.com"
+              git config --global credential.helper '!f() { echo username=tylertitsworth; echo password=$GITHUB_TOKEN; }; f'
+              git config --global --add safe.directory /workspace
+              git config --local user.name "tylertitsworth"
+              git config --local user.email "tylertitsworth@users.noreply.github.com"
+              exec opencode serve --hostname=0.0.0.0 --port=4096 --cors=https://open-vsx.org --cors=vscode --cors=http://127.0.0.1:4096 --cors=http://localhost:4096
+          ports:
+            - containerPort: 4096
+              name: http
+          env:
+            - name: OPENCODE_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: password
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-github
+                  key: token
+            - name: GIT_CONFIG_GLOBAL
+              value: /root/.local/share/opencode/.gitconfig
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: opencode-data
+              mountPath: /root/.local/share/opencode
+            - name: config
+              mountPath: /root/.config/opencode/opencode.json
+              subPath: opencode.json
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  B64=$(printf '%s' "$AUTH" | busybox base64)
+                  wget --spider -q -O /dev/null --header="Authorization: Basic $B64" http://127.0.0.1:4096/global/health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  B64=$(printf '%s' "$AUTH" | busybox base64)
+                  wget --spider -q -O /dev/null --header="Authorization: Basic $B64" http://127.0.0.1:4096/global/health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: opencode-workspace
+        - name: opencode-data
+          persistentVolumeClaim:
+            claimName: opencode-data
+        - name: config
+          configMap:
+            name: opencode-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+spec:
+  type: ClusterIP
+  selector:
+    app: opencode
+  ports:
+    - port: 4096
+      targetPort: 4096
+      name: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-router
+  namespace: opencode
+  labels:
+    app: opencode-router
+    stack: ai
+data:
+  nginx.conf: |
+    events {}
+    http {
+      map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+      }
+      server {
+        listen 80;
+        server_name _;
+        absolute_redirect off;
+        location = / {
+          return 302 /L3dvcmtzcGFjZQ;
+        }
+        location = /index.html {
+          return 302 /L3dvcmtzcGFjZQ;
+        }
+        location = /healthz {
+          return 200 "ok";
+        }
+        location / {
+          proxy_pass http://opencode.opencode.svc.cluster.local:4096;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection $connection_upgrade;
+          proxy_buffering off;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode-router
+  namespace: opencode
+  labels:
+    app: opencode-router
+    stack: ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencode-router
+  template:
+    metadata:
+      labels:
+        app: opencode-router
+        stack: ai
+    spec:
+      nodeName: framework-desktop
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: conf
+          configMap:
+            name: opencode-router
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencode-router
+  namespace: opencode
+  labels:
+    app: opencode-router
+    stack: ai
+spec:
+  type: ClusterIP
+  selector:
+    app: opencode-router
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+  annotations:
+    tailscale.com/proxy-class: pin-framework-desktop
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: opencode
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opencode-router
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - opencode
+  tls:
+    - hosts:
+        - opencode

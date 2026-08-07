@@ -12,11 +12,15 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: opencode
+    targetRevision: opencode-vllm
     path: apps/ai/opencode
   destination:
     server: https://kubernetes.default.svc
     namespace: opencode
   syncPolicy:
+    automated:
+      enabled: false
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true

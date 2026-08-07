@@ -173,6 +173,8 @@ spec:
           volumeMounts:
             - name: workspace
               mountPath: /home/opencode/workspace
+            - name: workspace
+              mountPath: /workspace
             - name: opencode-data
               mountPath: /home/opencode/.local/share/opencode
             - name: config

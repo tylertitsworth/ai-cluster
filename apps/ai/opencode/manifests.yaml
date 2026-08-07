@@ -67,7 +67,7 @@ data:
           "npm": "@ai-sdk/openai-compatible",
           "name": "vLLM",
           "options": {
-            "baseURL": "https://vllm.tail79a5c8.ts.net/v1"
+            "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
           },
           "models": {
             "qwen3.6-35b-a3b-awq": {

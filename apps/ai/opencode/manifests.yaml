@@ -268,7 +268,7 @@ spec:
                 - sh
                 - -c
                 - |
-                  wget -q -O /dev/null http://127.0.0.1/ || exit 1
+                  wget -q -O /dev/null http://127.0.0.1/assets/index-DkiM3pJJ.js || exit 1
             initialDelaySeconds: 5
             periodSeconds: 10
       volumes:

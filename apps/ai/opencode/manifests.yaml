@@ -80,6 +80,39 @@ data:
       }
     }
 ---
+# UI injection: the SPA is compiled into the opencode binary, so we serve a
+# patched bundle (fixes per-device home-session visibility) from the workspace
+# PVC via an nginx sidecar. Patch source: see .ui/README.md in the workspace.
+# The patched file lives at /workspace/.ui/index-DkiM3pJJ.js (seeded manually).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-ui-nginx
+  namespace: opencode
+data:
+  default.conf: |
+    server {
+      listen 80;
+      location = /assets/index-DkiM3pJJ.js {
+        alias /workspace/.ui/index-DkiM3pJJ.js;
+        default_type application/javascript;
+        add_header Cache-Control "no-cache";
+      }
+      location / {
+        proxy_pass http://127.0.0.1:4096;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+      }
+    }
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -208,6 +241,36 @@ spec:
                   curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
             initialDelaySeconds: 15
             periodSeconds: 20
+        - name: ui
+          image: nginx:alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http-ui
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+              readOnly: true
+            - name: ui-nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  wget -q -O /dev/null http://127.0.0.1/ || exit 1
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
         - name: workspace
           persistentVolumeClaim:
@@ -218,6 +281,9 @@ spec:
         - name: config
           configMap:
             name: opencode-config
+        - name: ui-nginx-conf
+          configMap:
+            name: opencode-ui-nginx
 ---
 apiVersion: v1
 kind: Service
@@ -235,6 +301,10 @@ spec:
     - port: 4096
       targetPort: 4096
       name: http
+      protocol: TCP
+    - port: 80
+      targetPort: 80
+      name: ui
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
@@ -259,7 +329,7 @@ spec:
               service:
                 name: opencode
                 port:
-                  number: 4096
+                  number: 80
   tls:
     - hosts:
         - opencode

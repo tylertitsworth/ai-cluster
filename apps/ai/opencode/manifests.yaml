@@ -41,6 +41,9 @@ data:
   opencode.json: |
     {
       "$schema": "https://opencode.ai/config.json",
+      "plugin": [
+        "@dietrichgebert/ponytail"
+      ],
       "model": "vllm/qwen3.6-35b-a3b-awq",
       "mcp": {
         "kubernetes-ro": {

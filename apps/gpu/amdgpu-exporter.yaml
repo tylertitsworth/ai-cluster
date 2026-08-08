@@ -1,0 +1,31 @@
+# AMD GPU Exporter — Prometheus metrics for ROCm on framework-desktop
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: amdgpu-exporter
+  namespace: argocd
+  labels:
+    stack: gpu
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      path: charts/amdgpu-exporter
+      helm:
+        valueFiles:
+          - $values/apps/gpu/values/amdgpu-exporter.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grafana
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

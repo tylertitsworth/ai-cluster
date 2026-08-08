@@ -1,0 +1,10 @@
+apiVersion: v2
+name: amdgpu-exporter
+description: Prometheus exporter for AMD GPU metrics (ROCm)
+type: application
+version: 0.1.0
+appVersion: "1.0"
+dependencies:
+  - name: app-template
+    version: 3.x.x
+    repository: https://bjw-s-labs.github.io/helm-charts/

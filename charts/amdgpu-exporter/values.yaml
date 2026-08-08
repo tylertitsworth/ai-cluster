@@ -1,0 +1,61 @@
+# AMD GPU metrics exporter — DaemonSet on framework-desktop
+
+app-template:
+  controllers:
+    amdgpu-exporter:
+      type: daemonset
+      nodeSelector:
+        kubernetes.io/hostname: framework-desktop
+
+      containers:
+        main:
+          image:
+            repository: scotty-ham/amdgpu-exporter
+            tag: latest
+            pullPolicy: Always
+
+          ports:
+            http:
+              enabled: true
+              containerPort: 8000
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+  service:
+    main:
+      controller: amdgpu-exporter
+      ports:
+        http:
+          port: 8000
+
+  persistence:
+    drm:
+      enabled: true
+      type: hostPath
+      hostPath: /sys/class/drm
+      globalMounts:
+        - readOnly: true
+          path: /sys/class/drm
+
+  extraObjects:
+    - apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: amdgpu-exporter
+        namespace: grafana
+        labels:
+          release: monitoring
+          prometheus: monitoring-kube-prometheus-prometheus
+      spec:
+        selector:
+          matchLabels:
+            app: amdgpu-exporter
+        endpoints:
+          - port: http
+            interval: 10s

@@ -1,0 +1,26 @@
+# ArgoCD Application — OpenCode headless server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opencode
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: opencode-vllm
+    path: apps/ai/opencode
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opencode
+  syncPolicy:
+    automated:
+      enabled: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -4,7 +4,7 @@ fullnameOverride: ollama
 image:
   repository: ollama/ollama
   # Pinned latest versioned ROCm image tag
-  tag: 0.21.2-rocm
+  tag: 0.32.5-rocm
   pullPolicy: Always
 
 ollama:
@@ -17,18 +17,9 @@ ollama:
     pull:
       - qwen3.6:35b
       - gemma4:31b
-    create:
-      - name: qwen3.6-35b-full
-        template: |
-          FROM qwen3.6:35b
-          PARAMETER num_ctx 262144
-      - name: gemma-4-31b-full
-        template: |
-          FROM gemma4:31b
-          PARAMETER num_ctx 262144
     run:
-      # - genna4-31b-full
-      - qwen3.6-35b-full
+      - gemma4:31b
+      # - qwen3.6:35b
     clean: true
 
 extraEnv:

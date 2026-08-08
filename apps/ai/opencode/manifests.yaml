@@ -1,0 +1,338 @@
+# OpenCode headless server — access via Tailscale from browser / phone
+# Image: sprisa/opencode (Ubuntu, unprivileged uid 1000, tini, env-driven serve config).
+#   Server runs `opencode serve` from /home/opencode/workspace (the workdir); all state
+#   lives under /home/opencode (config, sessions DB, logs, tools).
+# Config + sessions persist in /home/opencode/.local/share/opencode (mounted PVC).
+# Workspace seeded by init container cloning ai-cluster.
+# Default provider/model: vLLM via k8s DNS (vllm.ollama.svc.cluster.local:8000)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencode-workspace
+  namespace: opencode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencode-data
+  namespace: opencode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-config
+  namespace: opencode
+data:
+  opencode.json: |
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "plugin": [
+        "@dietrichgebert/ponytail"
+      ],
+      "model": "vllm/qwen3.6-35b-a3b-awq",
+      "mcp": {
+        "kubernetes-ro": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "kubernetes-rw": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server-rw.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "github": {
+          "type": "remote",
+          "url": "https://api.githubcopilot.com/mcp/",
+          "enabled": true,
+          "oauth": false,
+          "headers": {
+            "Authorization": "Bearer {env:GITHUB_TOKEN}"
+          }
+        }
+      },
+      "provider": {
+        "vllm": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "vLLM",
+          "options": {
+            "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
+          },
+          "models": {
+            "qwen3.6-35b-a3b-awq": {
+              "name": "Qwen3.6-35B-A3B-AWQ-4bit",
+              "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
+            }
+          }
+        }
+      }
+    }
+---
+# UI injection: the SPA is compiled into the opencode binary, so we serve a
+# patched bundle (fixes per-device home-session visibility) from the workspace
+# PVC via an nginx sidecar. Patch source: see .ui/README.md in the workspace.
+# The patched file lives at /workspace/.ui/index-DkiM3pJJ.js (seeded manually).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-ui-nginx
+  namespace: opencode
+data:
+  default.conf: |
+    server {
+      listen 80;
+      location = /assets/index-DkiM3pJJ.js {
+        alias /workspace/.ui/index-DkiM3pJJ.js;
+        default_type application/javascript;
+        add_header Cache-Control "no-cache";
+      }
+      location / {
+        proxy_pass http://127.0.0.1:4096;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: opencode
+  template:
+    metadata:
+      labels:
+        app: opencode
+        stack: ai
+    spec:
+      nodeName: framework-desktop
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+        - name: init
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /home/opencode/workspace /home/opencode/.local/share/opencode
+              rm -rf /home/opencode/workspace/lost+found /home/opencode/.local/share/opencode/lost+found
+              if [ ! -d /home/opencode/workspace/.git ]; then
+                echo "Cloning ai-cluster into /home/opencode/workspace..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /home/opencode/workspace
+              else
+                echo "Workspace already seeded, skipping clone."
+              fi
+              cat > /home/opencode/.local/share/opencode/.gitconfig <<'EOF'
+              [user]
+                      name = tylertitsworth
+                      email = tylertitsworth@users.noreply.github.com
+              [credential]
+                      helper = !f() { echo username=tylertitsworth; echo password=$GITHUB_TOKEN; }; f
+              [safe]
+                      directory = /home/opencode/workspace
+              EOF
+              chown -R 1000:1000 /home/opencode/workspace /home/opencode/.local/share/opencode
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-github
+                  key: token
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/opencode/workspace
+            - name: opencode-data
+              mountPath: /home/opencode/.local/share/opencode
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+      containers:
+        - name: opencode
+          image: sprisa/opencode:1.18.15
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4096
+              name: http
+          env:
+            - name: OPENCODE_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: password
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-github
+                  key: token
+            - name: GIT_CONFIG_GLOBAL
+              value: /home/opencode/.local/share/opencode/.gitconfig
+            - name: OPENCODE_PORT
+              value: "4096"
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/opencode/workspace
+            - name: workspace
+              mountPath: /workspace
+            - name: opencode-data
+              mountPath: /home/opencode/.local/share/opencode
+            - name: config
+              mountPath: /home/opencode/.config/opencode/opencode.json
+              subPath: opencode.json
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+        - name: ui
+          image: nginx:alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http-ui
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+              readOnly: true
+            - name: ui-nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  wget -q -O /dev/null http://127.0.0.1/assets/index-DkiM3pJJ.js || exit 1
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: opencode-workspace
+        - name: opencode-data
+          persistentVolumeClaim:
+            claimName: opencode-data
+        - name: config
+          configMap:
+            name: opencode-config
+        - name: ui-nginx-conf
+          configMap:
+            name: opencode-ui-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+spec:
+  type: ClusterIP
+  selector:
+    app: opencode
+  ports:
+    - port: 4096
+      targetPort: 4096
+      name: http
+      protocol: TCP
+    - port: 80
+      targetPort: 80
+      name: ui
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opencode
+  namespace: opencode
+  labels:
+    app: opencode
+    stack: ai
+  annotations:
+    tailscale.com/proxy-class: pin-framework-desktop
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: opencode
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opencode
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - opencode

@@ -2,7 +2,7 @@
 .lvenv/
 .venv/
 .vscode/
-.opencode/
+.opencode/node_modules/
 .claude/
 *.crt
 *.pem

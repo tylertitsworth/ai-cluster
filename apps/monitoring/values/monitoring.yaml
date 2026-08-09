@@ -40,6 +40,14 @@ kube-state-metrics:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"
 prometheus:
+  additionalServiceMonitors:
+    - name: amdgpu-exporter
+      selector:
+        matchLabels:
+          app: amdgpu-exporter
+      endpoints:
+        - port: http
+          interval: 10s
   ingress:
     enabled: true
     hosts:
@@ -66,4 +74,3 @@ prometheus-node-exporter:
 prometheusOperator:
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"
-

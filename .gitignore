@@ -14,3 +14,4 @@ npu-device-plugin/pkg/
 files/
 AGENTS.md
 CLAUDE.md
+*.tgz

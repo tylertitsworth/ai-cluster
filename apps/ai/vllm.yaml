@@ -1,0 +1,41 @@
+# vLLM inference server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vllm
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: opencode-vllm
+      path: charts/vllm
+      helm:
+        valueFiles:
+          - $values/apps/ai/values/vllm.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: opencode-vllm
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ollama
+  syncPolicy:
+    automated:
+      enabled: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  # Server-set annotations that are not part of the desired state.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: vllm
+      jqPathExpressions:
+        - .metadata.annotations["deployment.kubernetes.io/revision"]
+        - .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]
+        - .spec.template.metadata.annotations["kubectl.kubernetes.io/restartedAt"]

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  namespace: {{ .Release.Namespace }}
+data:
+  # vLLM serve configuration file: https://docs.vllm.ai/en/stable/configuration/serve_args/
+  config.yaml: |
+{{ range .Values.config }}    {{ .key }}: {{ .value }}
+{{ end }}

@@ -183,3 +183,6 @@ app-template:
       endpoints:
         - port: http
           interval: 10s
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_pod_node_name]
+              targetLabel: instance

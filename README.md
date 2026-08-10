@@ -311,24 +311,14 @@ It was with Open WebUI where I originally found the ISCSI issue with the Nvidia 
 
 Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
 
-## Troubleshooting
+### vLLM
 
-This concerns topics that are more sporatic and random than anything under a topic above.
+[vLLM](https://docs.vllm.ai/) is the alternative option to Ollama for serving LLMs. The important tradeoff with using vLLM is that it's harder to configure right and doesn't get to take advantage of q_k quantizations. Meaning that it has to use more VRAM to serve models. However, vLLM's upside is that it properly loads weights into VRAM and does prefix caching. Meaning the entire opencode prompt is stored in VRAM after the first message and each subsequent prompt is now trivial to decode. Serving a version of Qwen3.6-35B called `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit` gets around the limitations of lacking the q_k quantization support as AWQ is very memory efficient. The most important addition for compatibility is using community patches into vLLM to enable ROCM_AITER attention, which unlocks 40-50 t/s on vLLM. Unfortunately it took a lot of patches and tuning to get vLLM working as upstream vLLM doesn't support the gfx1151 at all. The [image](https://hub.docker.com/r/kyuz0/vllm-therock-gfx1151) is the Rocksmith community's ROCm fork, which `LD_PRELOAD`s a hip-memory override and forces a handful of flags (`VLLM_ROCM_USE_AITER`, `VLLM_USE_TRITON_AWQ`) to get the driver to behave. The 64GB version of the framework desktop can allow for the full 256k context length of this model.
 
-<details>
+The chart uses vllm with the `--config` parameter so we can just put all of the vllm kwargs into a configmap.
 
-<summary>No Space Left on Device</summary>
+### OpenCode
 
-Images are stored on `/run` in a temporary filesystem rather than on each nvme device. Because of this they have very little space due to memory constraints. If this becomes a bigger issue the directory will have to be moved to another volume, but in the meantime you can increase the size of the directory with `sudo mount -o remount,size=<Size>G /run`.
+[OpenCode](https://opencode.ai/) is the headless AI coding agent that runs *in* this repo's workspace — it's the dogfooding loop that makes this whole cluster self-maintaining. The pod is deployed in its own `opencode` namespace on `framework-desktop`, and its init container `git clone`s `ai-cluster` into a `workspace` PVC, drops in a `.gitconfig` that authenticates with `GITHUB_TOKEN`, then the agent edits a working tree of this very repository — like the commit that added these charts.
 
-Before running this command, run a prune command just in case that solves the issue.
-
-</details>
-
-<details>
-
-<summary>kube-prometheus-stack fails to sync in ArgoCD</summary>
-
-If you are receiving an error like `one or more synchronization tasks completed unsuccessfully, reason: error when patching "/dev/shm/119925187": CustomResourceDefinition.apiextensions.k8s.io "prometheuses.monitoring.coreos.com" is invalid: metadata.annotations: Too long: must have at most 262144 bytes` this means that the annotations of the resource exceed Kubernetes' size limit, to resolve this simply enable server-side apply for all future syncing.
-
-</details>
+The trust boundary with the Opencode harness is MCP servers. Two k8s mcp servers are configured to allow certain agents to get read-only vs. read-write access. The UI is served by an nginx sidecar that does one deliberately odd thing: opencode's web client is a single-page app compiled into the binary, so you can't just drop in a fixed bundle. Instead, nginx intercepts exactly one asset path (/assets/index-DkiM3pJJ.js) and substitutes a patched copy that lives on the workspace PVC — the patch fixes per-device session visibility in the home view. The purpose of this server is to serve as a single human user's view of the opencode server, rather than the per-session version that exists today. Whether I'm on my phone or PC I see the same sessions.

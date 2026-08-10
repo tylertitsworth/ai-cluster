@@ -1,4 +1,7 @@
 name: build-npu-device-plugin-container
+permissions:
+  contents: read
+  packages: write
 on:
   workflow_dispatch: null
   push:

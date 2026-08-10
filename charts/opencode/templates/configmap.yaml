@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-config
+  namespace: {{ .Release.Namespace }}
+data:
+{{ .Values.opencodeConfig | toYaml | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencode-ui-nginx
+  namespace: {{ .Release.Namespace }}
+data:
+{{ .Values.uiNginxConf | toYaml | indent 2 }}

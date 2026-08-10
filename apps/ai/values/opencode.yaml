@@ -1,0 +1,7 @@
+# Override values for the opencode chart (charts/opencode).
+# Full structure: https://github.com/bjw-s-labs/helm-charts/tree/main/charts/app-template
+
+app-template:
+  controllers:
+    main:
+      nameOverride: opencode

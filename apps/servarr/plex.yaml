@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://raw.githubusercontent.com/plexinc/pms-docker/gh-pages
-    targetRevision: 1.4.0  # Latest version
+    targetRevision: 1.6.0  # Latest version
     chart: plex-media-server
     helm:
       valuesObject:
@@ -23,6 +23,11 @@ spec:
         image:
           tag: latest
           imagePullPolicy: Always
+          pullPolicy: Always
+
+        # Pull from private registry (matches imagePullSecrets injected on the ServiceAccount)
+        imagePullSecrets:
+          - name: registry
 
         # Network configuration
         hostNetwork: true
@@ -94,6 +99,30 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr
+  # Ignore API-defaulted / admission-injected fields so the StatefulSet stays Synced
+  # (k8s adds these server-side; chart render omits them)
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: plex
+      jsonPointers:
+        - /spec/replicas
+        - /spec/podManagementPolicy
+        - /spec/revisionHistoryLimit
+        - /spec/persistentVolumeClaimRetentionPolicy
+        - /spec/updateStrategy
+        - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+        - /spec/template/metadata/annotations/restart-operator.k8s~1restartedAt
+        - /spec/template/spec/containers/0/ports/0/protocol
+        - /spec/template/spec/containers/0/terminationMessagePath
+        - /spec/template/spec/containers/0/terminationMessagePolicy
+        - /spec/template/spec/imagePullSecrets
+        - /spec/template/spec/restartPolicy
+        - /spec/template/spec/schedulerName
+        - /spec/template/spec/securityContext
+        - /spec/template/spec/serviceAccount
+        - /spec/template/spec/volumes/2/hostPath/type
+        - /metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration
   syncPolicy:
     # Disabled auto-sync to allow manual claim token configuration
     # automated:

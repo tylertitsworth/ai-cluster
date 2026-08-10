@@ -12,13 +12,13 @@ spec:
   project: default
   sources:
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: opencode-vllm
+      targetRevision: main
       path: charts/opencode
       helm:
         valueFiles:
           - $values/apps/ai/values/opencode.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: opencode-vllm
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

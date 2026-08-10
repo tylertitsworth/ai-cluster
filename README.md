@@ -311,6 +311,33 @@ It was with Open WebUI where I originally found the ISCSI issue with the Nvidia 
 
 Open WebUI is a great place to store data for RAG usage and test out new tools/functions in a sandbox environment. It has a lot of way to hook up tools like [Stable Diffusion](https://stabledifffusion.com/), Web Search, [Whisper](https://openai.com/index/whisper/), etc.
 
+### vLLM
+
+[vLLM](https://docs.vllm.ai/) is the high-throughput inference server, and it's what actually serves the models that Open WebUI and OpenCode talk to. It's deployed in the `ollama` namespace (where it exposes itself as `http://vllm:8000`), and it lives on `framework-desktop` because that's the only node with an AMD GPU — pinned via node affinity and requesting `amd.com/gpu: 1` from the ROCm device plugin.
+
+The [image](https://hub.docker.com/r/kyuz0/vllm-therock-gfx1151) is a ROCm build for the gfx1151 APU. The Rocksmith folks had to patch the HIP allocator and force some flags (`LD_PRELOAD=hip_mem_override.so`, `VLLM_ROCM_USE_AITER`, `VLLM_USE_TRITON_AWQ`) to get vLLM to behave on this particular iGPU, so the startup command is the patch script followed by `vllm serve --config /vllm/config/config.yaml`.
+
+The `config.yaml` itself comes from a ConfigMap (`charts/vllm/templates/configmap.yaml`), keyed as individual values so ArgoCD can diff them line by line instead of one opaque blob. It's tuned for a single APU:
+
+- model: `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit` (a 35B MoE, ~3B active, AWQ-quantized so it fits in the shared iGPU memory)
+- `max-model-len: 262144` with `enable-prefix-caching` and chunked prefill for the long context
+- `tool-call-parser` and `reasoning-parser` set to `qwen3` so it can use tools properly
+- `gpu-memory-utilization: 0.8` to leave headroom for the ROCm allocator tricks
+
+The chart is a thin app-template wrapper around the Deployment, Service, and that one ConfigMap; the whole thing is reconciled to the live deployment by ArgoCD.
+
+### OpenCode
+
+[OpenCode](https://opencode.ai/) is the headless AI coding agent that runs *in* this repo's workspace. It's deployed in its own `opencode` namespace on `framework-desktop`, and it's the reason this repository exists as a clone inside the cluster: the init container `git clone`s `ai-cluster` into a `workspace` PVC, drops in a `.gitconfig` that uses `GITHUB_TOKEN` for auth, and then the agent edits real files in a working tree of this very repo — like the commit that added these charts.
+
+Its config lives in a ConfigMap (`charts/opencode/templates/configmap.yaml`) rendered from `charts/opencode/values.yaml`. The interesting bits:
+
+- **Models** route entirely through the vLLM instance above (`http://vllm:8000`), using the same `Qwen3.6-35B-A3B-AWQ-4bit` checkpoint.
+- **MCP servers** give it live access to the cluster and to GitHub: `kubernetes-ro` and `kubernetes-rw` (the two [kubernetes-mcp-server](#other-applications) instances, RO and RW) plus a GitHub MCP over `api.githubcopilot.com`. The RW server gets its cluster-level RBAC from `charts/kubernetes-mcp-rbac/`, which grants it `argoproj.io` access so the agent can manage ArgoCD Applications directly.
+- The UI is served behind an nginx sidecar with auth set via `OPENCODE_SERVER_PASSWORD`, so the web client isn't an open door.
+
+State (config, sessions) persists on a `data` PVC, keeping the pod itself disposable.
+
 ## Troubleshooting
 
 This concerns topics that are more sporatic and random than anything under a topic above.

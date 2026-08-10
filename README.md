@@ -313,48 +313,12 @@ Open WebUI is a great place to store data for RAG usage and test out new tools/f
 
 ### vLLM
 
-[vLLM](https://docs.vllm.ai/) is the cluster's single inference endpoint. It's not one of several model servers — it's *the* one: Open WebUI, OpenCode, everything points at `http://vllm:8000`. That's a deliberate call to have one model, one server, one way to talk to it.
+[vLLM](https://docs.vllm.ai/) is the alternative option to Ollama for serving LLMs. The important tradeoff with using vLLM is that it's harder to configure right and doesn't get to take advantage of q_k quantizations. Meaning that it has to use more VRAM to serve models. However, vLLM's upside is that it properly loads weights into VRAM and does prefix caching. Meaning the entire opencode prompt is stored in VRAM after the first message and each subsequent prompt is now trivial to decode. Serving a version of Qwen3.6-35B called `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit` gets around the limitations of lacking the q_k quantization support as AWQ is very memory efficient. The most important addition for compatibility is using community patches into vLLM to enable ROCM_AITER attention, which unlocks 40-50 t/s on vLLM. Unfortunately it took a lot of patches and tuning to get vLLM working as upstream vLLM doesn't support the gfx1151 at all. The [image](https://hub.docker.com/r/kyuz0/vllm-therock-gfx1151) is the Rocksmith community's ROCm fork, which `LD_PRELOAD`s a hip-memory override and forces a handful of flags (`VLLM_ROCM_USE_AITER`, `VLLM_USE_TRITON_AWQ`) to get the driver to behave. The 64GB version of the framework desktop can allow for the full 256k context length of this model.
 
-The constraint that shapes everything is that the model runs on an **integrated** GPU. `framework-desktop`'s APU shares system memory with the desktop OS, so a dense 35B checkpoint is out of the question. That's why the model is `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit`: a 35B MoE where only ~3B parameters activate per token, AWQ-quantized so it fits in the shared memory an iGPU gives you. The `gpu-memory-utilization: 0.8` isn't conservative for its own sake — it's headroom for the fragile part, which is the ROCm allocator.
-
-The fragile part, concretely: upstream vLLM doesn't support the gfx1151 at all. The [image](https://hub.docker.com/r/kyuz0/vllm-therock-gfx1151) is the Rocksmith community's ROCm fork, which `LD_PRELOAD`s a hip-memory override and forces a handful of flags (`VLLM_ROCM_USE_AITER`, `VLLM_USE_TRITON_AWQ`) to get the driver to behave. You're running a community build of an inference engine on a consumer APU — expect the odd quirk, and expect `max-model-len: 262144` with prefix caching to be what keeps it useful as an agent backend, where the whole conversation has to stay in context. `tool-call-parser` and `reasoning-parser` are set to `qwen3` so the model actually uses tools rather than just chatting.
-
-Two things worth stealing from this chart:
-
-- The config is a ConfigMap rendered from `charts/vllm/values.yaml` as individual `key: value` entries, so ArgoCD diffs each setting on its own line instead of one opaque blob.
-- Scheduling is deterministic: node affinity pins it to `framework-desktop` (the only node with an AMD GPU) and it requests `amd.com/gpu: 1` from the ROCm device plugin.
+The chart uses vllm with the `--config` parameter so we can just put all of the vllm kwargs into a configmap.
 
 ### OpenCode
 
 [OpenCode](https://opencode.ai/) is the headless AI coding agent that runs *in* this repo's workspace — it's the dogfooding loop that makes this whole cluster self-maintaining. The pod is deployed in its own `opencode` namespace on `framework-desktop`, and its init container `git clone`s `ai-cluster` into a `workspace` PVC, drops in a `.gitconfig` that authenticates with `GITHUB_TOKEN`, then the agent edits a working tree of this very repository — like the commit that added these charts.
 
-The interesting design decision is the *trust boundary*. Rather than give the agent one blunt cluster-admin token, it gets two MCP servers with deliberately different reach:
-
-- **`kubernetes-ro`** — read-only access to the cluster, for inspection.
-- **`kubernetes-rw`** — the write path, scoped by `charts/kubernetes-mcp-rbac/` to exactly one thing: CRUD on `argoproj.io` Applications (plus read on Projects). No secrets, no nodes, no arbitrary pods — just enough to create, sync, and tweak ArgoCD Applications.
-
-That scoping is the point: the agent can manage the ArgoCD Applications that define the cluster, which is exactly the surface area it needs to be useful, and nothing more. It also gets a GitHub MCP over `api.githubcopilot.com` for repo work. Models route entirely through the local vLLM instance above — the same `Qwen3.6-35B-A3B-AWQ-4bit` checkpoint — so there's no hosted fallback; if the APU is down, the agent is down with it, which keeps everything self-contained.
-
-State (config, sessions) persists on a `data` PVC so the pod itself is disposable — kill it, and the init container reclones and it's back. The UI is served behind an nginx sidecar gated on `OPENCODE_SERVER_PASSWORD`, so the web client isn't an open door.
-
-## Troubleshooting
-
-This concerns topics that are more sporatic and random than anything under a topic above.
-
-<details>
-
-<summary>No Space Left on Device</summary>
-
-Images are stored on `/run` in a temporary filesystem rather than on each nvme device. Because of this they have very little space due to memory constraints. If this becomes a bigger issue the directory will have to be moved to another volume, but in the meantime you can increase the size of the directory with `sudo mount -o remount,size=<Size>G /run`.
-
-Before running this command, run a prune command just in case that solves the issue.
-
-</details>
-
-<details>
-
-<summary>kube-prometheus-stack fails to sync in ArgoCD</summary>
-
-If you are receiving an error like `one or more synchronization tasks completed unsuccessfully, reason: error when patching "/dev/shm/119925187": CustomResourceDefinition.apiextensions.k8s.io "prometheuses.monitoring.coreos.com" is invalid: metadata.annotations: Too long: must have at most 262144 bytes` this means that the annotations of the resource exceed Kubernetes' size limit, to resolve this simply enable server-side apply for all future syncing.
-
-</details>
+The trust boundary with the Opencode harness is MCP servers. Two k8s mcp servers are configured to allow certain agents to get read-only vs. read-write access. The UI is served by an nginx sidecar that does one deliberately odd thing: opencode's web client is a single-page app compiled into the binary, so you can't just drop in a fixed bundle. Instead, nginx intercepts exactly one asset path (/assets/index-DkiM3pJJ.js) and substitutes a patched copy that lives on the workspace PVC — the patch fixes per-device session visibility in the home view. The purpose of this server is to serve as a single human user's view of the opencode server, rather than the per-session version that exists today. Whether I'm on my phone or PC I see the same sessions.

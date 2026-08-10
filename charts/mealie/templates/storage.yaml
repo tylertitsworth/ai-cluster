@@ -1,0 +1,29 @@
+{{- if .Values.storage.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mealie.fullname" . }}-data
+spec:
+  accessModes:
+    - {{ .Values.storage.accessModeMealie }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.storage.mealieSize }}
+  storageClassName: {{ .Values.storage.className }}
+{{- end }}
+---
+{{- if and (.Values.storage.enabled) (.Values.postgres.enabled) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mealie.fullname" . }}-pgdata
+spec:
+  accessModes:
+    - {{ .Values.storage.accessModePostgres }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.storage.postgresSize }}
+  storageClassName: {{ .Values.storage.className }}
+{{- end }}

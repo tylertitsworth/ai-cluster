@@ -10,16 +10,10 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  sources:
-    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: main
-      path: charts/amdgpu-exporter
-      helm:
-        valueFiles:
-          - $values/apps/gpu/values/amdgpu-exporter.yaml
-    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: main
-      ref: values
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: charts/amdgpu-exporter
   destination:
     server: https://kubernetes.default.svc
     namespace: grafana

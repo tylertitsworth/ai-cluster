@@ -21,7 +21,7 @@ spec:
         valueFiles:
           - $values/apps/platform/values/longhorn.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: main
+      targetRevision: sync/out-of-sync-apps
       ref: values
   syncPolicy:
     syncOptions:

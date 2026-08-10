@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://raw.githubusercontent.com/plexinc/pms-docker/gh-pages
-    targetRevision: 1.4.0  # Latest version
+    targetRevision: 1.6.0  # Latest version
     chart: plex-media-server
     helm:
       valuesObject:
@@ -22,7 +22,7 @@ spec:
         # Image configuration
         image:
           tag: latest
-          imagePullPolicy: Always
+          pullPolicy: Always
 
         # Network configuration
         hostNetwork: true
@@ -101,3 +101,10 @@ spec:
     #   selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: plex
+      jqPathExpressions:
+        - .spec.template.metadata.annotations."kubectl.kubernetes.io/restartedAt"
+        - .spec.template.metadata.annotations."restart-operator.k8s/restartedAt"

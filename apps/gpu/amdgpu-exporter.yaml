@@ -1,28 +1,25 @@
-# Pi-hole - Network-wide DNS ad blocking
+# AMD GPU Exporter — Prometheus metrics for ROCm on framework-desktop
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pihole
+  name: amdgpu-exporter
   namespace: argocd
   labels:
-    stack: platform
+    stack: gpu
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    path: charts/pihole
     targetRevision: main
+    path: charts/amdgpu-exporter
   destination:
     server: https://kubernetes.default.svc
-    namespace: pihole
+    namespace: grafana
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
-  ignoreDifferences:
-    - group: ""
-      kind: PersistentVolumeClaim
-      name: pihole-config
-      jsonPointers:
-        - /spec/resources/requests/storage

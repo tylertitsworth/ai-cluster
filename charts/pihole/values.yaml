@@ -53,7 +53,7 @@ app-template:
         tailscale.com/expose: "true"
         tailscale.com/hostname: "pihole"
       labels:
-        tailscale.com/proxy-class: "control-plane"
+        tailscale.com/proxy-class: "pin-framework-desktop"
       ports:
         dns-tcp:
           port: 53

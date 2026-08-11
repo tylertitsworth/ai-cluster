@@ -1,8 +1,7 @@
-# Pi-hole - Network-wide DNS ad blocking
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pihole
+  name: kubernetes-mcp-rbac
   namespace: argocd
   labels:
     stack: platform
@@ -12,17 +11,11 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    path: charts/pihole
     targetRevision: main
+    path: charts/kubernetes-mcp-rbac
   destination:
     server: https://kubernetes.default.svc
-    namespace: pihole
+    namespace: kubernetes-mcp
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
-  ignoreDifferences:
-    - group: ""
-      kind: PersistentVolumeClaim
-      name: pihole-config
-      jsonPointers:
-        - /spec/resources/requests/storage

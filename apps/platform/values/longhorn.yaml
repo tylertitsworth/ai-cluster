@@ -1,6 +1,8 @@
 # https://github.com/longhorn/longhorn/tree/master/chart
 defaultSettings:
   defaultDataPath: /storage
+persistence:
+  backupTargetName: cloudflare
 ingress:
   enabled: true
   host: longhorn

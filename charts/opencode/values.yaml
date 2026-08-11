@@ -1,0 +1,384 @@
+# OpenCode headless server — access via Tailscale from browser / phone.
+# Image: sprisa/opencode (Ubuntu, unprivileged uid 1000, tini, env-driven serve config).
+# Full app-template schema: https://github.com/bjw-s-labs/helm-charts/tree/main/charts/app-template
+app-template:
+  controllers:
+    main:
+      type: deployment
+      replicas: 1
+      strategy: Recreate
+
+      pod:
+        # Pin to the node with the workspace PVC (mirrors the original nodeName)
+        nodeSelector:
+          kubernetes.io/hostname: framework-desktop
+        securityContext:
+          fsGroup: 1000
+
+      initContainers:
+        init:
+          image:
+            repository: alpine/git
+            tag: latest
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /home/opencode/workspace /home/opencode/.local/share/opencode
+              rm -rf /home/opencode/workspace/lost+found /home/opencode/.local/share/opencode/lost+found
+              if [ ! -d /home/opencode/workspace/.git ]; then
+                echo "Cloning ai-cluster into /home/opencode/workspace..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /home/opencode/workspace
+              else
+                echo "Workspace already seeded, skipping clone."
+              fi
+              # The patched web UI bundle lives in git so it survives workspace
+              # branch churn. Copy it onto the data PVC, which is git-immune.
+              mkdir -p /home/opencode/.local/share/opencode/.ui
+              if [ -f /home/opencode/workspace/.ui/index-DkiM3pJJ.js ]; then
+                echo "Seeding patched UI bundle onto data PVC..."
+                cp /home/opencode/workspace/.ui/index-DkiM3pJJ.js /home/opencode/.local/share/opencode/.ui/index-DkiM3pJJ.js
+                chown 1000:1000 /home/opencode/.local/share/opencode/.ui/index-DkiM3pJJ.js
+              else
+                echo "WARNING: patched UI bundle not found in workspace; serving default SPA."
+              fi
+              cat > /home/opencode/.local/share/opencode/.gitconfig <<'EOF'
+              [user]
+                      name = tylertitsworth
+                      email = tylertitsworth@users.noreply.github.com
+              [credential]
+                      helper = !f() { echo username=tylertitsworth; echo password=$GITHUB_TOKEN; }; f
+              [safe]
+                      directory = /home/opencode/workspace
+              EOF
+              chown -R 1000:1000 /home/opencode/workspace /home/opencode/.local/share/opencode
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-github
+                  key: token
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+
+      containers:
+        opencode:
+          image:
+            repository: sprisa/opencode
+            tag: 1.18.15
+            pullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4096
+              name: http
+              protocol: TCP
+          env:
+            - name: OPENCODE_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-secret
+                  key: password
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: opencode-github
+                  key: token
+            - name: GIT_CONFIG_GLOBAL
+              value: /home/opencode/.local/share/opencode/.gitconfig
+            - name: OPENCODE_PORT
+              value: "4096"
+          probes:
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - |
+                      AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                      curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
+                initialDelaySeconds: 10
+                periodSeconds: 10
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - |
+                      AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                      curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:4096/global/health
+                initialDelaySeconds: 15
+                periodSeconds: 20
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+
+        ui:
+          image:
+            repository: nginx
+            tag: alpine
+            pullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http-ui
+              protocol: TCP
+          probes:
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - |
+                      wget -q -O /dev/null http://127.0.0.1/assets/index-DkiM3pJJ.js || exit 1
+                initialDelaySeconds: 5
+                periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+  service:
+    main:
+      controller: main
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          port: 4096
+          targetPort: 4096
+        ui:
+          enabled: true
+          port: 80
+          targetPort: 80
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      annotations:
+        tailscale.com/proxy-class: pin-framework-desktop
+      hosts:
+        - host: opencode
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: ui
+      tls:
+        - hosts:
+            - opencode
+
+  persistence:
+    workspace:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      storageClass: longhorn
+      size: 20Gi
+      advancedMounts:
+        main:
+          init:
+            - path: /home/opencode/workspace
+          opencode:
+            - path: /home/opencode/workspace
+            - path: /workspace
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      storageClass: longhorn
+      size: 5Gi
+      advancedMounts:
+        main:
+          init:
+            - path: /home/opencode/.local/share/opencode
+          opencode:
+            - path: /home/opencode/.local/share/opencode
+          ui:
+            - path: /data
+              readOnly: true
+    config:
+      enabled: true
+      type: configMap
+      name: opencode-config
+      advancedMounts:
+        main:
+          opencode:
+            - path: /home/opencode/.config/opencode/opencode.json
+              subPath: opencode.json
+              readOnly: true
+            - path: /home/opencode/.config/opencode/AGENTS.md
+              subPath: AGENTS.md
+              readOnly: true
+    ui-nginx-conf:
+      enabled: true
+      type: configMap
+      name: opencode-ui-nginx
+      advancedMounts:
+        main:
+          ui:
+            - path: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+
+# opencode config rendered to the opencode-config ConfigMap.
+# Keys are validated against https://opencode.ai/config.json — unknown keys (e.g.
+# `session.*`) break validation and prevent ArgoCD from applying the ConfigMap.
+opencodeConfig:
+  opencode.json: |
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "permission": "allow",
+      "plugin": [
+        "@dietrichgebert/ponytail",
+        "context-mode",
+        "superpowers-mcp"
+      ],
+      "model": "vllm/qwen3.6-35b-a3b-awq",
+      "mcp": {
+        "kubernetes-ro": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "kubernetes-rw": {
+          "type": "remote",
+          "url": "http://kubernetes-mcp-server-rw.kubernetes-mcp.svc.cluster.local:8080/mcp",
+          "enabled": true
+        },
+        "github": {
+          "type": "remote",
+          "url": "https://api.githubcopilot.com/mcp/",
+          "enabled": true,
+          "oauth": false,
+          "headers": {
+            "Authorization": "Bearer {env:GITHUB_TOKEN}"
+          }
+        }
+      },
+      "provider": {
+        "vllm": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "vLLM",
+          "options": {
+            "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
+          },
+          "models": {
+            "qwen3.6-35b-a3b-awq": {
+              "name": "Qwen3.6-35B-A3B-AWQ-4bit",
+              "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
+            }
+          }
+        }
+      }
+    }
+  AGENTS.md: |
+    # OpenCode Server — Session Context
+
+    You are running in the opencode headless server pod (namespace `opencode`, node
+    `framework-desktop`). Working directory is `/home/opencode/workspace`, a clone of
+    ai-cluster. All state persists under `/home/opencode` (config, sessions DB, logs).
+
+    ## Tool Access
+    kubectl is NOT available in this container. Use the Kubernetes MCP tools for all
+    cluster operations:
+    - `kubernetes-ro_*` for read-only queries (list, get, events, etc.)
+    - `kubernetes-rw_*` for mutations (create, update, delete, exec)
+    - `list_mcp_resources` to discover available tool endpoints
+    Do NOT `kubernetes-rw_pods_exec` into the opencode pod — you are already running
+    inside it, so just use bash directly for local inspection.
+
+    ## Config Validation
+    opencode.json keys are validated against https://opencode.ai/config.json. Adding
+    unknown keys (e.g. `session.*`) breaks validation and prevents ArgoCD from applying
+    the ConfigMap. Validate config changes before deploying.
+
+    ## Git
+    The git credential helper lives in `/home/opencode/.local/share/opencode/.gitconfig`.
+    If auth fails, push using the remote URL form
+    `https://tylertitsworth:<token>@github.com/...` where the token is the GITHUB_TOKEN
+    value. The opencode-vllm branch is deployed by ArgoCD (app `opencode`, path
+    `charts/opencode`); sync manually via `kubectl argocd app sync opencode -n argocd`.
+
+    ## Deployment
+    The deployment is a helm chart at `charts/opencode` (values in
+    `charts/opencode/values.yaml`, overrides in `apps/ai/values/opencode.yaml`) on
+    branch `opencode-vllm` (ArgoCD tracks this branch). Config, limits, and AGENTS.md
+    are all defined in the chart. After pushing, the user syncs ArgoCD manually.
+
+    ## Memory Constraints
+    This pod has a 4Gi memory limit. A Grafana-observed spike reached 2.74GB during a
+    heavy session, so DO NOT lower the limit below 4Gi (a 3Gi limit was tried and left
+    only ~260MB headroom against observed usage). Keep memory requests/limits as-is unless
+    you have new data. The following operations can trigger OOM kills and must be AVOIDED:
+    - **Heap snapshots**: Do NOT attempt to generate heap snapshots (Ctrl+P → heap snapshot
+      or `OPENCODE_AUTO_HEAP_SNAPSHOT=1`). This dumps the entire V8 heap to disk and can
+      spike RSS by 1-2GB. If heap debugging is needed, advise the user to run opencode
+      locally or on a separate pod with higher limits.
+    - **Dumping large files**: Avoid reading entire large files (>1MB) into the agent context.
+      Use grep/glob/head for content exploration instead of full file reads.
+    - **Long-running session accumulations**: If the conversation or session tree is extremely
+      long, suggest compacting or starting a new session to release accumulated context.
+    - **npm install / large subprocesses**: Avoid running `npm install` inside the agent.
+      If package changes are needed, have the user do it outside this pod.
+
+# nginx UI-injection config rendered to the opencode-ui-nginx ConfigMap.
+# The SPA is compiled into the opencode binary, so a patched bundle (fixes per-device
+# home-session visibility) is seeded from the repo (.ui/) onto the data PVC by the init
+# container and served from there. Patch source: .ui/README.md.
+uiNginxConf:
+  default.conf: |
+    server {
+      listen 80;
+      location = /assets/index-DkiM3pJJ.js {
+        alias /data/.ui/index-DkiM3pJJ.js;
+        default_type application/javascript;
+        add_header Cache-Control "no-cache";
+      }
+      # Hashed static chunks are immutable; cache them so lazy imports
+      # don't refetch (and fail) on flaky mobile connections.
+      location /assets/ {
+        proxy_pass http://127.0.0.1:4096;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+      }
+      location / {
+        proxy_pass http://127.0.0.1:4096;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        add_header Cache-Control "no-store" always;
+      }
+    }

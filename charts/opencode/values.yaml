@@ -33,6 +33,16 @@ app-template:
               else
                 echo "Workspace already seeded, skipping clone."
               fi
+              # The patched web UI bundle lives in git so it survives workspace
+              # branch churn. Copy it onto the data PVC, which is git-immune.
+              mkdir -p /home/opencode/.local/share/opencode/.ui
+              if [ -f /home/opencode/workspace/.ui/index-DkiM3pJJ.js ]; then
+                echo "Seeding patched UI bundle onto data PVC..."
+                cp /home/opencode/workspace/.ui/index-DkiM3pJJ.js /home/opencode/.local/share/opencode/.ui/index-DkiM3pJJ.js
+                chown 1000:1000 /home/opencode/.local/share/opencode/.ui/index-DkiM3pJJ.js
+              else
+                echo "WARNING: patched UI bundle not found in workspace; serving default SPA."
+              fi
               cat > /home/opencode/.local/share/opencode/.gitconfig <<'EOF'
               [user]
                       name = tylertitsworth
@@ -193,9 +203,6 @@ app-template:
           opencode:
             - path: /home/opencode/workspace
             - path: /workspace
-          ui:
-            - path: /workspace
-              readOnly: true
     data:
       enabled: true
       type: persistentVolumeClaim
@@ -208,6 +215,9 @@ app-template:
             - path: /home/opencode/.local/share/opencode
           opencode:
             - path: /home/opencode/.local/share/opencode
+          ui:
+            - path: /data
+              readOnly: true
     config:
       enabled: true
       type: configMap
@@ -335,15 +345,27 @@ opencodeConfig:
 
 # nginx UI-injection config rendered to the opencode-ui-nginx ConfigMap.
 # The SPA is compiled into the opencode binary, so a patched bundle (fixes per-device
-# home-session visibility) is served from the workspace PVC. Patch source: .ui/README.md.
+# home-session visibility) is seeded from the repo (.ui/) onto the data PVC by the init
+# container and served from there. Patch source: .ui/README.md.
 uiNginxConf:
   default.conf: |
     server {
       listen 80;
       location = /assets/index-DkiM3pJJ.js {
-        alias /workspace/.ui/index-DkiM3pJJ.js;
+        alias /data/.ui/index-DkiM3pJJ.js;
         default_type application/javascript;
         add_header Cache-Control "no-cache";
+      }
+      # Hashed static chunks are immutable; cache them so lazy imports
+      # don't refetch (and fail) on flaky mobile connections.
+      location /assets/ {
+        proxy_pass http://127.0.0.1:4096;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
       }
       location / {
         proxy_pass http://127.0.0.1:4096;
@@ -357,5 +379,6 @@ uiNginxConf:
         proxy_buffering off;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
+        add_header Cache-Control "no-store" always;
       }
     }

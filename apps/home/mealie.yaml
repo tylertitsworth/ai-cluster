@@ -15,7 +15,7 @@ spec:
     namespace: mealie
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster
-    targetRevision: sync/out-of-sync-apps
+    targetRevision: main
     path: charts/mealie
     helm:
       valueFiles:

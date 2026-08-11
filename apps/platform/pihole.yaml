@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
     path: charts/pihole
-    targetRevision: sync/out-of-sync-apps
+    targetRevision: main
   destination:
     server: https://kubernetes.default.svc
     namespace: pihole

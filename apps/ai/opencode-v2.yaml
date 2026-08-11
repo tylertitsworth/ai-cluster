@@ -1,8 +1,8 @@
-# ArgoCD Application — OpenCode web server (streamlined, single-process)
+# ArgoCD Application — OpenCode 2.0 server (streamlined, single-process)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: opencode-web
+  name: opencode-v2
   namespace: argocd
   labels:
     stack: ai
@@ -13,10 +13,10 @@ spec:
   sources:
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: add/opencode-web
-      path: charts/opencode-web
+      path: charts/opencode-v2
       helm:
         valueFiles:
-          - $values/apps/ai/values/opencode-web.yaml
+          - $values/apps/ai/values/opencode-v2.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: add/opencode-web
       ref: values

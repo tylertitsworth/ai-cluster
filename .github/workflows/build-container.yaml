@@ -12,6 +12,10 @@ on:
       dockerfile:
         required: true
         type: string
+      platforms:
+        required: false
+        type: string
+        default: linux/arm64
 
 jobs:
   build:
@@ -40,4 +44,4 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/arm64
+          platforms: ${{ inputs.platforms }}

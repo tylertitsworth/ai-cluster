@@ -1,5 +1,5 @@
-# Override values for the opencode-web chart (charts/opencode-web).
-# Streamlined single-process opencode web server; access via Tailscale from browser / phone.
+# Override values for the opencode-v2 chart (charts/opencode-v2).
+# OpenCode 2.0 headless server (serve pattern); access via Tailscale from browser / phone.
 
 nodeSelector:
   kubernetes.io/hostname: framework-desktop
@@ -10,13 +10,13 @@ ingress:
   annotations:
     tailscale.com/proxy-class: pin-framework-desktop
   hosts:
-    - host: opencode-web
+    - host: opencode-v2
       paths:
         - path: /
           pathType: Prefix
   tls:
     - hosts:
-        - opencode-web
+        - opencode-v2
 
 opencodeConfig: |
   {

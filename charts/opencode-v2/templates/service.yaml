@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "opencode-web.fullname" . }}
+  name: {{ include "opencode-v2.fullname" . }}
   labels:
-    {{- include "opencode-web.labels" . | nindent 4 }}
+    {{- include "opencode-v2.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,4 +12,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "opencode-web.selectorLabels" . | nindent 4 }}
+    {{- include "opencode-v2.selectorLabels" . | nindent 4 }}

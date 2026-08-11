@@ -1,8 +1,10 @@
-# OpenCode web server — API + web UI in one process.
+# OpenCode 2.0 headless server — API + web UI in one process.
 # Single deployment, single container, one PVC. No nginx sidecar, no UI patching.
+# Image is built from charts/opencode-v2/Dockerfile (2.0 beta npm binary) via
+# the opencode-v2-build GitHub workflow, pushed to GHCR.
 image:
-  repository: sprisa/opencode
-  tag: 1.18.15
+  repository: ghcr.io/tylertitsworth/opencode-v2
+  tag: latest
   pullPolicy: IfNotPresent
 
 replicaCount: 1

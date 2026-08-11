@@ -1,0 +1,23 @@
+name: build-opencode-v2-container
+permissions:
+  contents: read
+  packages: write
+on:
+  workflow_dispatch: null
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/opencode-v2/Dockerfile'
+  pull_request:
+    paths:
+      - 'charts/opencode-v2/Dockerfile'
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-container.yaml
+    with:
+      image: opencode-v2
+      context: charts/opencode-v2
+      dockerfile: ./charts/opencode-v2/Dockerfile
+      platforms: linux/amd64

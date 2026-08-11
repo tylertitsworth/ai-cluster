@@ -32,6 +32,43 @@ spec:
       {{- end }}
       securityContext:
         fsGroup: 1000
+      initContainers:
+        - name: seed-workspace
+          image: alpine/git:latest
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /home/opencode/workspace /home/opencode/.local/share/opencode
+              rm -rf /home/opencode/workspace/lost+found /home/opencode/.local/share/opencode/lost+found
+              if [ ! -d /home/opencode/workspace/.git ]; then
+                echo "Cloning ai-cluster into /home/opencode/workspace..."
+                git clone --depth 1 https://github.com/tylertitsworth/ai-cluster.git /home/opencode/workspace
+              else
+                echo "Workspace already seeded, skipping clone."
+              fi
+              cat > /home/opencode/.local/share/opencode/.gitconfig <<'EOF'
+              [user]
+                      name = tylertitsworth
+                      email = tylertitsworth@users.noreply.github.com
+              [credential]
+                      helper = !f() { echo username=tylertitsworth; echo password=$GITHUB_TOKEN; }; f
+              [safe]
+                      directory = /home/opencode/workspace
+              EOF
+              chown -R 1000:1000 /home/opencode/workspace /home/opencode/.local/share/opencode
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.githubTokenName }}
+                  key: {{ .Values.secret.githubTokenKey }}
+          volumeMounts:
+            - name: data
+              mountPath: /home/opencode
       volumes:
         - name: data
           persistentVolumeClaim:

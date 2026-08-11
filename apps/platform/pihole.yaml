@@ -20,3 +20,9 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: ""
+      kind: PersistentVolumeClaim
+      name: pihole-config
+      jsonPointers:
+        - /spec/resources/requests/storage

@@ -34,3 +34,11 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: restart-operator
+      jsonPointers:
+        - /spec/template/spec/containers/0/securityContext/fsGroup
+      jqPathExpressions:
+        - .spec.template.metadata.annotations."kubectl.kubernetes.io/restartedAt"

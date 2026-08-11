@@ -49,3 +49,11 @@ Selector labels
 app.kubernetes.io/name: {{ include "mealie.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Postgres selector labels (flat key-value for Service spec.selector; do not use matchLabels).
+*/}}
+{{- define "mealie.postgresSelectorLabels" -}}
+app.kubernetes.io/name: postgres-mealie
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

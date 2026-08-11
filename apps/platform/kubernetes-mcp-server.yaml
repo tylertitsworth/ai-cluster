@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/containers/kubernetes-mcp-server.git
-    targetRevision: v0.0.57
+    targetRevision: v0.0.66
     path: charts/kubernetes-mcp-server
     helm:
       valuesObject:

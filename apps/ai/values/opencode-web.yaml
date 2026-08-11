@@ -1,0 +1,67 @@
+# Override values for the opencode-web chart (charts/opencode-web).
+# Streamlined single-process opencode web server; access via Tailscale from browser / phone.
+
+nodeSelector:
+  kubernetes.io/hostname: framework-desktop
+
+ingress:
+  enabled: true
+  className: tailscale
+  annotations:
+    tailscale.com/proxy-class: pin-framework-desktop
+  hosts:
+    - host: opencode-web
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - opencode-web
+
+opencodeConfig: |
+  {
+    "$schema": "https://opencode.ai/config.json",
+    "permission": "allow",
+    "plugin": [
+      "@dietrichgebert/ponytail",
+      "context-mode",
+      "superpowers-mcp"
+    ],
+    "model": "vllm/qwen3.6-35b-a3b-awq",
+    "mcp": {
+      "kubernetes-ro": {
+        "type": "remote",
+        "url": "http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp",
+        "enabled": true
+      },
+      "kubernetes-rw": {
+        "type": "remote",
+        "url": "http://kubernetes-mcp-server-rw.kubernetes-mcp.svc.cluster.local:8080/mcp",
+        "enabled": true
+      },
+      "github": {
+        "type": "remote",
+        "url": "https://api.githubcopilot.com/mcp/",
+        "enabled": true,
+        "oauth": false,
+        "headers": {
+          "Authorization": "Bearer {env:GITHUB_TOKEN}"
+        }
+      }
+    },
+    "provider": {
+      "vllm": {
+        "npm": "@ai-sdk/openai-compatible",
+        "name": "vLLM",
+        "options": {
+          "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
+        },
+        "models": {
+          "qwen3.6-35b-a3b-awq": {
+            "name": "Qwen3.6-35B-A3B-AWQ-4bit",
+            "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
+          }
+        }
+      }
+    }
+  }

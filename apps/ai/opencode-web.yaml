@@ -1,0 +1,32 @@
+# ArgoCD Application — OpenCode web server (streamlined, single-process)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opencode-web
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: add/opencode-web
+      path: charts/opencode-web
+      helm:
+        valueFiles:
+          - $values/apps/ai/values/opencode-web.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: add/opencode-web
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opencode
+  syncPolicy:
+    automated:
+      enabled: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: opencode-web
+description: OpenCode web server — API and web UI in a single process
+type: application
+version: 0.1.0
+appVersion: "1.18.15"

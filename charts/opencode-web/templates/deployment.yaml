@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opencode-web.fullname" . }}
+  labels:
+    {{- include "opencode-web.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "opencode-web.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "opencode-web.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "opencode-web.fullname" . }}-data
+        - name: config
+          configMap:
+            name: {{ include "opencode-web.fullname" . }}-config
+      containers:
+        - name: opencode
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              mkdir -p "${HOME}/.config/opencode" "${HOME}/workspace"
+              cd "${HOME}/workspace"
+              exec opencode web --hostname 0.0.0.0 --port {{ .Values.service.port }}
+          env:
+            - name: OPENCODE_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name }}
+                  key: {{ .Values.secret.passwordKey }}
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.githubTokenName }}
+                  key: {{ .Values.secret.githubTokenKey }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:{{ .Values.service.port }}/global/health
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  AUTH="opencode:$OPENCODE_SERVER_PASSWORD"
+                  curl -fsS -o /dev/null -H "Authorization: Basic $(printf '%s' "$AUTH" | base64)" http://127.0.0.1:{{ .Values.service.port }}/global/health
+          volumeMounts:
+            - name: data
+              mountPath: /home/opencode
+            - name: config
+              mountPath: /home/opencode/.config/opencode/opencode.json
+              subPath: opencode.json
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

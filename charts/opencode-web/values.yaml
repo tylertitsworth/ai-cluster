@@ -1,0 +1,61 @@
+# OpenCode web server — API + web UI in one process.
+# Single deployment, single container, one PVC. No nginx sidecar, no UI patching.
+image:
+  repository: sprisa/opencode
+  tag: 1.18.15
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Secret references — set these to the secret/key holding the server password
+# and the GitHub token used by the github MCP provider.
+secret:
+  name: opencode-secret
+  passwordKey: password
+  githubTokenName: opencode-github
+  githubTokenKey: token
+
+service:
+  type: ClusterIP
+  port: 4096
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  size: 5Gi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 1Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+# opencode.json rendered to the ConfigMap and mounted at
+# /home/opencode/.config/opencode/opencode.json.
+opencodeConfig: |
+  {
+    "$schema": "https://opencode.ai/config.json",
+    "permission": "allow"
+  }

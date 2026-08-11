@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "opencode-web.fullname" . }}-config
+  labels:
+    {{- include "opencode-web.labels" . | nindent 4 }}
+data:
+  opencode.json: |
+    {{- .Values.opencodeConfig | nindent 4 }}

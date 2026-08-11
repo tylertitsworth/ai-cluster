@@ -1,0 +1,71 @@
+# Kubernetes MCP Server (rw) - read-write cluster access via MCP
+# Read-only ArgoCD permissions were previously granted by the standalone
+# kubernetes-mcp-rbac chart/app; that app is deleted and the argocd-view
+# ClusterRole is recreated here by the upstream chart's rbac extras so the
+# rw ServiceAccount keeps them.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-mcp-server-rw
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/containers/kubernetes-mcp-server.git
+    targetRevision: v0.0.66
+    path: charts/kubernetes-mcp-server
+    helm:
+      valuesObject:
+        config:
+          port: "8080"
+          cluster_provider: in-cluster
+          disable_multi_cluster: true
+          read_only: false
+        fullnameOverride: kubernetes-mcp-server-rw
+        ingress:
+          enabled: false
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: "true"
+        rbac:
+          create: true
+          extraClusterRoles:
+            - name: argocd-view
+              rules:
+                - apiGroups:
+                    - argoproj.io
+                  resources:
+                    - applications
+                  verbs:
+                    - get
+                    - list
+                    - watch
+                    - create
+                    - update
+                    - patch
+                    - delete
+                - apiGroups:
+                    - argoproj.io
+                  resources:
+                    - appprojects
+                  verbs:
+                    - get
+                    - list
+                    - watch
+          extraClusterRoleBindings:
+            - name: use-edit-role
+              roleRef:
+                name: edit
+                external: true
+            - name: use-argocd-view-role
+              roleRef:
+                name: argocd-view
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubernetes-mcp
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

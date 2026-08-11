@@ -13,12 +13,17 @@ app-template:
             repository: python
             tag: 3.12-alpine
             pullPolicy: IfNotPresent
+          env:
+            NODE_NAME:
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           command:
             - sh
             - -c
             - |
               pip install prometheus-client
-              NODE_NAME=$(hostname) python /metrics/amd_exporter.py --port 9494
+              python /metrics/amd_exporter.py --port 9494
           ports:
             - name: http
               containerPort: 9494
@@ -183,3 +188,6 @@ app-template:
       endpoints:
         - port: http
           interval: 10s
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_pod_node_name]
+              targetLabel: instance

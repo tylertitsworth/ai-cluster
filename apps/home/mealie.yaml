@@ -15,8 +15,8 @@ spec:
     namespace: mealie
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster
-    targetRevision: mealie3
-    path: mealie
+    targetRevision: main
+    path: charts/mealie
     helm:
       valueFiles:
         - values.yaml
@@ -41,3 +41,9 @@ spec:
           value: "true"
         - name: ingress.hosts[0].host
           value: mealie.tail79a5c8.ts.net
+  ignoreDifferences:
+    - group: ""
+      kind: PersistentVolumeClaim
+      name: mealie-pgdata
+      jsonPointers:
+        - /spec/volumeName

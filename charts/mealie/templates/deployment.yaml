@@ -84,12 +84,14 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      {{- include "mealie.postgresSelectorLabels" . | nindent 6 }}
       {{- with .Values.customLabels.postgres }}
         {{- toYaml . | nindent 6 }}
       {{- end }}
   template:
     metadata:
       labels:
+        {{- include "mealie.postgresSelectorLabels" . | nindent 8 }}
         {{- with .Values.customLabels.postgres }}
           {{- toYaml . | nindent 8 }}
         {{- end }}

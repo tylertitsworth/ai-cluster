@@ -1,0 +1,40 @@
+# ArgoCD Application — OpenCode headless server
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opencode
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: fix/server-cache-control
+      path: charts/opencode
+      helm:
+        valueFiles:
+          - $values/apps/ai/values/opencode.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: fix/server-cache-control
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opencode
+  syncPolicy:
+    automated:
+      enabled: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: opencode
+      jqPathExpressions:
+        - .metadata.annotations["deployment.kubernetes.io/revision"]
+        - .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]
+        - .spec.template.metadata.annotations["kubectl.kubernetes.io/restartedAt"]

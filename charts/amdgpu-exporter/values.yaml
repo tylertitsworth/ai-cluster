@@ -1,0 +1,193 @@
+# AMD GPU metrics exporter — DaemonSet on framework-desktop
+
+app-template:
+  controllers:
+    main:
+      type: daemonset
+      pod:
+        nodeSelector:
+          kubernetes.io/hostname: framework-desktop
+      containers:
+        main:
+          image:
+            repository: python
+            tag: 3.12-alpine
+            pullPolicy: IfNotPresent
+          env:
+            NODE_NAME:
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - sh
+            - -c
+            - |
+              pip install prometheus-client
+              python /metrics/amd_exporter.py --port 9494
+          ports:
+            - name: http
+              containerPort: 9494
+
+  configMaps:
+    config:
+      enabled: true
+      data:
+        amd_exporter.py: |
+          import argparse
+          import os
+          import time
+          from glob import glob
+
+          from prometheus_client import start_http_server
+          from prometheus_client.core import REGISTRY, GaugeMetricFamily
+
+
+          DEVICE_PATH = "/sys/class/drm"
+
+
+          def get_gpu_cards():
+              """Return list of cardN directories for AMD GPUs."""
+              return sorted(glob(f"{DEVICE_PATH}/card[0-9]*"))
+
+
+          def read_sysfs(path):
+              """Read an integer value from a sysfs file."""
+              try:
+                  with open(path, "r") as f:
+                      return int(f.read().strip())
+              except (FileNotFoundError, IOError, ValueError):
+                  return None
+
+
+          class AmdgpuCollector:
+              def __init__(self):
+                  self.node_name = os.getenv("NODE_NAME", "unknown")
+
+              def collect(self):
+                  cards = get_gpu_cards()
+                  if not cards:
+                      return
+
+                  for card_path in cards:
+                      device_path = os.path.join(card_path, "device")
+                      card_name = os.path.basename(card_path)
+
+                      # --- Board info ---
+                      gpu_info = GaugeMetricFamily(
+                          "amdgpu_info", "AMD GPU board info", labels=["node", "card"]
+                      )
+                      vendor_id = read_sysfs(f"{device_path}/vendor")
+                      device_id = read_sysfs(f"{device_path}/device")
+                      vbios = read_sysfs(f"{device_path}/vbios_version")
+                      gpu_info.add_metric(
+                          [self.node_name, card_name],
+                          1.0,  # 1 = GPU present
+                      )
+                      yield gpu_info
+
+                      # --- GPU utilization ---
+                      for metric_name in ("gpu_busy_percent", "cpu_busy_percent", "ncu_busy_percent", "sdma_busy_percent", "vcn_busy_percent"):
+                          val = read_sysfs(f"{device_path}/{metric_name}")
+                          if val is not None:
+                              g = GaugeMetricFamily(
+                                  f"amdgpu_{metric_name}",
+                                  metric_name.replace("_percent", " % busy") if metric_name.endswith("_percent") else metric_name,
+                                  labels=["node", "card"],
+                              )
+                              g.add_metric([self.node_name, card_name], val)
+                              yield g
+
+                      # --- Memory ---
+                      for mem_prefix, label in (
+                          ("mem_info_vram", "VRAM"),
+                          ("mem_info_vis_vram", "visible VRAM"),
+                          ("mem_info_gtt", "GTT"),
+                      ):
+                          used = read_sysfs(f"{device_path}/{mem_prefix}_used")
+                          total = read_sysfs(f"{device_path}/{mem_prefix}_total")
+                          if used is not None and total is not None:
+                              m = GaugeMetricFamily(
+                                  f"amdgpu_{mem_prefix}_bytes",
+                                  f"{label} usage (bytes)",
+                                  labels=["node", "card"],
+                              )
+                              m.add_metric([self.node_name, card_name + ":used"], used)
+                              m.add_metric([self.node_name, card_name + ":total"], total)
+                              yield m
+
+                      # --- hwmon: temp, power, clock, voltage ---
+                      hwmon = glob(f"{device_path}/hwmon/hwmon*")
+                      if hwmon:
+                          temp = read_sysfs(f"{hwmon[0]}/temp1_input")
+                          if temp is not None:
+                              m = GaugeMetricFamily(
+                                  "amdgpu_gpu_temperature_celsius",
+                                  "GPU temperature",
+                                  labels=["node", "card"],
+                              )
+                              m.add_metric([self.node_name, card_name], temp / 1000.0)
+                              yield m
+
+                          power = read_sysfs(f"{hwmon[0]}/power1_average")
+                          if power is not None:
+                              m = GaugeMetricFamily(
+                                  "amdgpu_gpu_power_watts",
+                                  "GPU package power",
+                                  labels=["node", "card"],
+                              )
+                              m.add_metric([self.node_name, card_name], power / 1_000_000.0)
+                              yield m
+
+                          freq = read_sysfs(f"{hwmon[0]}/freq1_input")
+                          if freq is not None:
+                              m = GaugeMetricFamily(
+                                  "amdgpu_gpu_clock_hz",
+                                  "GPU clock frequency",
+                                  labels=["node", "card"],
+                              )
+                              m.add_metric([self.node_name, card_name], freq)
+                              yield m
+
+
+          if __name__ == "__main__":
+              parser = argparse.ArgumentParser()
+              parser.add_argument("--port", type=int, default=9494, help="Metrics port")
+              args = parser.parse_args()
+              start_http_server(args.port)
+              REGISTRY.register(AmdgpuCollector())
+              while True:
+                  time.sleep(5)
+
+  persistence:
+    config:
+      enabled: true
+      type: configMap
+      name: amdgpu-exporter-config
+      globalMounts:
+        - path: /metrics/amd_exporter.py
+          subPath: amd_exporter.py
+          readOnly: true
+
+  service:
+    main:
+      controller: main
+      ports:
+        http:
+          enabled: true
+          port: 9494
+
+  serviceMonitor:
+    main:
+      enabled: true
+      labels:
+        release: monitoring
+        prometheus: monitoring-kube-prometheus-prometheus
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: amdgpu-exporter
+      endpoints:
+        - port: http
+          interval: 10s
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_pod_node_name]
+              targetLabel: instance

@@ -1,0 +1,3 @@
+serviceAccount:
+  name: kubernetes-mcp-server-rw
+  namespace: kubernetes-mcp

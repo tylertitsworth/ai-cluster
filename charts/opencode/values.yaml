@@ -314,18 +314,41 @@ opencodeConfig:
     unknown keys (e.g. `session.*`) breaks validation and prevents ArgoCD from applying
     the ConfigMap. Validate config changes before deploying.
 
-    ## Git
-    The git credential helper lives in `/home/opencode/.local/share/opencode/.gitconfig`.
-    If auth fails, push using the remote URL form
-    `https://tylertitsworth:<token>@github.com/...` where the token is the GITHUB_TOKEN
-    value. The opencode-vllm branch is deployed by ArgoCD (app `opencode`, path
-    `charts/opencode`); sync manually via `kubectl argocd app sync opencode -n argocd`.
+    ## Git: Branching and Worktrees
+    - **Never push to `main`.** It is the shared base branch and many ArgoCD apps
+      track it directly.
+    - **Never push to an ArgoCD-tracked branch.** Any branch pinned by
+      `targetRevision` in `apps/**/*.yaml` (e.g. `main`, `fix/server-cache-control`,
+      `add/opencode-web`) is synced to the cluster the moment it is pushed. Before
+      pushing, check the Application manifests for the opencode app(s).
+    - **Do all work on a feature branch in a linked worktree.** Keep the main
+      workspace checkout clean and on its deployed branch. Convention (already
+      gitignored): `git worktree add .worktrees/<branch> <base>`. The workspace is a
+      shallow clone, so `git fetch origin <base> --depth=1` first if the base commit
+      is not present.
+    - Push the feature branch to origin to back it up or open a PR. ArgoCD ignores
+      branches it does not pin, so this does NOT trigger a sync.
+    - **Never force-push** and never rewrite history that has already been pushed.
+
+    ## Secrets and Temp Files
+    - **Never commit, print, or embed secrets** (GITHUB_TOKEN, OPENCODE_SERVER_PASSWORD,
+      API keys). The git credential helper in
+      `/home/opencode/.local/share/opencode/.gitconfig` authenticates pushes from
+      `$GITHUB_TOKEN`; do not paste the token into URLs, commands, files, or logs.
+      Inject secrets via secretKeyRef-backed env vars, never as literals.
+    - **Never leave temp/scratch files in the workspace or repo.** Use `/tmp/opencode`
+      for throwaway work and remove it when done. Do not commit session dumps,
+      `*.db*`, `node_modules`, or `lost+found`.
+    - **Run `git status` before staging** and stage only intended files; never
+      `git add -A` blindly.
 
     ## Deployment
     The deployment is a helm chart at `charts/opencode` (values in
-    `charts/opencode/values.yaml`, overrides in `apps/ai/values/opencode.yaml`) on
-    branch `opencode-vllm` (ArgoCD tracks this branch). Config, limits, and AGENTS.md
-    are all defined in the chart. After pushing, the user syncs ArgoCD manually.
+    `charts/opencode/values.yaml`, overrides in `apps/ai/values/opencode.yaml`).
+    Config, limits, and AGENTS.md are all defined in the chart. A change is live only
+    after a merge onto a pinned branch AND a manual `argocd app sync` run by the user
+    from outside this pod (kubectl is not available here). Never trigger the sync
+    yourself.
 
     ## Memory Constraints
     This pod has a 4Gi memory limit. A Grafana-observed spike reached 2.74GB during a

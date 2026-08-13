@@ -1,0 +1,17 @@
+# RBAC for Dagster (release "dagster") to submit KubeRay RayJob CRs and read
+# them back while polling. K8sRunLauncher run pods use the namespace `default`
+# service account (the code server SA is only used by the gRPC server itself),
+# so that is what is bound. The RayJobs live in the "kuberay" namespace and the
+# role itself is shared with Airflow (manifests/airflow/rayjob-rbac.yaml).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dagster-rayjob
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: airflow-rayjob
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: dagster

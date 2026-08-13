@@ -1,0 +1,98 @@
+# Dagster - orchestration dashboard (webserver + daemon + code server).
+# Code syncs from this repo via git-sync (dagster/ on the pinned branch);
+# ops submit KubeRay RayJob CRs directly through the kubernetes client
+# (included in the dagster/dagster-k8s image), mirroring airflow's
+# ray_train_workflow.
+#
+# NOTE: gitSync ref and the manifests source pin branch "add/dagster";
+# flip both to "main" after this branch merges.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dagster
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://dagster-io.github.io/helm
+      chart: dagster
+      targetRevision: 1.13.17
+      helm:
+        valuesObject:
+          # Code server image doubles as the K8s run pod image (K8sRunLauncher
+          # pulls it from the code location at launch time) and ships the
+          # kubernetes client ops need to submit RayJobs.
+          dagster-user-deployments:
+            deployments:
+              - name: "dagster-ai"
+                image:
+                  repository: "docker.io/dagster/dagster-k8s"
+                  tag: "1.13.17"
+                  pullPolicy: IfNotPresent
+                dagsterApiGrpcArgs:
+                  - "--python-file"
+                  - "/git/repo/dagster/rayjobs.py"
+                port: 3030
+                volumes:
+                  - name: repo
+                    emptyDir: {}
+                volumeMounts:
+                  - name: repo
+                    mountPath: /git
+                # Clone once at startup, then keep the sidecar in sync.
+                initContainers:
+                  - name: git-sync-init
+                    image: registry.k8s.io/git-sync/git-sync:v4.4.2
+                    args:
+                      - "--repo=https://github.com/tylertitsworth/ai-cluster.git"
+                      - "--branch=add/dagster"
+                      - "--depth=1"
+                      - "--root=/git"
+                      - "--dest=repo"
+                      - "--one-time"
+                    volumeMounts:
+                      - name: repo
+                        mountPath: /git
+                sidecarContainers:
+                  - name: git-sync
+                    image: registry.k8s.io/git-sync/git-sync:v4.4.2
+                    args:
+                      - "--repo=https://github.com/tylertitsworth/ai-cluster.git"
+                      - "--branch=add/dagster"
+                      - "--depth=1"
+                      - "--root=/git"
+                      - "--dest=repo"
+                      - "--wait=1"
+                    volumeMounts:
+                      - name: repo
+                        mountPath: /git
+          # Metadata DB on longhorn, matching the airflow postgres.
+          postgresql:
+            persistence:
+              storageClass: longhorn
+              size: 8Gi
+          # Tailscale ingress in front of the webserver.
+          ingress:
+            enabled: true
+            ingressClassName: tailscale
+            annotations:
+              tailscale.com/proxy-class: "pin-framework-desktop"
+            dagsterWebserver:
+              host: dagster
+              path: /*
+              pathType: ImplementationSpecific
+              tls:
+                enabled: true
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: add/dagster
+      path: manifests/dagster
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dagster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

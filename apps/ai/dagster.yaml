@@ -83,7 +83,7 @@ spec:
               tailscale.com/proxy-class: "pin-framework-desktop"
             dagsterWebserver:
               host: dagster
-              path: /*
+              path: /
               pathType: ImplementationSpecific
               tls:
                 enabled: true

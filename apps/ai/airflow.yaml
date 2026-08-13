@@ -1,0 +1,67 @@
+# Airflow 3 - orchestration dashboard (API server serves the UI + REST API).
+# DAGs sync from this repo via git-sync (airflow/dags on the pinned branch);
+# tasks submit KubeRay RayJob CRs directly (there is no Apache Ray provider
+# for Airflow 3, so the DAG uses the in-tree cncf-kubernetes provider).
+#
+# NOTE: gitSync ref and the manifests source pin branch "add/airflow";
+# flip both to "main" after this branch merges.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: airflow
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://airflow.apache.org
+      chart: airflow
+      targetRevision: 1.22.0
+      helm:
+        valuesObject:
+          # DAGs sync from this repo (airflow/dags).
+          dags:
+            gitSync:
+              enabled: true
+              repo: https://github.com/tylertitsworth/ai-cluster.git
+              branch: add/airflow
+              ref: add/airflow
+              subPath: airflow/dags
+          # Tailscale ingress in front of the apiServer (UI + API).
+          ingress:
+            apiServer:
+              enabled: true
+              ingressClassName: tailscale
+              annotations:
+                tailscale.com/proxy-class: "pin-framework-desktop"
+              hosts:
+                - name: airflow
+                  tls:
+                    enabled: false
+          apiServer:
+            args:
+              - bash
+              - -c
+              - exec airflow api-server --proxy-headers
+          config:
+            api:
+              base_url: https://airflow.tail79a5c8.ts.net
+          # Longhorn-backed metadata DB + broker for the default CeleryExecutor.
+          postgresql:
+            persistence:
+              storageClass: longhorn
+          redis:
+            persistence:
+              storageClassName: longhorn
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: add/airflow
+      path: manifests/airflow
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: airflow
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

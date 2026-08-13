@@ -191,7 +191,7 @@ class RayJobOperator(BaseOperator):
         job_status = "NEW"
         while time.monotonic() < deadline:
             time.sleep(self.poll_interval)
-            status = api.get_namespaced_custom_object_status(
+            status = api.get_namespaced_custom_object(
                 RAY_GROUP, RAY_VERSION, RAY_NAMESPACE, RAY_PLURAL, name
             ).get("status", {})
             job_status = status.get("jobStatus", "NEW")

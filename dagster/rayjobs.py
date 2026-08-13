@@ -17,7 +17,7 @@ import re
 import time
 
 from dagster import job, op
-from kubernetes import client
+from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 RAY_IMAGE = "rayproject/ray:2.55.0"
@@ -159,7 +159,7 @@ def _run_rayjob(
     timeout=900,
 ):
     name = _sanitize_name(name)
-    client.config.load_incluster_config()
+    config.load_incluster_config()
     api = client.CustomObjectsApi()
     try:
         api.create_namespaced_custom_object(

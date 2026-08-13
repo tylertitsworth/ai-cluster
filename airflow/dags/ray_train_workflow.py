@@ -176,7 +176,7 @@ class RayJobOperator(BaseOperator):
         if not name:
             raise AirflowException(f"Invalid RayJob name: {self.ray_job_name!r}")
         hook = KubernetesHook(conn_id="kubernetes_default")
-        api = hook.get_conn().CustomObjectsApi()
+        api = client.CustomObjectsApi(hook.get_conn())
         try:
             api.create_namespaced_custom_object(
                 RAY_GROUP, RAY_VERSION, RAY_NAMESPACE, RAY_PLURAL, self._rayjob(name)

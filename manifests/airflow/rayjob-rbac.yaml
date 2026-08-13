@@ -7,7 +7,7 @@ metadata:
   name: airflow-rayjob
 rules:
   - apiGroups: ["ray.io"]
-    resources: ["rayjobs"]
+    resources: ["rayjobs", "rayjobs/status"]
     verbs: ["get", "list", "watch", "create", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

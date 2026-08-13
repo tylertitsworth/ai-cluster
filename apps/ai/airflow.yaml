@@ -40,7 +40,7 @@ spec:
               hosts:
                 - name: airflow
                   tls:
-                    enabled: false
+                    enabled: true
           apiServer:
             args:
               - bash
@@ -56,6 +56,20 @@ spec:
           redis:
             persistence:
               storageClassName: longhorn
+          # Worker/triggerer log volumes default to 100Gi; clamp to 10Gi.
+          workers:
+            persistence:
+              size: 10Gi
+          triggerer:
+            persistence:
+              size: 10Gi
+          # The migrate + create-user jobs are Helm-hook-gated by default, which
+          # ArgoCD does not run; render them as plain resources so the DB
+          # migrates and admin/admin is created on sync.
+          migrateDatabaseJob:
+            useHelmHooks: false
+          createUserJob:
+            useHelmHooks: false
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: add/airflow
       path: manifests/airflow
@@ -65,3 +79,7 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      # The chart gates fernet-key/redis-password/broker-url as pre-install
+      # hooks; without this ArgoCD never creates them and pods hang on
+      # CreateContainerConfigError.
+      - --enable-helm-hooks

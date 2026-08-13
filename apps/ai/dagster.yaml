@@ -70,6 +70,39 @@ spec:
                     volumeMounts:
                       - name: repo
                         mountPath: /git
+          # Capture op stdout/stderr to shared NFS (manifests/dagster/compute-logs-pvc.yaml)
+          # so the webserver can show compute logs for runs executing on any node.
+          computeLogManager:
+            type: LocalComputeLogManager
+            config:
+              localComputeLogManager:
+                baseDir: /var/logs/dagster/compute
+          dagsterWebserver:
+            volumes:
+              - name: compute-logs
+                persistentVolumeClaim:
+                  claimName: dagster-compute-logs
+            volumeMounts:
+              - name: compute-logs
+                mountPath: /var/logs/dagster/compute
+          dagsterDaemon:
+            volumes:
+              - name: compute-logs
+                persistentVolumeClaim:
+                  claimName: dagster-compute-logs
+            volumeMounts:
+              - name: compute-logs
+                mountPath: /var/logs/dagster/compute
+          runLauncher:
+            config:
+              k8sRunLauncher:
+                volumes:
+                  - name: compute-logs
+                    persistentVolumeClaim:
+                      claimName: dagster-compute-logs
+                volumeMounts:
+                  - name: compute-logs
+                    mountPath: /var/logs/dagster/compute
           # Metadata DB on longhorn, matching the airflow postgres.
           postgresql:
             persistence:

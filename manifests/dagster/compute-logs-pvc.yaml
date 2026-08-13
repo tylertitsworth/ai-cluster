@@ -1,0 +1,16 @@
+# Shared RWX volume for Dagster compute logs (op stdout/stderr shown in the
+# UI). Mounted on the webserver, daemon, and K8s run pods at the same path the
+# instance's LocalComputeLogManager writes to. NFS (synology-csi) so webserver
+# and run pods can live on different nodes; longhorn is RWO and can't.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dagster-compute-logs
+  namespace: dagster
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: synology-csi-nfs-retain
+  resources:
+    requests:
+      storage: 5Gi

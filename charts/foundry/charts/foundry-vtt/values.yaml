@@ -38,7 +38,7 @@ serviceAccount:
 ## @param image.repository Repository to take the Image from
 ## @param image.tag Image Tag
 image:
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   repository: felddy/foundryvtt
   tag: "14"
 
@@ -292,7 +292,7 @@ foundryvtt:
   upnp: false
 
   ## Version of Foundry VTT to install.
-  version: "13.345"
+  version: "14"
 
   ## The world startup at system start.
   world: ""

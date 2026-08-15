@@ -31,7 +31,13 @@ spec:
               hostname: prefect
               path: /
               pathType: ImplementationSpecific
-            tls: true
+            # The chart only renders a tls: block via cert-manager annotations,
+            # selfSigned, or extraTls; emit the same shape as the dagster
+            # ingress (tls with null secret) so the tailscale proxy serves HTTPS.
+            extraTls:
+              - hosts:
+                  - prefect
+                secretName: null
           # Metadata DB on longhorn, matching airflow/dagster postgres.
           postgresql:
             primary:

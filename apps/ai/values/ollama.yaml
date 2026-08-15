@@ -35,9 +35,9 @@ extraEnv:
   # Max Content Length for any Model
   - name: OLLAMA_CONTEXT_LENGTH
     value: "300000"
-  # Quality-optimized KV cache type
+  # Quality-optimized KV cache type (q8_0 = ~2x q4_0 memory, better precision)
   - name: OLLAMA_KV_CACHE_TYPE
-    value: q4_0
+    value: q8_0
   # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m

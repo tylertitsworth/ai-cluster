@@ -59,8 +59,8 @@ resources:
     cpu: 500m
     memory: 512Mi
   limits:
-    cpu: 1024m
-    memory: 1024Mi
+    cpu: 2048m
+    memory: 2048Mi
 
 ## @section Pod Security and Scheduling
 ## @param podSecurityContext Extra security context for Pods

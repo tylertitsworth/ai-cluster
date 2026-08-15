@@ -4,7 +4,7 @@ fullnameOverride: ollama
 image:
   repository: ollama/ollama
   # Pinned latest versioned ROCm image tag
-  tag: 0.32.5-rocm
+  tag: 0.32.13-rocm
   pullPolicy: Always
 
 ollama:
@@ -47,12 +47,6 @@ extraEnv:
   # Keep only one model loaded in memory at a time
   - name: OLLAMA_MAX_LOADED_MODELS
     value: "1"
-  # Pull Ollama cloud API key from Kubernetes Secret (value not stored in Git)
-  - name: OLLAMA_API_KEY
-    valueFrom:
-      secretKeyRef:
-        name: ollama-api-key
-        key: OLLAMA_API_KEY
 
 service:
   type: ClusterIP

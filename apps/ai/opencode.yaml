@@ -12,13 +12,13 @@ spec:
   project: default
   sources:
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: fix/server-cache-control
+      targetRevision: add/qwen38-27b-opencode
       path: charts/opencode
       helm:
         valueFiles:
           - $values/apps/ai/values/opencode.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: fix/server-cache-control
+      targetRevision: add/qwen38-27b-opencode
       ref: values
   destination:
     server: https://kubernetes.default.svc

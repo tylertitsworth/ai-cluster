@@ -255,7 +255,7 @@ opencodeConfig:
         "context-mode",
         "superpowers-mcp"
       ],
-      "model": "vllm/qwen3.6-35b-a3b-awq",
+      "model": "vllm/qwen3.8-27b-awq",
       "mcp": {
         "kubernetes-ro": {
           "type": "remote",
@@ -285,9 +285,9 @@ opencodeConfig:
             "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
           },
           "models": {
-            "qwen3.6-35b-a3b-awq": {
-              "name": "Qwen3.6-35B-A3B-AWQ-4bit",
-              "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
+            "qwen3.8-27b-awq": {
+              "name": "Qwen3.8-27B-AWQ-INT4",
+              "id": "cyankiwi/Qwen3.8-27B-AWQ-INT4"
             }
           }
         }

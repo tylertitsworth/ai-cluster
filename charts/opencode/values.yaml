@@ -290,6 +290,23 @@ opencodeConfig:
               "id": "cyankiwi/Qwen3.8-27B-AWQ-INT4"
             }
           }
+        },
+        "ollama": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "Ollama",
+          "options": {
+            "baseURL": "http://ollama.ollama.svc.cluster.local:11434/v1"
+          },
+          "models": {
+            "qwen3.8-27b": {
+              "name": "Qwen3.8-27B",
+              "id": "qwen3.8:27b"
+            },
+            "gemma4-31b": {
+              "name": "Gemma4-31B",
+              "id": "gemma4:31b"
+            }
+          }
         }
       }
     }

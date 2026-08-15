@@ -101,7 +101,7 @@ app-template:
 # Order is significant: matches the live ConfigMap so a sync is a no-op.
 config:
   - key: attention-backend
-    value: ROCM_ATTN
+    value: TRITON_ATTN
   - key: chat-template
     value: /vllm/config/chat_template.jinja
   - key: enable-prefix-caching
@@ -128,6 +128,8 @@ config:
     value: 8000
   - key: reasoning-parser
     value: qwen3
+  - key: speculative-config
+    value: '{"method": "qwen3_5_mtp", "num_speculative_tokens": 1}'
   - key: tensor-parallel-size
     value: 1
   - key: tool-call-parser

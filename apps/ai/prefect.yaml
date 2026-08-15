@@ -45,6 +45,9 @@ spec:
                 enabled: true
                 storageClass: longhorn
                 size: 8Gi
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: add/prefect
+      path: manifests/prefect
   destination:
     server: https://kubernetes.default.svc
     namespace: prefect

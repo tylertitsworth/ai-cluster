@@ -37,10 +37,14 @@ spec:
             - --cache-dir
             - /root/.cache/huggingface
           resources:
+            # cgroup v2 charges page cache from writing ~21GB to the PVC against
+            # this cgroup, so 4Gi OOM-kills the download even at low RSS. 16Gi
+            # gives the kernel room to flush. # ponytail: generous single-shot
+            # limit; shrink if hf hub ever switches to unbuffered writes.
             requests:
-              memory: 2Gi
+              memory: 8Gi
             limits:
-              memory: 4Gi
+              memory: 16Gi
           volumeMounts:
             - name: hf-cache
               mountPath: /root/.cache/huggingface

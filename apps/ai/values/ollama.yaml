@@ -15,11 +15,11 @@ ollama:
   models:
     # Ensure model exists locally, then load it into memory at startup
     pull:
-      - qwen3.6:35b
+      - qwen3.8:27b
       - gemma4:31b
     run:
       - gemma4:31b
-      # - qwen3.6:35b
+      - qwen3.8:27b
     clean: true
 
 extraEnv:

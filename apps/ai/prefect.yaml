@@ -1,0 +1,47 @@
+# Prefect 3 - self-hosted orchestration server (API + UI).
+# Flows/workers can be added later as a separate prefect-worker app.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prefect
+  namespace: argocd
+  labels:
+    stack: ai
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://prefecthq.github.io/prefect-helm
+      chart: prefect-server
+      targetRevision: 2026.8.13185342
+      helm:
+        valuesObject:
+          # Point the browser UI at the API through the tailscale ingress.
+          server:
+            uiConfig:
+              prefectUiApiUrl: https://prefect.tail79a5c8.ts.net/api
+          # Tailscale ingress in front of the server (API + UI).
+          ingress:
+            enabled: true
+            className: tailscale
+            annotations:
+              tailscale.com/proxy-class: "pin-framework-desktop"
+            host:
+              hostname: prefect
+              path: /
+              pathType: ImplementationSpecific
+            tls: true
+          # Metadata DB on longhorn, matching airflow/dagster postgres.
+          postgresql:
+            primary:
+              persistence:
+                enabled: true
+                storageClass: longhorn
+                size: 8Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prefect
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

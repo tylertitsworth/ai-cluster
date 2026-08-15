@@ -35,7 +35,11 @@ spec:
             - download
             - cyankiwi/Qwen3.8-27B-AWQ-INT4
             - --cache-dir
-            - /root/.cache/huggingface
+            # Must be the vLLM-resolved cache root (HF_HUB_CACHE=$HF_HOME/hub):
+            # hf download --cache-dir X treats X as HF_HUB_CACHE, so files land
+            # in X/models--... while vLLM (HF_HUB_OFFLINE=1) looks in
+            # ~/.cache/huggingface/hub/models--...
+            - /root/.cache/huggingface/hub
           resources:
             # cgroup v2 charges page cache from writing ~21GB to the PVC against
             # this cgroup, so 4Gi OOM-kills the download even at low RSS. 16Gi

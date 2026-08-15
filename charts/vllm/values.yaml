@@ -108,6 +108,8 @@ app-template:
 config:
   - key: attention-backend
     value: ROCM_ATTN
+  - key: chat-template
+    value: /vllm/config/chat_template.jinja
   - key: enable-prefix-caching
     value: true
   - key: enable-chunked-prefill

@@ -8,3 +8,8 @@ data:
   config.yaml: |
 {{ range .Values.config }}    {{ .key }}: {{ .value }}
 {{ end }}
+  # Qwen3.x chat template patched to coalesce leading system messages instead of
+  # raising "System message must be at the beginning." (opencode sends 2+ system
+  # messages). Referenced by `chat-template` in .Values.config.
+  chat_template.jinja: |
+{{ .Files.Get "chat_template.jinja" | indent 4 }}

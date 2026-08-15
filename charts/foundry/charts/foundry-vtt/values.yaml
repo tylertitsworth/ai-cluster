@@ -40,7 +40,7 @@ serviceAccount:
 image:
   pullPolicy: Always
   repository: felddy/foundryvtt
-  tag: "14.365"
+  tag: "13.351"
 
 ## @param imagePullSecrets Credentials for Docker private repository.
 imagePullSecrets: []
@@ -292,7 +292,7 @@ foundryvtt:
   upnp: false
 
   ## Version of Foundry VTT to install.
-  version: "14.365"
+  version: "13.351"
 
   ## The world startup at system start.
   world: ""

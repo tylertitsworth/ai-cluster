@@ -3,7 +3,7 @@ name: foundry
 description: Foundry Virtual Tabletop (upstream foundry-vtt chart + Tailscale ingress)
 type: application
 version: 0.1.0
-appVersion: "14.365"
+appVersion: "13.351"
 # The upstream foundry-vtt chart (v13.345.0, which supports configSecretName) is
 # vendored under charts/foundry-vtt/ from github.com/hugoprudente/charts (git main,
 # unpublished to the Helm repo). Helm auto-includes it as a subchart; no Helm-repo

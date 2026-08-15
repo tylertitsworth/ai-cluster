@@ -26,12 +26,6 @@ app-template:
               value: "1"
             - name: VLLM_USE_TRITON_AWQ
               value: "1"
-            - name: VLLM_ROCM_USE_AITER
-              value: "1"
-            - name: GPU_ARCHS
-              value: native
-            - name: VLLM_TUNED_CONFIG_FOLDER
-              value: /root/.cache/huggingface/moe-tuned
           probes:
             readiness:
               enabled: true

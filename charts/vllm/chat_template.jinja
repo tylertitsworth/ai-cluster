@@ -52,8 +52,23 @@
     {%- endif %}
 {%- endfor %}
 {%- set sys_combined = sys_contents.items | join('\n\n') %}
+{%- set reasoning_instructions = '' %}
+{%- if enable_thinking is undefined or enable_thinking is true %}
+    {%- set resolved_reasoning_effort = reasoning_effort|default('xhigh') %}
+    {%- if resolved_reasoning_effort not in ('xhigh', 'medium', 'low') %}
+        {{- raise_exception('Unexpected reasoning effort ' ~ reasoning_effort ~ '. Supported types are xhigh (default), medium, and low.') }}
+    {%- endif %}
+    {%- if resolved_reasoning_effort == 'xhigh' %}
+        {%- set reasoning_instructions = 'Reasoning effort is set to xhigh. Please think carefully through the task, validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and clarity in the final answer.' %}
+    {%- elif resolved_reasoning_effort == 'low' %}
+        {%- set reasoning_instructions = 'Reasoning effort is set to low. Keep your thinking brief and focused, moving directly to the conclusion without unnecessary elaboration.' %}
+    {%- endif %}
+{%- endif %}
 {%- if tools and tools is iterable and tools is not mapping %}
     {{- '<|im_start|>system\n' }}
+    {%- if reasoning_instructions %}
+        {{- reasoning_instructions + '\n\n' }}
+    {%- endif %}
     {{- "# Tools\n\nYou have access to the following functions:\n\n<tools>" }}
     {%- for tool in tools %}
         {{- "\n" }}
@@ -67,7 +82,9 @@
     {{- '<|im_end|>\n' }}
 {%- else %}
     {%- if sys_combined %}
-        {{- '<|im_start|>system\n' + sys_combined + '<|im_end|>\n' }}
+        {{- '<|im_start|>system\n' + (reasoning_instructions + '\n\n' if reasoning_instructions else '') + sys_combined + '<|im_end|>\n' }}
+    {%- elif reasoning_instructions %}
+        {{- '<|im_start|>system\n' + reasoning_instructions + '<|im_end|>\n' }}
     {%- endif %}
 {%- endif %}
 {%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
@@ -93,14 +110,9 @@
         {%- set reasoning_content = '' %}
         {%- if message.reasoning_content is string %}
             {%- set reasoning_content = message.reasoning_content %}
-        {%- else %}
-            {%- if '</think>' in content %}
-                {%- set reasoning_content = content.split('</think>')[0].rstrip('\n').split('<think>')[-1].lstrip('\n') %}
-                {%- set content = content.split('</think>')[-1].lstrip('\n') %}
-            {%- endif %}
         {%- endif %}
         {%- set reasoning_content = reasoning_content|trim %}
-        {%- if loop.index0 > ns.last_query_index %}
+        {%- if preserve_thinking is undefined or preserve_thinking is true or loop.index0 > ns.last_query_index %}
             {{- '<|im_start|>' + message.role + '\n<think>\n' + reasoning_content + '\n</think>\n\n' + content }}
         {%- else %}
             {{- '<|im_start|>' + message.role + '\n' + content }}
@@ -119,7 +131,7 @@
                 {%- else %}
                     {{- '\n<tool_call>\n<function=' + tool_call.name + '>\n' }}
                 {%- endif %}
-                {%- if tool_call.arguments is defined %}
+                {%- if tool_call.arguments is defined and tool_call.arguments != '' %}
                     {%- for args_name, args_value in tool_call.arguments|items %}
                         {{- '<parameter=' + args_name + '>\n' }}
                         {%- set args_value = args_value | tojson | safe if args_value is mapping or (args_value is sequence and args_value is not string) else args_value | string %}

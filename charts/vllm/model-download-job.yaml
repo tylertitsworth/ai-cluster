@@ -1,0 +1,50 @@
+# One-shot download of the Qwen3.8-27B AWQ quant into the shared HF cache PVC.
+# Applied manually with kubectl (not part of the chart's rendered state), while
+# the vllm Deployment is scaled to 0 so the RWO PVC is free:
+#   kubectl scale deployment vllm -n ollama --replicas=0
+#   kubectl apply -f charts/vllm/model-download-job.yaml
+#   kubectl wait --for=condition=complete job/model-download-qwen38 -n ollama --timeout=30m
+#   kubectl delete -f charts/vllm/model-download-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-download-qwen38
+  namespace: ollama
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - framework-desktop
+      containers:
+        - name: download
+          image: docker.io/kyuz0/vllm-therock-gfx1151:latest
+          imagePullPolicy: Always
+          command:
+            - /opt/venv/bin/hf
+          args:
+            - download
+            - cyankiwi/Qwen3.8-27B-AWQ-INT4
+            - --cache-dir
+            - /root/.cache/huggingface
+          resources:
+            requests:
+              memory: 2Gi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /root/.cache/huggingface
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: vllm-hf-cache

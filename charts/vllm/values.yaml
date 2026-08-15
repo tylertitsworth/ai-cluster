@@ -129,7 +129,7 @@ config:
   - key: mm-encoder-attn-backend
     value: TRITON_ATTN
   - key: model
-    value: cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit
+    value: cyankiwi/Qwen3.8-27B-AWQ-INT4
   - key: port
     value: 8000
   - key: reasoning-parser

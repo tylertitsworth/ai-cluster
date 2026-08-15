@@ -42,16 +42,20 @@
 {%- if not messages %}
     {{- raise_exception('No messages provided.') }}
 {%- endif %}
-{%- set sys_contents = namespace(items=[]) %}
+{%- set sys_contents = namespace(value='') %}
 {%- for _message in messages %}
     {%- if _message.role == 'system' %}
         {%- set _content = render_content(_message.content, false, true)|trim %}
         {%- if _content %}
-            {%- set _ = sys_contents.items.append(_content) %}
+            {%- if sys_contents.value %}
+                {%- set sys_contents.value = sys_contents.value + '\n\n' + _content %}
+            {%- else %}
+                {%- set sys_contents.value = _content %}
+            {%- endif %}
         {%- endif %}
     {%- endif %}
 {%- endfor %}
-{%- set sys_combined = sys_contents.items | join('\n\n') %}
+{%- set sys_combined = sys_contents.value %}
 {%- set reasoning_instructions = '' %}
 {%- if enable_thinking is undefined or enable_thinking is true %}
     {%- set resolved_reasoning_effort = reasoning_effort|default('xhigh') %}

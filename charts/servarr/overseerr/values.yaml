@@ -74,6 +74,6 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: overseer-config
+      existingClaim: overseer-config-v1
       globalMounts:
         - path: /app/config

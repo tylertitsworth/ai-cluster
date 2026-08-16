@@ -72,7 +72,7 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: tautulli-config
+      existingClaim: tautulli-config-v1
       globalMounts:
         - path: /config
 
@@ -80,7 +80,7 @@ app-template:
     plex-logs:
       enabled: true
       type: persistentVolumeClaim
-      existingClaim: plex-config
+      existingClaim: plex-config-v1
       globalMounts:
         - path: /plexlogs
           subPath: Library/Application Support/Plex Media Server/Logs

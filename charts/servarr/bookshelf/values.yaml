@@ -71,7 +71,7 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: readarr
+      existingClaim: readarr-v1
       globalMounts:
         - path: /config
 

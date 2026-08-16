@@ -63,7 +63,7 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: fileflows-config
+      existingClaim: fileflows-config-v1
       globalMounts:
         - path: /app/Data
 

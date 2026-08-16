@@ -103,7 +103,7 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: plex-config
+      existingClaim: plex-config-v1
       globalMounts:
         - path: /config
 

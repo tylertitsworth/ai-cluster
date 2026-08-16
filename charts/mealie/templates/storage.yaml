@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "mealie.fullname" . }}-data
+  name: {{ include "mealie.fullname" . }}-data-v1
 spec:
   accessModes:
     - {{ .Values.storage.accessModeMealie }}
@@ -22,7 +22,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "mealie.fullname" . }}-pgdata
+  name: {{ include "mealie.fullname" . }}-pgdata-v1
 spec:
   accessModes:
     - {{ .Values.storage.accessModePostgres }}

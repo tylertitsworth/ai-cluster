@@ -20,7 +20,7 @@ spec:
         valuesObject:
           grafana:
             persistence:
-              existingClaim: grafana
+              existingClaim: grafana-v1
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
       targetRevision: main
       ref: values

@@ -30,7 +30,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ include "mealie.fullname" . }}-data
+            claimName: {{ include "mealie.fullname" . }}-data-v1
       containers:
         - name: mealie
           securityContext:
@@ -127,7 +127,7 @@ spec:
       volumes:
         - name: pgdata
           persistentVolumeClaim:
-            claimName: {{ include "mealie.fullname" . }}-pgdata
+            claimName: {{ include "mealie.fullname" . }}-pgdata-v1
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

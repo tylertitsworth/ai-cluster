@@ -71,7 +71,6 @@ app-template:
   persistence:
     config:
       type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      size: 2Gi
+      existingClaim: pihole-config-v1
       globalMounts:
         - path: /etc/pihole

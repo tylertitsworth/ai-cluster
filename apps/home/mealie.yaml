@@ -23,14 +23,10 @@ spec:
       parameters:
         - name: storage.className
           value: longhorn
-        - name: storage.mealieVolumeName
-          value: mealie
-        - name: storage.postgresVolumeName
-          value: mealie-pg
         - name: storage.mealieSize
-          value: 4Gi
+          value: 1Gi
         - name: storage.postgresSize
-          value: 8Gi
+          value: 1Gi
         - name: postgres.enabled
           value: "true"
         - name: image.tag

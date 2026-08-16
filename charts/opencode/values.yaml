@@ -193,9 +193,7 @@ app-template:
     workspace:
       enabled: true
       type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      storageClass: longhorn
-      size: 20Gi
+      existingClaim: opencode-workspace-v1
       advancedMounts:
         main:
           init:
@@ -206,9 +204,7 @@ app-template:
     data:
       enabled: true
       type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      storageClass: longhorn
-      size: 5Gi
+      existingClaim: opencode-data-v1
       advancedMounts:
         main:
           init:

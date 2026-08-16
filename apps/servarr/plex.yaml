@@ -31,7 +31,7 @@ spec:
         # PMS (Plex Media Server) specific settings
         pms:
           # Use existing PVC for config storage
-          configExistingClaim: plex-config
+          configExistingClaim: plex-config-v1
 
           # GPU configuration for hardware acceleration
           gpu:

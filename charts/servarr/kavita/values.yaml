@@ -72,7 +72,7 @@ app-template:
   persistence:
     config:
       enabled: true
-      existingClaim: kavita
+      existingClaim: kavita-v1
       globalMounts:
         - path: /config
 

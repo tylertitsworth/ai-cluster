@@ -1,0 +1,28 @@
+name: build-dagster-containers
+permissions:
+  contents: read
+  packages: write
+on:
+  workflow_dispatch: null
+  push:
+    branches:
+      - add/dagster
+    paths:
+      - 'dagster/docker/*'
+  pull_request:
+    paths:
+      - 'dagster/docker/*'
+
+jobs:
+  celery-k8s:
+    uses: ./.github/workflows/build-container.yaml
+    with:
+      image: dagster-celery-k8s
+      context: dagster/docker
+      dockerfile: ./dagster/docker/Dockerfile.celery-k8s
+  k8s:
+    uses: ./.github/workflows/build-container.yaml
+    with:
+      image: dagster-k8s
+      context: dagster/docker
+      dockerfile: ./dagster/docker/Dockerfile.k8s

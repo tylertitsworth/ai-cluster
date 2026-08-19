@@ -23,6 +23,46 @@ spec:
       targetRevision: 1.13.17
       helm:
         valuesObject:
+          # Official dagster images are amd64-only; our builds add arm64
+          # so they run on the Jetson nodes (npu01/02, orinnx01).
+          dagsterWebserver:
+            image:
+              repository: "ghcr.io/tylertitsworth/dagster-celery-k8s"
+              tag: "latest"
+              pullPolicy: Always
+            volumes:
+              - name: compute-logs
+                persistentVolumeClaim:
+                  claimName: dagster-compute-logs
+            volumeMounts:
+              - name: compute-logs
+                mountPath: /var/logs/dagster/compute
+          dagsterDaemon:
+            image:
+              repository: "ghcr.io/tylertitsworth/dagster-celery-k8s"
+              tag: "latest"
+              pullPolicy: Always
+            volumes:
+              - name: compute-logs
+                persistentVolumeClaim:
+                  claimName: dagster-compute-logs
+            volumeMounts:
+              - name: compute-logs
+                mountPath: /var/logs/dagster/compute
+          runLauncher:
+            config:
+              k8sRunLauncher:
+                image:
+                  repository: "ghcr.io/tylertitsworth/dagster-k8s"
+                  tag: "latest"
+                  pullPolicy: Always
+                volumes:
+                  - name: compute-logs
+                    persistentVolumeClaim:
+                      claimName: dagster-compute-logs
+                volumeMounts:
+                  - name: compute-logs
+                    mountPath: /var/logs/dagster/compute
           # Code server image doubles as the K8s run pod image (K8sRunLauncher
           # pulls it from the code location at launch time) and ships the
           # kubernetes client ops need to submit RayJobs.
@@ -30,9 +70,9 @@ spec:
             deployments:
               - name: "dagster-ai"
                 image:
-                  repository: "docker.io/dagster/dagster-k8s"
-                  tag: "1.13.17"
-                  pullPolicy: IfNotPresent
+                  repository: "ghcr.io/tylertitsworth/dagster-k8s"
+                  tag: "latest"
+                  pullPolicy: Always
                 dagsterApiGrpcArgs:
                   - "--python-file"
                   - "/git/repo/dagster/rayjobs.py"
@@ -77,32 +117,6 @@ spec:
             config:
               localComputeLogManager:
                 baseDir: /var/logs/dagster/compute
-          dagsterWebserver:
-            volumes:
-              - name: compute-logs
-                persistentVolumeClaim:
-                  claimName: dagster-compute-logs
-            volumeMounts:
-              - name: compute-logs
-                mountPath: /var/logs/dagster/compute
-          dagsterDaemon:
-            volumes:
-              - name: compute-logs
-                persistentVolumeClaim:
-                  claimName: dagster-compute-logs
-            volumeMounts:
-              - name: compute-logs
-                mountPath: /var/logs/dagster/compute
-          runLauncher:
-            config:
-              k8sRunLauncher:
-                volumes:
-                  - name: compute-logs
-                    persistentVolumeClaim:
-                      claimName: dagster-compute-logs
-                volumeMounts:
-                  - name: compute-logs
-                    mountPath: /var/logs/dagster/compute
           # Metadata DB on longhorn, matching the airflow postgres.
           postgresql:
             persistence:

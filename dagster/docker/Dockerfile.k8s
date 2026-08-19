@@ -1,0 +1,15 @@
+FROM python:3.10-slim
+
+ARG DAGSTER_VERSION=1.13.17
+
+RUN pip install --no-cache-dir -U uv \
+    && python -m uv pip install --no-cache \
+        dagster==${DAGSTER_VERSION} \
+        dagster-azure \
+        dagster-postgres \
+        dagster-k8s \
+        dagster-aws \
+        dagster-gcp \
+        dagster-graphql \
+        dagster-webserver \
+        grpcio==1.57.0

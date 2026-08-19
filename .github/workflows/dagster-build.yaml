@@ -7,11 +7,6 @@ on:
   push:
     branches:
       - add/dagster
-    paths:
-      - 'dagster/docker/*'
-  pull_request:
-    paths:
-      - 'dagster/docker/*'
 
 jobs:
   build:

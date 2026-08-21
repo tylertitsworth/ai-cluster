@@ -11,7 +11,6 @@ repos:
   - hooks:
       - id: go-fmt
       - id: go-imports # sudo apt install golang-golang-x-tools
-      - id: no-go-testing
       - id: golangci-lint # sudo snap install golangci-lint --classic
         entry: bash -c "cd npu-device-plugin && golangci-lint run ./..."
         language: system

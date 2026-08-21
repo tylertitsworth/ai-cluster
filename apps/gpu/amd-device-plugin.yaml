@@ -30,9 +30,5 @@ spec:
       jsonPointers:
         - /spec/template/spec/nodeSelector
   syncPolicy:
-    # Auto-sync disabled - manual sync only
-    # automated:
-    #   prune: true
-    #   selfHeal: true
     syncOptions:
       - CreateNamespace=true

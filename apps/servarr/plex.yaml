@@ -96,9 +96,6 @@ spec:
     namespace: servarr
   syncPolicy:
     # Disabled auto-sync to allow manual claim token configuration
-    # automated:
-    #   prune: true
-    #   selfHeal: true
     syncOptions:
       - CreateNamespace=true
   ignoreDifferences:

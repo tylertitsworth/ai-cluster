@@ -1,0 +1,28 @@
+# Garden Map — Seasonal Tasks & Site Map (home stack)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: garden-map
+  namespace: argocd
+  labels:
+    stack: home
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: garden-map
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster
+    targetRevision: main   # image updater commits digest bumps here (see manifests/image-updater-garden-map.yaml)
+    path: charts/garden-map
+    helm:
+      valueFiles:
+        - values.yaml
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

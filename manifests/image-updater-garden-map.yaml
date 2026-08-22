@@ -1,0 +1,23 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: garden-map
+  namespace: argocd
+spec:
+  # Unlike the sibling CRs (argocd method), garden-map writes digest bumps back
+  # to this repo's main so image history is auditable and rollback is a revert.
+  writeBackConfig:
+    method: git
+    gitConfig:
+      branch: main
+      writeBackTarget: helmvalues:./values.yaml   # charts/garden-map/values.yaml
+  applicationRefs:
+    - namePattern: garden-map
+      images:
+        - alias: gardenmap
+          imageName: ghcr.io/tylertitsworth/garden-map:latest
+          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
+          manifestTargets:
+            helm:
+              name: app-template.controllers.main.containers.main.image.repository
+              tag: app-template.controllers.main.containers.main.image.tag

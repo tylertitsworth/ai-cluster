@@ -58,20 +58,23 @@ spec:
               imagePullPolicy: IfNotPresent
               env:
                 - name: RELAY_PORT
-                  value: "40000"
+                  value: "41641"
+                - name: WAN_PORT_BASE
+                  value: "41641"
                 - name: STATE_CONFIGMAP
                   value: tailscale-relay-updater-state
                 - name: POD_SELECTOR
-                  value: tailscale.com/parent-resource=egress,tailscale.com/parent-resource-type=proxygroup
+                  value: tailscale.com/parent-resource=relay,tailscale.com/parent-resource-type=peerrelay
               command:
                 - /bin/sh
                 - -ec
                 - |
                   apk add --no-cache curl kubectl >/dev/null
 
-                  RELAY_PORT="${RELAY_PORT:-40000}"
+                  RELAY_PORT="${RELAY_PORT:-41641}"
+                  WAN_PORT_BASE="${WAN_PORT_BASE:-41641}"
                   STATE_CONFIGMAP="${STATE_CONFIGMAP:-tailscale-relay-updater-state}"
-                  POD_SELECTOR="${POD_SELECTOR:-tailscale.com/parent-resource=egress,tailscale.com/parent-resource-type=proxygroup}"
+                  POD_SELECTOR="${POD_SELECTOR:-tailscale.com/parent-resource=relay,tailscale.com/parent-resource-type=peerrelay}"
 
                   PUBLIC_IP="$(curl -fsS --max-time 10 https://ifconfig.me || curl -fsS --max-time 10 https://api.ipify.org)"
                   if ! echo "${PUBLIC_IP}" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
@@ -92,14 +95,18 @@ spec:
                   fi
 
                   # Update one pod at a time with retries to preserve availability.
+                  # Replica N is reachable on WAN port WAN_PORT_BASE+N (router forwards
+                  # it to this replica's VIP); every replica listens internally on RELAY_PORT.
                   for POD in ${PODS}; do
+                    IDX="${POD##*-}"
+                    WAN_PORT=$((WAN_PORT_BASE + IDX))
                     ATTEMPT=1
                     SUCCESS=0
                     while [ "${ATTEMPT}" -le 3 ]; do
-                      echo "updating ${POD} attempt ${ATTEMPT}"
-                      if kubectl -n tailscale exec "${POD}" -c tailscale -- tailscale set --relay-server-port="${RELAY_PORT}" --relay-server-static-endpoints="${PUBLIC_IP}:${RELAY_PORT}"; then
+                      echo "updating ${POD} attempt ${ATTEMPT} -> ${PUBLIC_IP}:${WAN_PORT}"
+                      if kubectl -n tailscale exec "${POD}" -c tailscaled -- tailscale set --relay-server-port="${RELAY_PORT}" --relay-server-static-endpoints="${PUBLIC_IP}:${WAN_PORT}"; then
                         SUCCESS=1
-                        kubectl -n tailscale exec "${POD}" -c tailscale -- tailscale debug peer-relay-servers || true
+                        kubectl -n tailscale exec "${POD}" -c tailscaled -- tailscale debug peer-relay-servers || true
                         break
                       fi
                       sleep $((ATTEMPT * 5))
@@ -118,4 +125,4 @@ spec:
                     --from-literal=lastUpdated="${NOW}" \
                     --dry-run=client -o yaml | kubectl apply -f -
 
-                  echo "relay endpoints updated to ${PUBLIC_IP}:${RELAY_PORT}"
+                  echo "relay endpoints updated to ${PUBLIC_IP} ports ${WAN_PORT_BASE}+ (internal ${RELAY_PORT})"

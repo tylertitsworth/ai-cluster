@@ -4,9 +4,11 @@
 # Requires: kubectl, curl
 set -euo pipefail
 
-RELAY_PORT="${RELAY_PORT:-40000}"
+RELAY_PORT="${RELAY_PORT:-41641}"
+WAN_PORT_BASE="${WAN_PORT_BASE:-41641}"
 NAMESPACE="${NAMESPACE:-tailscale}"
-LABEL="${LABEL:-tailscale.com/parent-resource=egress,tailscale.com/parent-resource-type=proxygroup}"
+LABEL="${LABEL:-tailscale.com/parent-resource=relay,tailscale.com/parent-resource-type=peerrelay}"
+CONTAINER="${CONTAINER:-tailscaled}"
 RELAY_IP="${RELAY_IP:-}"
 
 if [[ -z "${RELAY_IP}" ]]; then
@@ -24,19 +26,23 @@ if [[ ! "${RELAY_IP}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
 fi
 echo "Using relay endpoint ${RELAY_IP}:${RELAY_PORT}"
 
-PODS="$(kubectl get pods -n "${NAMESPACE}" -l "${LABEL}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')"
+PODS="$(kubectl get pods -n "${NAMESPACE}" -l "${LABEL}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | sort)"
 if [[ -z "${PODS}" ]]; then
-  echo "No egress pods found for selector: ${LABEL}" >&2
+  echo "No relay pods found for selector: ${LABEL}" >&2
   exit 1
 fi
 
-echo "Updating egress pods one-by-one..."
+echo "Updating relay pods one-by-one..."
+# Replica N is reachable on WAN port WAN_PORT_BASE+N (router forwards it to the
+# replica's VIP); every replica listens internally on RELAY_PORT.
 for pod in ${PODS}; do
-  echo "  -> ${pod}"
+  idx="${pod##*-}"
+  wan_port=$((WAN_PORT_BASE + idx))
+  echo "  -> ${pod} (${RELAY_IP}:${wan_port})"
   success=0
   for attempt in 1 2 3; do
-    if kubectl exec -n "${NAMESPACE}" "${pod}" -c tailscale -- tailscale set --relay-server-port="${RELAY_PORT}" --relay-server-static-endpoints="${RELAY_IP}:${RELAY_PORT}"; then
-      kubectl exec -n "${NAMESPACE}" "${pod}" -c tailscale -- tailscale debug peer-relay-servers || true
+    if kubectl exec -n "${NAMESPACE}" "${pod}" -c "${CONTAINER}" -- tailscale set --relay-server-port="${RELAY_PORT}" --relay-server-static-endpoints="${RELAY_IP}:${wan_port}"; then
+      kubectl exec -n "${NAMESPACE}" "${pod}" -c "${CONTAINER}" -- tailscale debug peer-relay-servers || true
       success=1
       break
     fi
@@ -48,4 +54,4 @@ for pod in ${PODS}; do
   fi
 done
 
-echo "Done. Relay endpoint applied across egress pods."
+echo "Done. Relay endpoints applied across relay pods."

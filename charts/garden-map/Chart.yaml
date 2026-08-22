@@ -1,0 +1,10 @@
+apiVersion: v2
+name: garden-map
+description: Interactive map of Tyler & Kaitlynd's garden (plant dots on aerial imagery + seasonal task tables)
+type: application
+version: 0.1.0
+appVersion: "latest"
+dependencies:
+  - name: app-template
+    version: 3.7.3
+    repository: https://bjw-s-labs.github.io/helm-charts/

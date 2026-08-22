@@ -4,13 +4,9 @@ metadata:
   name: garden-map
   namespace: argocd
 spec:
-  # Unlike the sibling CRs (argocd method), garden-map writes digest bumps back
-  # to this repo's main so image history is auditable and rollback is a revert.
   writeBackConfig:
-    method: git
-    gitConfig:
-      branch: main
-      writeBackTarget: helmvalues:./values.yaml   # charts/garden-map/values.yaml
+    method: argocd   # pins latest@<digest> as a helm parameter on the live
+                     # Application; no git credentials involved
   applicationRefs:
     - namePattern: garden-map
       images:

@@ -15,7 +15,7 @@ spec:
     namespace: garden-map
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster
-    targetRevision: feat/garden-map   # flip to main once the chart PR merges
+    targetRevision: main   # image updater commits digest bumps here (see manifests/image-updater-garden-map.yaml)
     path: charts/garden-map
     helm:
       valueFiles:

@@ -152,6 +152,14 @@ spec:
   replicas: 2
   proxyClass: relay-egress
 ---
+apiVersion: tailscale.com/v1alpha1
+kind: PeerRelay
+metadata:
+  name: relay
+spec:
+  replicas: 2
+  proxyClass: relay-egress
+---
 apiVersion: v1
 kind: Service
 metadata:

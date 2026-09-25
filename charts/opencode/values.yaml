@@ -9,9 +9,8 @@ app-template:
       strategy: Recreate
 
       pod:
-        # Pin to the node with the workspace PVC (mirrors the original nodeName)
         nodeSelector:
-          kubernetes.io/hostname: framework-desktop
+          kubernetes.io/role: worker
         securityContext:
           fsGroup: 1000
 

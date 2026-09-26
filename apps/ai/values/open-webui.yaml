@@ -12,7 +12,7 @@ ingress:
     tailscale.com/proxy-class: "pin-npu01"
   tls: true
 nodeSelector:
-  node-role.kubernetes.io/control-plane: "true"
+  kubernetes.io/role: worker
 ollama:
   enabled: false
   periodSeconds: 30

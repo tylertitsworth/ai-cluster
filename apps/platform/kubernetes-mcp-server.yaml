@@ -26,8 +26,6 @@ spec:
             secretName: ""
           annotations:
             tailscale.com/proxy-class: pin-npu01
-        nodeSelector:
-          node-role.kubernetes.io/control-plane: "true"
         config:
           port: "8080"
           cluster_provider: in-cluster

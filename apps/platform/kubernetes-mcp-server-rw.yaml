@@ -28,8 +28,6 @@ spec:
         fullnameOverride: kubernetes-mcp-server-rw
         ingress:
           enabled: false
-        nodeSelector:
-          node-role.kubernetes.io/control-plane: "true"
         rbac:
           create: true
           extraClusterRoles:

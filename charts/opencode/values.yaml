@@ -248,7 +248,7 @@ opencodeConfig:
         "context-mode",
         "superpowers-mcp"
       ],
-      "model": "vllm/qwen3.6-35b-a3b-awq",
+      "model": "ollama/swift-qwen3.8-27b",
       "mcp": {
         "kubernetes-ro": {
           "type": "remote",
@@ -271,16 +271,16 @@ opencodeConfig:
         }
       },
       "provider": {
-        "vllm": {
+        "ollama": {
           "npm": "@ai-sdk/openai-compatible",
-          "name": "vLLM",
+          "name": "Ollama",
           "options": {
-            "baseURL": "http://vllm.ollama.svc.cluster.local:8000/v1"
+            "baseURL": "http://ollama.ollama.svc.cluster.local:11434/v1"
           },
           "models": {
-            "qwen3.6-35b-a3b-awq": {
-              "name": "Qwen3.6-35B-A3B-AWQ-4bit",
-              "id": "cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit"
+            "swift-qwen3.8-27b": {
+              "name": "Swift-Qwen3.8-27B (map-k4v)",
+              "id": "smtek/Swift-Qwen3.8-27B:map-k4v"
             }
           }
         }

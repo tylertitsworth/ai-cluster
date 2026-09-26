@@ -1,0 +1,23 @@
+# Ray Dashboard viewer - browses historyserver's data via --proxy-server-url
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ray-dashboard-viewer
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: main
+    path: manifests/ray-dashboard-viewer
+    kustomize: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kuberay
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

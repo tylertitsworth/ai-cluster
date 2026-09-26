@@ -1,0 +1,100 @@
+# Ray History Server - browse historical Ray dashboards/logs for terminated RayClusters
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: historyserver
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://bjw-s-labs.github.io/helm-charts/
+    chart: app-template
+    # Needs the v4+ rbac.roles/bindings schema - newer than the 3.5.1 pinned elsewhere in this repo.
+    targetRevision: 5.0.1
+    helm:
+      valuesObject:
+        serviceAccount:
+          historyserver: {}
+
+        rbac:
+          roles:
+            raycluster-reader:
+              type: ClusterRole
+              rules:
+                - apiGroups: ["ray.io"]
+                  resources: ["rayclusters"]
+                  verbs: ["list", "get"]
+          bindings:
+            historyserver:
+              type: ClusterRoleBinding
+              roleRef:
+                identifier: raycluster-reader
+              subjects:
+                - identifier: historyserver
+
+        controllers:
+          historyserver:
+            serviceAccount:
+              identifier: historyserver
+            pod:
+              # upstream image is amd64-only
+              nodeSelector:
+                kubernetes.io/arch: amd64
+              automountServiceAccountToken: true
+            containers:
+              main:
+                image:
+                  repository: ghcr.io/tylertitsworth/historyserver
+                  tag: 052b7c34fbb6a32c91db1842f61fcfcf2702a2f5
+                command:
+                  - historyserver
+                args:
+                  - --runtime-class-name=s3
+                  - --ray-root-dir=log
+                env:
+                  - name: S3_REGION
+                    value: auto
+                  - name: S3_ENDPOINT
+                    value: 34826bc885b7bc472873b2c47a7b8f91.r2.cloudflarestorage.com
+                  - name: S3_BUCKET
+                    value: ray-history
+                  - name: S3FORCE_PATH_STYLE
+                    value: "false"
+                  - name: S3DISABLE_SSL
+                    value: "false"
+                  - name: AWS_ACCESS_KEY_ID
+                    valueFrom:
+                      secretKeyRef:
+                        name: r2-historyserver-credentials
+                        key: AWS_S3ID
+                  - name: AWS_SECRET_ACCESS_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: r2-historyserver-credentials
+                        key: AWS_S3SECRET
+                  - name: AWS_SESSION_TOKEN
+                    valueFrom:
+                      secretKeyRef:
+                        name: r2-historyserver-credentials
+                        key: AWS_S3TOKEN
+                resources:
+                  limits:
+                    cpu: "500m"
+
+        # No ingress: only consumed in-cluster, browsing goes through ray-dashboard-viewer instead.
+        service:
+          main:
+            controller: historyserver
+            ports:
+              http:
+                port: 8080
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kuberay
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

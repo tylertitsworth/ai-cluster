@@ -279,8 +279,8 @@ opencodeConfig:
           },
           "models": {
             "swift-qwen3.8-27b": {
-              "name": "Swift-Qwen3.8-27B (map-k4v)",
-              "id": "smtek/Swift-Qwen3.8-27B:map-k4v"
+              "name": "Swift-Qwen3.8-27B (Q6_K, map-k4v)",
+              "id": "swift-qwen3.8-27b:q6k-map-k4v"
             }
           }
         }

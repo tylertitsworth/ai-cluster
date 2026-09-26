@@ -2,10 +2,12 @@
 fullnameOverride: ollama
 
 image:
-  repository: ollama/ollama
-  # Pinned latest versioned ROCm image tag
-  tag: 0.32.5-rocm
+  repository: ghcr.io/tylertitsworth/ollama-swift
+  tag: latest
   pullPolicy: Always
+
+imagePullSecrets:
+  - name: ghcr-pull-secret
 
 ollama:
   gpu:
@@ -13,46 +15,45 @@ ollama:
     type: amd
     number: 1
   models:
-    # Ensure model exists locally, then load it into memory at startup
-    pull:
-      - qwen3.6:35b
-      - gemma4:31b
+    create:
+      - name: swift-qwen3.8-27b:q6k-map-k4v
+        template: |
+          FROM hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K
+
+          RENDERER qwen3.8
+          PARSER qwen3.5
+
+          PARAMETER temperature 0.6
+          PARAMETER top_k 20
+          PARAMETER top_p 0.95
+          PARAMETER min_p 0
+          PARAMETER presence_penalty 0
+          PARAMETER repeat_penalty 1
+          PARAMETER num_batch 512
+          PARAMETER num_predict -1
+
+          PARAMETER draft_spec_type draft-mtp,ngram-map-k4v
+          PARAMETER draft_num_predict 3
+          PARAMETER draft_ngram_map_k4v_size_n 12
+          PARAMETER draft_ngram_map_k4v_size_m 48
+          PARAMETER draft_ngram_map_k4v_min_hits 1
     run:
-      - gemma4:31b
-      # - qwen3.6:35b
+      - swift-qwen3.8-27b:q6k-map-k4v
     clean: true
 
 extraEnv:
-  # Force Vulkan backend on AMD where supported
-  # - name: OLLAMA_LLM_LIBRARY
-  #   value: vulkan
-  # # Explicitly enable experimental Vulkan runtime path
-  # - name: OLLAMA_VULKAN
-  #   value: "1"
-  # Explicitly enable experimental flash attention
   - name: OLLAMA_FLASH_ATTENTION
     value: "1"
-  # Max Content Length for any Model
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "300000"
-  # Quality-optimized KV cache type
+    value: "262144"
   - name: OLLAMA_KV_CACHE_TYPE
     value: q4_0
-  # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m
-  # Keep loaded models in memory indefinitely (never unload on idle)
   - name: OLLAMA_KEEP_ALIVE
     value: "-1"
-  # Keep only one model loaded in memory at a time
   - name: OLLAMA_MAX_LOADED_MODELS
     value: "1"
-  # Pull Ollama cloud API key from Kubernetes Secret (value not stored in Git)
-  - name: OLLAMA_API_KEY
-    valueFrom:
-      secretKeyRef:
-        name: ollama-api-key
-        key: OLLAMA_API_KEY
 
 service:
   type: ClusterIP
@@ -90,4 +91,4 @@ extraObjects:
         - ReadWriteOnce
       resources:
         requests:
-          storage: 72Gi
+          storage: 100Gi

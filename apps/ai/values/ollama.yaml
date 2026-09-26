@@ -2,19 +2,10 @@
 fullnameOverride: ollama
 
 image:
-  # Custom image: stock ollama/ollama:0.34.0-rocm with the Go plumbing that
-  # forwards draft_spec_type / draft_ngram_map_k4v_* to llama-server. Without it
-  # the ngram-map-k4v route is unreachable, because the Modelfile PARAMETERs
-  # below are silently dropped. See ../../../ollama-swift/README.md.
   repository: ghcr.io/tylertitsworth/ollama-swift
   tag: latest
   pullPolicy: Always
 
-# The package above is private, so the namespace needs a pull secret:
-#   kubectl create secret docker-registry ghcr-pull-secret -n ollama \
-#     --docker-server=ghcr.io --docker-username=<user> --docker-password=<token>
-# It lives only in the cluster; this repo has no SOPS/ExternalSecret/SealedSecret
-# setup, so there is nowhere in git to put it.
 imagePullSecrets:
   - name: ghcr-pull-secret
 
@@ -24,41 +15,6 @@ ollama:
     type: amd
     number: 1
   models:
-    # Created rather than pulled, so the speculative-decoding options are
-    # explicit and versioned here instead of baked into a third-party tag.
-    #
-    # `FROM hf.co/...` is ollama 0.33+ fetching a GGUF straight from HuggingFace.
-    # It verifies the sha256 and stores the file content-addressed, so re-running
-    # this on restart reuses the existing blob rather than re-downloading 21 GiB.
-    #
-    # Q6_K over Q4_K_M because this is for long agentic runs, where quality per
-    # token matters more than throughput. It also makes speculation more
-    # valuable, not less: a larger quant is more bandwidth-bound, so there is
-    # more idle compute to spend on drafting.
-    #
-    # Sampling values (notably temperature 0.6) are taken from the reference
-    # smtek/Swift-Qwen3.8-27B:map-k4v configuration, so the speculative setup
-    # is not half-and-half with unrelated sampling.
-    #
-    # Speculative decoding: MTP3 covers novel work, where the ngram route can
-    # contribute nothing because it can only copy from history. The
-    # ngram-map-k4v lookup table covers self-similar work, which is most of an
-    # agentic code run. Both are needed.
-    #
-    # Context is set by OLLAMA_CONTEXT_LENGTH below, not here, so there is a
-    # single source of truth for it.
-    #
-    # Vision is intentionally not attached: the reference :map-k4v tag has no
-    # mmproj either and this workload is text/code. To add it, append a second
-    # FROM line pointing at the mmproj-F16 quant in the same HF repo.
-    #
-    # NOTE: the template below is written by the chart through an *unquoted*
-    # heredoc, so it must not contain backticks or $ -- the shell would expand
-    # them. That is why the explanation lives out here rather than inline.
-    #
-    # The tag must be explicit: `clean` matches `ollama list` output (always
-    # name:tag) with an exact line match, so an untagged name would make the
-    # clean step delete the model it just created.
     create:
       - name: swift-qwen3.8-27b:q6k-map-k4v
         template: |
@@ -81,30 +37,21 @@ ollama:
           PARAMETER draft_ngram_map_k4v_size_n 12
           PARAMETER draft_ngram_map_k4v_size_m 48
           PARAMETER draft_ngram_map_k4v_min_hits 1
-    # Ensure model exists locally, then load it into memory at startup
     run:
       - swift-qwen3.8-27b:q6k-map-k4v
     clean: true
 
 extraEnv:
-  # Explicitly enable experimental flash attention
   - name: OLLAMA_FLASH_ATTENTION
     value: "1"
-  # Max Content Length for any Model. This GGUF's native maximum is 262144, so
-  # this runs at the model's limit with no extrapolation. At q4_0 the KV cache
-  # for Swift-Qwen3.8-27B is ~18 KiB/token, so 256K is ~4.5 GiB.
   - name: OLLAMA_CONTEXT_LENGTH
     value: "262144"
-  # Quality-optimized KV cache type
   - name: OLLAMA_KV_CACHE_TYPE
     value: q4_0
-  # Allow up to 30 minutes for large model load stalls
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m
-  # Keep loaded models in memory indefinitely (never unload on idle)
   - name: OLLAMA_KEEP_ALIVE
     value: "-1"
-  # Keep only one model loaded in memory at a time
   - name: OLLAMA_MAX_LOADED_MODELS
     value: "1"
 
@@ -144,6 +91,4 @@ extraObjects:
         - ReadWriteOnce
       resources:
         requests:
-          # Must not be smaller than the live claim or the sync is rejected:
-          # Kubernetes does not allow shrinking a bound PVC.
           storage: 100Gi

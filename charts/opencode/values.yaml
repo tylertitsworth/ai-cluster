@@ -235,9 +235,6 @@ app-template:
               subPath: default.conf
               readOnly: true
 
-# opencode config rendered to the opencode-config ConfigMap.
-# Keys are validated against https://opencode.ai/config.json — unknown keys (e.g.
-# `session.*`) break validation and prevent ArgoCD from applying the ConfigMap.
 opencodeConfig:
   opencode.json: |
     {

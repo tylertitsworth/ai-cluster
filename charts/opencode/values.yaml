@@ -191,10 +191,7 @@ app-template:
   persistence:
     workspace:
       enabled: true
-      type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      storageClass: longhorn
-      size: 20Gi
+      existingClaim: opencode-workspace-v1
       advancedMounts:
         main:
           init:
@@ -204,10 +201,7 @@ app-template:
             - path: /workspace
     data:
       enabled: true
-      type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      storageClass: longhorn
-      size: 5Gi
+      existingClaim: opencode-data-v1
       advancedMounts:
         main:
           init:
@@ -295,8 +289,8 @@ opencodeConfig:
   AGENTS.md: |
     # OpenCode Server — Session Context
 
-    You are running in the opencode headless server pod (namespace `opencode`, node
-    `framework-desktop`). Working directory is `/home/opencode/workspace`, a clone of
+    You are running in the opencode headless server pod (namespace `opencode`, on any
+    `kubernetes.io/role=worker` node). Working directory is `/home/opencode/workspace`, a clone of
     ai-cluster. All state persists under `/home/opencode` (config, sessions DB, logs).
 
     ## Tool Access

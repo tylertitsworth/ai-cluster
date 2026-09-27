@@ -14,7 +14,7 @@ app-template:
         main:
           image:
             repository: totalsundae/dev
-            tag: terraria-tmodloader
+            tag: terraria
             pullPolicy: Always
 
           env:
@@ -41,42 +41,24 @@ app-template:
       size: 1Gi
       storageClass: longhorn
       globalMounts:
-        - path: /home/tml/.local/share/Terraria/tModLoader
+        - path: /home/terraria/.local/share/Terraria
 
     serverconfig:
       enabled: true
       type: configMap
       name: terraria-serverconfig
       globalMounts:
-        - path: /home/tml/.local/share/Terraria/tModLoader/serverconfig.txt
+        - path: /home/terraria/.local/share/Terraria/serverconfig.txt
           subPath: serverconfig.txt
 
-# Server configuration file content
-# See: https://github.com/tModLoader/tModLoader/wiki/Command-Line
 serverConfig: |
-  # tModLoader Server Configuration
-  # World settings - autocreate a new world if none exists
-  # world= must be set for autocreate to work in non-interactive mode
-  world=/home/tml/.local/share/Terraria/tModLoader/Worlds/coop-tyler-nathan-kaitlynd.wld
-  autocreate=2
+  world=/home/terraria/.local/share/Terraria/Worlds/coop-tyler-nathan-kaitlynd.wld
   worldname=coop-tyler-nathan-kaitlynd
-  difficulty=1
-
-  # Server settings
   maxplayers=8
   port=7777
   password=password
-
-  # Message of the day
-  motd=Welcome to the tModLoader server!
-
-  # Performance
+  motd=Welcome to the Terraria server!
   priority=1
   npcstream=1
-
-  # Security
   secure=1
-  steam=1
-
-  # Language (en-US, de-DE, it-IT, fr-FR, es-ES, ru-RU, zh-Hans, pt-BR, pl-PL)
   language=en-US

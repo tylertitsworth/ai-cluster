@@ -14,10 +14,32 @@ ollama:
     enabled: true
     type: amd
     number: 1
-  models:
-    create:
-      - name: swift-qwen3.8-27b:q6k-map-k4v
-        template: |
+
+lifecycle:
+  postStart:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - |
+          MODEL=swift-qwen3.8-27b:q6k-map-k4v
+          LOG=/tmp/ollama-preload.log
+          DONE=/tmp/ollama-preload.done
+          rm -f "$DONE"
+
+          (
+            trap 'echo $? >"$DONE"' EXIT
+            i=0
+            until /bin/ollama ps >/dev/null 2>&1; do
+              i=$((i + 1))
+              if [ "$i" -ge 120 ]; then
+                echo "ollama server not ready after 600s" >&2
+                exit 0
+              fi
+              sleep 5
+            done
+
+            cat <<MODELLEOF > /root/.ollama/models/$MODEL
           FROM hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K
 
           RENDERER qwen3.8
@@ -37,9 +59,32 @@ ollama:
           PARAMETER draft_ngram_map_k4v_size_n 12
           PARAMETER draft_ngram_map_k4v_size_m 48
           PARAMETER draft_ngram_map_k4v_min_hits 1
-    run:
-      - swift-qwen3.8-27b:q6k-map-k4v
-    clean: true
+          MODELLEOF
+            /bin/ollama create "$MODEL" -f /root/.ollama/models/$MODEL
+
+            /bin/ollama list | awk 'NR>1 {print $1}' | while read -r m; do
+              [ "$m" = "$MODEL" ] || /bin/ollama rm "$m"
+            done
+
+            /bin/ollama run "$MODEL" " " >/dev/null 2>&1
+          ) >"$LOG" 2>&1 &
+
+          i=0
+          while [ "$i" -lt 12 ]; do
+            if /bin/ollama ps | grep -qF "$MODEL"; then
+              echo "postStart: $MODEL is resident"
+              exit 0
+            fi
+            if [ -f "$DONE" ]; then
+              echo "postStart: preload exited (status $(cat "$DONE")):" >&2
+              cat "$LOG" >&2
+              exit 0
+            fi
+            i=$((i + 1))
+            sleep 5
+          done
+          echo "postStart: $MODEL preloading in background, log $LOG"
+          exit 0
 
 extraEnv:
   - name: OLLAMA_FLASH_ATTENTION

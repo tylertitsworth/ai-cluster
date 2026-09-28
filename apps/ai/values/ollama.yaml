@@ -39,7 +39,7 @@ ollama:
           PARAMETER draft_ngram_map_k4v_min_hits 1
     run:
       - swift-qwen3.8-27b:q6k-map-k4v
-    clean: true
+    clean: false
 
 extraEnv:
   - name: OLLAMA_FLASH_ATTENTION

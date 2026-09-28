@@ -1,0 +1,72 @@
+# Dedicated Postgres instance for Flyte's metadata store
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flyte-postgres
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://bjw-s-labs.github.io/helm-charts/
+    chart: app-template
+    targetRevision: 3.5.1
+    helm:
+      valuesObject:
+        controllers:
+          postgres:
+            containers:
+              postgres:
+                image:
+                  repository: postgres
+                  tag: "15-alpine"
+                env:
+                  POSTGRES_DB: flyte
+                  POSTGRES_USER: flyte
+                  # Password lives in a pre-created Secret (never committed to git).
+                  POSTGRES_PASSWORD:
+                    valueFrom:
+                      secretKeyRef:
+                        name: flyte-postgres-auth
+                        key: password
+                  PGDATA: /var/lib/postgresql/data/pgdata
+                probes:
+                  liveness:
+                    enabled: true
+                    custom: true
+                    spec:
+                      exec:
+                        command: ["pg_isready", "-U", "flyte"]
+                      initialDelaySeconds: 15
+                      periodSeconds: 10
+                  readiness:
+                    enabled: true
+                    custom: true
+                    spec:
+                      exec:
+                        command: ["pg_isready", "-U", "flyte"]
+                      periodSeconds: 10
+
+        service:
+          main:
+            controller: postgres
+            ports:
+              postgres:
+                port: 5432
+
+        persistence:
+          data:
+            enabled: true
+            accessMode: ReadWriteOnce
+            size: 20Gi
+            globalMounts:
+              - path: /var/lib/postgresql/data
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flyte-postgres
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

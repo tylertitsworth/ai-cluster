@@ -4,6 +4,10 @@ app-template:
       replicas: 1
       strategy: Recreate
 
+      pod:
+        nodeSelector:
+          kubernetes.io/hostname: framework-13-laptop
+
       containers:
         main:
           image:

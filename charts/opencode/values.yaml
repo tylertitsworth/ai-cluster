@@ -70,8 +70,8 @@ app-template:
         opencode:
           image:
             repository: sprisa/opencode
-            tag: 1.18.15
-            pullPolicy: IfNotPresent
+            tag: latest
+            pullPolicy: Always
           ports:
             - containerPort: 4096
               name: http

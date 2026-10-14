@@ -13,6 +13,10 @@ controllers:
                 operator: NotIn
                 values:
                 - jetson
+              - key: kubernetes.io/hostname	
+                operator: In	
+                values:	
+                - framework-desktop
 
     initContainers:
       # Gluetun as a native sidecar (Kubernetes 1.28+)

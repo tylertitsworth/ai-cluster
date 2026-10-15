@@ -16,28 +16,11 @@ ollama:
     number: 1
   models:
     create:
-      - name: swift-qwen3.8-27b:q6k-map-k4v
+      - name: nemotron-3.5-bolt
         template: |
-          FROM hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K
-
-          RENDERER qwen3.8
-          PARSER qwen3.5
-
-          PARAMETER temperature 0.6
-          PARAMETER top_k 20
-          PARAMETER top_p 0.95
-          PARAMETER min_p 0
-          PARAMETER presence_penalty 0
-          PARAMETER repeat_penalty 1
-          PARAMETER num_batch 512
-          PARAMETER num_predict -1
-
-          PARAMETER draft_spec_type draft-mtp,ngram-map-k4v
-          PARAMETER draft_num_predict 3
-          PARAMETER draft_ngram_map_k4v_size_n 12
-          PARAMETER draft_ngram_map_k4v_size_m 48
-          PARAMETER draft_ngram_map_k4v_min_hits 1
+          FROM nemotron-3.5-bolt
     run:
+      - nemotron-3.5-bolt
       - swift-qwen3.8-27b:q6k-map-k4v
     clean: false
 

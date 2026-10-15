@@ -3,7 +3,7 @@ fullnameOverride: ollama
 
 image:
   repository: ollama/ollama
-  tag: 0.11.11-rocm
+  tag: 0.40.5-rocm
   pullPolicy: Always
 
 imagePullSecrets:

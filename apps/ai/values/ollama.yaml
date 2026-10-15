@@ -2,8 +2,8 @@
 fullnameOverride: ollama
 
 image:
-  repository: ghcr.io/tylertitsworth/ollama-swift
-  tag: latest
+  repository: ollama/ollama
+  tag: 0.11.11-rocm
   pullPolicy: Always
 
 imagePullSecrets:
@@ -16,6 +16,9 @@ ollama:
     number: 1
   models:
     create:
+      - name: nemotron-3.5-bolt
+        template: |
+          FROM nemotron-3.5-bolt
       - name: swift-qwen3.8-27b:q6k-map-k4v
         template: |
           FROM hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K
@@ -38,7 +41,7 @@ ollama:
           PARAMETER draft_ngram_map_k4v_size_m 48
           PARAMETER draft_ngram_map_k4v_min_hits 1
     run:
-      - swift-qwen3.8-27b:q6k-map-k4v
+      - nemotron-3.5-bolt
     clean: false
 
 extraEnv:

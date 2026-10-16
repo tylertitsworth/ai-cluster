@@ -6,6 +6,7 @@ networkPolicies:
   restrictInternalTraffic: false
 persistence:
   backupTargetName: cloudflare
+  defaultMkfsParams: "-b 4096"
 metrics:
   serviceMonitor:
     additionalLabels:

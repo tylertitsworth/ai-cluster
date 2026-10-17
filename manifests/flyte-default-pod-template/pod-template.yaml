@@ -1,0 +1,31 @@
+# Base PodTemplate merged into every Flyte task pod (flyteplugins/go/tasks/pluginmachinery/flytek8s
+# looks up a "default"-named container in a PodTemplate resource named by
+# plugins.k8s.default-pod-template-name, and appends its env into every task container).
+# This is how task pods get R2 credentials - the control-plane binary's own storage
+# config (apps/platform/values/flyte.yaml) is separate and does NOT propagate to tasks.
+apiVersion: v1
+kind: PodTemplate
+metadata:
+  name: flyte-default-pod-template
+  namespace: flyte
+template:
+  spec:
+    containers:
+      # image is required by the K8s PodTemplate API but never actually used -
+      # flyteplugins only reads env from the "default" container and merges it
+      # into each task's own container (which keeps its own real image).
+      - name: default
+        image: busybox
+        env:
+          - name: FLYTE_AWS_ENDPOINT
+            value: "https://34826bc885b7bc472873b2c47a7b8f91.r2.cloudflarestorage.com"
+          - name: FLYTE_AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: flyte-r2-credentials
+                key: accessKey
+          - name: FLYTE_AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: flyte-r2-credentials
+                key: secretKey

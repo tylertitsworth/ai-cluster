@@ -1,0 +1,35 @@
+# Flyte v2 (binary deployment) - workflow orchestration, with the Ray plugin
+# enabled to submit RayJobs against the in-cluster KubeRay operator.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flyte
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://flyteorg.github.io/flyte/
+      chart: flyte-binary
+      targetRevision: v2.0.33
+      helm:
+        valueFiles:
+          - $values/apps/platform/values/flyte.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      path: manifests/flyte-default-pod-template
+      kustomize: {}
+  destination:
+    server: https://kubernetes.default.svc
+    # Namespace must be "flyte" - the chart hardcodes it as the default for
+    # actions.kubernetes.namespace and the flyteconnector service endpoint.
+    namespace: flyte
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

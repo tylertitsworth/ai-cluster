@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://archsyscall.github.io/restart-operator
+    repoURL: https://olramde.github.io/restart-operator
     chart: restart-operator
     targetRevision: 0.1.1
     helm:

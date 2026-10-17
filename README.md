@@ -284,7 +284,7 @@ A few smaller things that don't need their own full section:
 - **[Mealie](https://mealie.io/)** — a recipe manager with its own Postgres instance, mostly so household recipes don't live in a dozen browser tabs.
 - **[KubeRay](https://github.com/ray-project/kuberay)** — the Ray operator + API server, for running Ray clusters on top of k3s instead of standing up dedicated hardware for it.
 - **[kubernetes-mcp-server](https://github.com/containers/kubernetes-mcp-server)** — exposes an MCP server over Tailscale so an LLM client can query the cluster directly instead of me pasting `kubectl` output into a chat window.
-- **[restart-operator](https://archsyscall.github.io/restart-operator)** — a small third-party operator (amd64-only, so it only runs on framework-desktop) for scheduling pod restarts on a cron.
+- **[restart-operator](https://olramde.github.io/restart-operator)** — a small third-party operator (amd64-only, so it only runs on framework-desktop) for scheduling pod restarts on a cron.
 - **[Foundry VTT](https://foundryvtt.com/)** — a virtual tabletop for running D&D-style games, deployed as an umbrella chart pulling in the upstream `foundry-vtt` chart plus a Tailscale ingress template.
 - **[Pi-hole](https://pi-hole.net/)** — network-wide ad blocking.
 - **[Terraria](https://terraria.org/)** — a dedicated game server, exposed directly over Tailscale via the `tailscale.com/expose` Service annotation instead of an `Ingress`, since it isn't HTTP.

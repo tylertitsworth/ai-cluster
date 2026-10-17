@@ -21,8 +21,6 @@ spec:
       valueFiles:
         - values.yaml
       parameters:
-        - name: storage.className
-          value: longhorn
         - name: storage.mealieSize
           value: 1Gi
         - name: storage.postgresSize

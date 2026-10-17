@@ -16,7 +16,7 @@ spec:
   source:
     repoURL: https://ray-project.github.io/kuberay-helm/
     chart: kuberay-apiserver
-    targetRevision: 1.5.1
+    targetRevision: 1.6.2
     helm:
       valuesObject:
         cors:

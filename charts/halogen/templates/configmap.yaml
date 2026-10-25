@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: halogen-config
+  namespace: {{ .Release.Namespace }}
+data:
+  # Halogen is configured entirely through environment variables.
+  # See docs/FLAGS.md in the halogen-server repo for the full list.
+{{ range .Values.config }}  {{ .key }}: {{ .value | quote }}
+{{ end }}

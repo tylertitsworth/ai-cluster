@@ -119,4 +119,4 @@ config:
   - key: HALOGEN_KV_SLOTS
     value: "1"
   - key: HALOGEN_SLOT_CTX
-    value: "262144"
+    value: "65536"

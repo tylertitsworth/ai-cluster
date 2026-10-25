@@ -1,0 +1,118 @@
+# Halogen inference server — Qwen3.8-27B on AMD Strix Halo (gfx1151).
+# Image ships no weights; they live on the models PVC (see persistence.models).
+# Full flag reference: https://github.com/peonist-ai/halogen-server/blob/main/docs/FLAGS.md
+
+app-template:
+  controllers:
+    halogen:
+      type: deployment
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/peonist-ai/halogen
+            tag: "0.1.4"
+            pullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: halogen-config
+          probes:
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /health
+                  port: 8731
+                initialDelaySeconds: 60
+                periodSeconds: 15
+                timeoutSeconds: 5
+                failureThreshold: 24
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /health
+                  port: 8731
+                initialDelaySeconds: 120
+                periodSeconds: 30
+                timeoutSeconds: 5
+                failureThreshold: 6
+          resources:
+            requests:
+              amd.com/gpu: "1"
+            limits:
+              amd.com/gpu: "1"
+
+      pod:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: In
+                      values:
+                        - framework-desktop
+
+  service:
+    main:
+      controller: halogen
+      type: ClusterIP
+      ports:
+        http:
+          port: 8731
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      annotations:
+        tailscale.com/proxy-class: "pin-framework-desktop"
+      hosts:
+        - host: halogen
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      tls:
+        - hosts:
+            - halogen
+
+  persistence:
+    models:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 60Gi
+      storageClass: longhorn
+      globalMounts:
+        - path: /models
+
+# -- Halogen environment configuration, rendered to the halogen-config ConfigMap
+# and injected via envFrom. One entry per line: key + value.
+config:
+  - key: HALOGEN_CHECKPOINT
+    value: /models/qwen3.8-27b-p1w4d-d2.hgn
+  - key: HALOGEN_TOKENIZER
+    value: /models/tokenizer
+  - key: HALOGEN_API_PORT
+    value: "8731"
+  - key: HALOGEN_MODEL_ID
+    value: halogen-qwen3.8-27b
+  # Auto-download on first start. Leave empty to run fully offline against a
+  # pre-populated PVC (the volume must then be mounted read-only by setting
+  # persistence.models.readOnly: true).
+  - key: HALOGEN_DOWNLOAD
+    value: peonist-ai/halogen-qwen3.8-27b
+  - key: HALOGEN_CACHE_MB
+    value: ""
+  - key: HALOGEN_KV_SLOTS
+    value: "1"
+  - key: HALOGEN_SLOT_CTX
+    value: "262144"

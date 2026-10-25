@@ -37,7 +37,11 @@ app-template:
                 httpGet:
                   path: /health
                   port: 8731
-                initialDelaySeconds: 120
+                # Halogen downloads ~36 GB of weights on first start before
+                # /health comes up, so the liveness probe must not fire during
+                # that window (a restart mid-download just resumes, but it
+                # wastes the partial progress accounting).
+                initialDelaySeconds: 7200
                 periodSeconds: 30
                 timeoutSeconds: 5
                 failureThreshold: 6

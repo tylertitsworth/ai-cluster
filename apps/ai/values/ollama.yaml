@@ -2,8 +2,8 @@
 fullnameOverride: ollama
 
 image:
-  repository: ollama/ollama
-  tag: 0.40.5-rocm
+  repository: ghcr.io/tylertitsworth/ai-cluster-ollama-swift
+  tag: 0.40.15-tuned
   pullPolicy: Always
 
 imagePullSecrets:
@@ -32,25 +32,25 @@ ollama:
           PARAMETER min_p 0
           PARAMETER presence_penalty 0
           PARAMETER repeat_penalty 1
-          PARAMETER num_batch 512
+          PARAMETER num_batch 2048
           PARAMETER num_predict -1
 
           PARAMETER draft_spec_type draft-mtp,ngram-map-k4v
-          PARAMETER draft_num_predict 3
+          PARAMETER draft_num_predict 4
           PARAMETER draft_ngram_map_k4v_size_n 12
           PARAMETER draft_ngram_map_k4v_size_m 48
           PARAMETER draft_ngram_map_k4v_min_hits 1
     run:
-      - nemotron-3.5-bolt
+      - swift-qwen3.8-27b:q6k-map-k4v
     clean: false
 
 extraEnv:
   - name: OLLAMA_FLASH_ATTENTION
     value: "1"
   - name: OLLAMA_CONTEXT_LENGTH
-    value: "262144"
+    value: "131072"
   - name: OLLAMA_KV_CACHE_TYPE
-    value: q4_0
+    value: q8_0
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m
   - name: OLLAMA_KEEP_ALIVE

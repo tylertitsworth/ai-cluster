@@ -246,6 +246,12 @@ opencodeConfig:
         "superpowers-mcp"
       ],
       "model": "ollama/swift-qwen3.8-27b",
+      "compaction": {
+        "auto": true,
+        "keep": { "tokens": 72000 },
+        "buffer": "15%"
+      },
+      "experimental": { "background_compaction": true },
       "mcp": {
         "kubernetes-ro": {
           "type": "remote",

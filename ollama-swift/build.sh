@@ -42,6 +42,9 @@ docker run --rm --entrypoint /bin/sh "${IMAGE}" -c '
       echo "  MARKER MISSING:     $marker"; exit 1
     fi
   done
+  # gfx1151 hipBLASLt kernels (rocmlib stage) — fail fast if the lazy file is gone.
+  test -f /usr/lib/ollama/rocm_v7_2/hipblaslt/library/TensileLibrary_lazy_gfx1151.dat && echo "  lazy ok" || { echo "  LAZY MISSING"; exit 1; }
+  test -f /usr/lib/ollama/rocm_v7_2/hipblaslt/library/Kernels.so-000-gfx1151.hsaco && echo "  kernels ok" || { echo "  KERNELS MISSING"; exit 1; }
   echo -n "  /bin -> /usr/bin:   "; readlink /bin
   echo -n "  llama-server k4v flags: "
   /usr/lib/ollama/llama-server --help 2>&1 | grep -c "spec-ngram-map-k4v"

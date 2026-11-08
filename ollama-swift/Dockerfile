@@ -45,6 +45,18 @@ RUN go build -trimpath -buildmode=pie \
       -o /out/ollama .
 
 # ---------------------------------------------------------------------------
+# Stage 2.5: gfx1151 hipBLASLt kernels
+#
+# The stock image ships no hipblaslt/library/ dir, so hipBLASLt emits
+# `Cannot read "TensileLibrary_lazy_gfx1151.dat"` and silently falls back to
+# slower paths. kyuz0 ships the tuned gfx1151 kernel library (ROCm 7.1);
+# ship the whole dir (TensileLibrary_lazy_gfx1151.dat + Kernels.so).
+# ---------------------------------------------------------------------------
+FROM docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.1 AS rocmlib
+
+# note: the kyuz0 reference image is pinned by tag; bump above when upstream releases a newer ROCm toolbox.
+
+# ---------------------------------------------------------------------------
 # Stage 2: stock ROCm image with only /bin/ollama swapped
 # ---------------------------------------------------------------------------
 FROM ollama/ollama:${OLLAMA_IMAGE_TAG}
@@ -53,6 +65,9 @@ FROM ollama/ollama:${OLLAMA_IMAGE_TAG}
 # binary at both paths and leaves the entrypoint (/bin/ollama) and PATH lookup
 # on the patched build.
 COPY --from=builder /out/ollama /bin/ollama
+
+# gfx1151 hipBLASLt kernels (from the rocmlib stage above).
+COPY --from=rocmlib /opt/rocm-7.1.0/lib/hipblaslt/library/ /usr/lib/ollama/rocm_v7_2/hipblaslt/library/
 
 # Maximal HIP tuning for gfx1151 (Bkpaine 2026): hipBLASLt kernels + rocWMMA FA.
 ENV ROCBLAS_USE_HIPBLASLT=1

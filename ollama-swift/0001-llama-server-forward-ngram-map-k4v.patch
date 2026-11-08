@@ -1,0 +1,126 @@
+diff --git a/api/types.go b/api/types.go
+index 1aa7134..65bd566 100644
+--- a/api/types.go
++++ b/api/types.go
+@@ -592,13 +592,20 @@ type Options struct {
+ 
+ // Runner options which must be set when the model is loaded into memory
+ type Runner struct {
+-	NumCtx          int   `json:"num_ctx,omitempty"`
+-	NumBatch        int   `json:"num_batch,omitempty"`
+-	NumGPU          int   `json:"num_gpu,omitempty"`
+-	MainGPU         *int  `json:"main_gpu,omitempty"`
+-	UseMMap         *bool `json:"use_mmap,omitempty"`
+-	NumThread       int   `json:"num_thread,omitempty"`
+-	DraftNumPredict int   `json:"draft_num_predict,omitempty"`
++	NumCtx                  int    `json:"num_ctx,omitempty"`
++	NumBatch                int    `json:"num_batch,omitempty"`
++	NumGPU                  int    `json:"num_gpu,omitempty"`
++	MainGPU                 *int   `json:"main_gpu,omitempty"`
++	UseMMap                 *bool  `json:"use_mmap,omitempty"`
++	NumThread               int    `json:"num_thread,omitempty"`
++	DraftNumPredict         int    `json:"draft_num_predict,omitempty"`
++	DraftSpecType           string `json:"draft_spec_type,omitempty"`
++	DraftNgramModNMatch     int    `json:"draft_ngram_mod_n_match,omitempty"`
++	DraftNgramModNMin       int    `json:"draft_ngram_mod_n_min,omitempty"` // Minimum draft tokens, not prompt length.
++	DraftNgramModNMax       int    `json:"draft_ngram_mod_n_max,omitempty"`
++	DraftNgramMapK4VN       int    `json:"draft_ngram_map_k4v_size_n,omitempty"`
++	DraftNgramMapK4VM       int    `json:"draft_ngram_map_k4v_size_m,omitempty"`
++	DraftNgramMapK4VMinHits int    `json:"draft_ngram_map_k4v_min_hits,omitempty"`
+ }
+ 
+ // SystemOneRequest is the request passed to [Client.SystemOne]. It asks a
+diff --git a/llm/llama_server.go b/llm/llama_server.go
+index 4d3928b..85786a8 100644
+--- a/llm/llama_server.go
++++ b/llm/llama_server.go
+@@ -364,6 +364,13 @@ func (s *llamaServerRunner) ContextLength() int {
+ // FindLlamaServer locates the llama-server binary in lib/ollama/.
+ // There is a single binary that dynamically loads GPU backends at runtime.
+ func FindLlamaServer() (string, error) {
++	if configured := os.Getenv("OLLAMA_LLAMA_SERVER"); configured != "" {
++		info, err := os.Stat(configured)
++		if err != nil || info.IsDir() || info.Mode()&0111 == 0 {
++			return "", fmt.Errorf("OLLAMA_LLAMA_SERVER is not an executable: %s", configured)
++		}
++		return configured, nil
++	}
+ 	path, candidates, err := findLlamaCppBinary("llama-server", defaultLlamaCppBinarySearch())
+ 	if err != nil {
+ 		return "", fmt.Errorf("llama-server binary not found (checked: %s). Run 'cmake -S llama/server --preset cpu && cmake --build --preset cpu' first", strings.Join(candidates, ", "))
+@@ -836,31 +843,67 @@ func appendContextShiftArgs(params []string, opts api.Options, enabled bool) []s
+ }
+ 
+ const (
+-	draftTypeMTP    = "draft-mtp"
+-	draftTypeEagle3 = "draft-eagle3"
++	draftTypeMTP         = "draft-mtp"
++	draftTypeEagle3      = "draft-eagle3"
++	draftTypeNgramMod    = "ngram-mod"
++	draftTypeNgramMapK4V = "ngram-map-k4v"
+ )
+ 
+ func appendDraftArgs(params []string, draftType, draftModelPath string, opts api.Options) []string {
+-	if draftType == "" && draftModelPath == "" {
++	if opts.DraftNumPredict <= 0 {
+ 		return params
+ 	}
+-	if opts.DraftNumPredict <= 0 {
++	specType := draftType
++	if opts.DraftSpecType != "" {
++		specType = opts.DraftSpecType
++	}
++	if specType == "" && draftModelPath == "" {
+ 		return params
+ 	}
+-
+-	if draftType != "" {
+-		params = append(params, "--spec-type", draftType)
++	if specType != "" {
++		params = append(params, "--spec-type", specType)
+ 	}
+ 	params = append(params, "--spec-draft-n-max", strconv.Itoa(opts.DraftNumPredict))
+-	if draftType == draftTypeMTP {
++	if specType == draftTypeMTP {
+ 		params = append(params, "--spec-draft-backend-sampling")
+ 	}
++	if hasSpecType(specType, draftTypeNgramMod) {
++		if opts.DraftNgramModNMatch > 0 {
++			params = append(params, "--spec-ngram-mod-n-match", strconv.Itoa(opts.DraftNgramModNMatch))
++		}
++		if opts.DraftNgramModNMin > 0 {
++			params = append(params, "--spec-ngram-mod-n-min", strconv.Itoa(opts.DraftNgramModNMin))
++		}
++		if opts.DraftNgramModNMax > 0 {
++			params = append(params, "--spec-ngram-mod-n-max", strconv.Itoa(opts.DraftNgramModNMax))
++		}
++	}
++	if hasSpecType(specType, draftTypeNgramMapK4V) {
++		if opts.DraftNgramMapK4VN > 0 {
++			params = append(params, "--spec-ngram-map-k4v-size-n", strconv.Itoa(opts.DraftNgramMapK4VN))
++		}
++		if opts.DraftNgramMapK4VM > 0 {
++			params = append(params, "--spec-ngram-map-k4v-size-m", strconv.Itoa(opts.DraftNgramMapK4VM))
++		}
++		if opts.DraftNgramMapK4VMinHits > 0 {
++			params = append(params, "--spec-ngram-map-k4v-min-hits", strconv.Itoa(opts.DraftNgramMapK4VMinHits))
++		}
++	}
+ 	if draftModelPath != "" {
+ 		params = append(params, "--spec-draft-model", draftModelPath)
+ 	}
+ 	return params
+ }
+ 
++func hasSpecType(specType, wanted string) bool {
++	for _, typ := range strings.Split(specType, ",") {
++		if strings.TrimSpace(typ) == wanted {
++			return true
++		}
++	}
++	return false
++}
++
+ func externalDraftType(path string, shards ...string) (string, error) {
+ 	f, err := LoadModel(path, 1, shards...)
+ 	if err != nil {

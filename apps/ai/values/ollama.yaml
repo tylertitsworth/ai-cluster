@@ -50,7 +50,9 @@ extraEnv:
   - name: OLLAMA_CONTEXT_LENGTH
     value: "131072"
   - name: OLLAMA_KV_CACHE_TYPE
-    value: q8_0
+    value: q4_0
+  - name: ROCBLAS_USE_HIPBLASLT
+    value: "0"
   - name: OLLAMA_LOAD_TIMEOUT
     value: 30m
   - name: OLLAMA_KEEP_ALIVE

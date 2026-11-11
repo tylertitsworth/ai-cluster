@@ -17,6 +17,12 @@ app-template:
 
           env:
             TZ: America/Los_Angeles
+            # Disable AVX-512: .NET 8 segfaults on framework-13-laptop's Intel
+            # Tiger Lake AVX-512. Force the runtime back to AVX2.
+            DOTNET_EnableAVX512F: "0"
+            DOTNET_EnableAVX512BW: "0"
+            DOTNET_EnableAVX512VL: "0"
+            DOTNET_EnableAVX512DQ: "0"
 
           probes:
             liveness:

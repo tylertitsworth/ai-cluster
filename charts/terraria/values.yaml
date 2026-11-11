@@ -5,6 +5,10 @@ app-template:
       strategy: Recreate
 
       pod:
+        # Pin to framework-desktop (AMD): .NET segfaults on framework-13-laptop's
+        # Intel Tiger Lake AVX-512.
+        nodeSelector:
+          kubernetes.io/hostname: framework-desktop
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000

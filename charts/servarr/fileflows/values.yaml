@@ -6,7 +6,7 @@ app-template:
 
       pod:
         nodeSelector:
-          kubernetes.io/hostname: framework-13-laptop
+          kubernetes.io/hostname: framework-desktop
 
       containers:
         main:

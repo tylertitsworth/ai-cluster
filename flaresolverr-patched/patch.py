@@ -26,14 +26,44 @@ def cleanup_orphaned_browsers() -> None:
     PID 1 so the next pass can reach it. Active browsers (parent != 1) are
     left untouched.
     """
+    import signal as _signal
     try:
+        my_uid = os.getuid()
         for _ in range(6):
-            subprocess.run(
-                "for p in $(pgrep -u $(id -u) -f '/usr/lib/chromium/chromium' 2>/dev/null); do "
-                "[ \"$(awk '{print $4}' /proc/$p/stat 2>/dev/null)\" = 1 ] && kill -9 $p 2>/dev/null; "
-                "done",
-                shell=True, executable="/bin/sh", stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL)
+            victims = []
+            for name in os.listdir("/proc"):
+                if not name.isdigit():
+                    continue
+                pid = int(name)
+                if pid <= 1:
+                    continue
+                try:
+                    with open("/proc/%d/stat" % pid) as f:
+                        stat = f.read().split()
+                    # stat[3] is ppid; comm may contain spaces but ppid is field 4
+                    ppid = int(stat[3])
+                    # verify it is a chromium process owned by us
+                    with open("/proc/%d/cmdline" % pid, "rb") as f:
+                        cmd = f.read().replace(b"\\x00", b" ").decode("utf-8", "ignore")
+                except (FileNotFoundError, ProcessLookupError, ValueError, PermissionError):
+                    continue
+                if ppid != 1:
+                    continue
+                if "/usr/lib/chromium/chromium" not in cmd:
+                    continue
+                try:
+                    if os.stat("/proc/%d" % pid).st_uid != my_uid:
+                        continue
+                except FileNotFoundError:
+                    continue
+                victims.append(pid)
+            for pid in victims:
+                try:
+                    os.kill(pid, _signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    pass
+            if not victims:
+                break
     except Exception:
         pass
 '''

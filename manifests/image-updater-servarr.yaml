@@ -39,7 +39,7 @@ spec:
     - namePattern: flaresolverr
       images:
         - alias: flaresolverr
-          imageName: ghcr.io/flaresolverr/flaresolverr:latest
+          imageName: ghcr.io/tylertitsworth/ai-cluster-flaresolverr:latest
           commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
           manifestTargets:
             helm:

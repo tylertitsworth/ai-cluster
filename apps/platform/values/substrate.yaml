@@ -17,6 +17,12 @@ atenetRouter:
   ingressAllowedSPIFFEIDs:
     - spiffe://cluster.local/ns/kagent/sa/kagent-controller
 
+ateApi:
+  authorization:
+    bootstrapOwners:
+      - system:serviceaccount:ate-system:ate-client
+      - system:serviceaccount:kagent:kagent-controller
+
 # Atelet managed by separate substrate-atelet application
 atelet:
   enabled: false

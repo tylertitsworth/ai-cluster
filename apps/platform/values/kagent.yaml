@@ -35,11 +35,6 @@ providers:
     model: "swift-qwen3.8-27b:q6k-map-k4v"
     config:
       host: ollama.ollama.svc.cluster.local:11434
-  openAI:
-    provider: OpenAI
-    model: "gpt-4.1-mini"
-    apiKeySecretRef: kagent-openai
-    apiKeySecretKey: OPENAI_API_KEY
 
 substrateWorkerPool:
   create: true

@@ -19,6 +19,9 @@ spec:
     targetRevision: 1.0.0
     helm:
       valuesObject:
+        global:
+          imagePullSecrets:
+            - name: ghcr-pull
         substrateReleaseName: substrate
         objectStore:
           backend: s3

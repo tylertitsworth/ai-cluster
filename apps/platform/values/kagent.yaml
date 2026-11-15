@@ -1,4 +1,8 @@
 # kagent values (Helm, 1.0.1)
+global:
+  imagePullSecrets:
+    - name: ghcr-pull
+
 database:
   postgres:
     ownerConnectionStringSecretRef:

@@ -1,5 +1,9 @@
 # Substrate chart values (1.0.0)
 
+global:
+  imagePullSecrets:
+    - name: ghcr-pull
+
 postgres:
   readWriteConnectionStringSecretRef:
     name: substrate-postgres-readwrite

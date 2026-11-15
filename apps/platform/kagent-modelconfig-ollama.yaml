@@ -1,0 +1,12 @@
+# kagent ModelConfig for in-cluster Ollama
+apiVersion: api.kagent.dev/v1alpha3
+kind: ModelConfig
+metadata:
+  name: ollama-swift-qwen38-27b
+  namespace: kagent
+spec:
+  provider: Ollama
+  model: swift-qwen3.8-27b:q6k-map-k4v
+  ollama:
+    host: http://ollama.ollama.svc.cluster.local:11434
+  stream: true

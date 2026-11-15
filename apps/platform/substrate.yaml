@@ -13,6 +13,13 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ate-system
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: ate-api-server
+      namespace: ate-system
+      jsonPointers:
+        - /spec/template/spec/containers/0/args
   sources:
     - repoURL: oci://ghcr.io/kagent-dev/substrate/helm/substrate
       chart: substrate

@@ -1,0 +1,22 @@
+# Substrate PodCert controller
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: substrate-podcert
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: podcertificate-controller-system
+  sources:
+    - repoURL: oci://ghcr.io/kagent-dev/substrate/helm/substrate-podcert
+      chart: substrate-podcert
+      targetRevision: 1.0.0
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,23 @@
+# kagent CRDs
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent-crds
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  sources:
+    - repoURL: oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds
+      chart: kagent-crds
+      targetRevision: 1.0.1
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

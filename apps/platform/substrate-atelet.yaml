@@ -1,4 +1,4 @@
-# Substrate Atelet
+# Substrate Atelet (separate release; substrate chart has atelet.enabled=false)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,10 +13,24 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ate-system
-  sources:
-    - repoURL: oci://ghcr.io/kagent-dev/substrate/helm/substrate-atelet
-      chart: substrate-atelet
-      targetRevision: 1.0.0
+  source:
+    repoURL: oci://ghcr.io/kagent-dev/substrate/helm/substrate-atelet
+    chart: substrate-atelet
+    targetRevision: 1.0.0
+    helm:
+      valuesObject:
+        substrateReleaseName: substrate
+        objectStore:
+          backend: s3
+          endpoint: http://rustfs.ate-system.svc:9000
+          region: us-east-1
+          pathStyle: true
+        objectStorePlugin:
+          extraEnv:
+            - name: AWS_ACCESS_KEY_ID
+              value: rustfsadmin
+            - name: AWS_SECRET_ACCESS_KEY
+              value: rustfsadmin
   syncPolicy:
     syncOptions:
       - CreateNamespace=true

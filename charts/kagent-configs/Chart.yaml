@@ -1,6 +1,0 @@
-apiVersion: v2
-name: kagent-configs
-description: Kagent custom resources (ModelConfigs, etc.)
-type: application
-version: 0.1.0
-appVersion: "1.0.0"

@@ -1,0 +1,22 @@
+# Substrate Atelet
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: substrate-atelet
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ate-system
+  sources:
+    - repoURL: oci://ghcr.io/kagent-dev/substrate/helm/substrate-atelet
+      chart: substrate-atelet
+      targetRevision: 1.0.0
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,68 @@
+# kagent PostgreSQL (CloudNativePG Cluster)
+# Applied as a raw manifest (not via Helm) per user request.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: kagent-postgres
+  namespace: kagent
+spec:
+  instances: 1
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  enableSuperuserAccess: true
+  bootstrap:
+    initdb:
+      database: kagent
+      owner: kagent_owner_user
+      secret:
+        name: kagent-postgres-bootstrap
+  managed:
+    roles:
+      - name: kagent_readwrite_user
+        ensure: present
+        login: true
+        passwordSecret:
+          name: kagent-postgres-readwrite-password
+---
+# Bootstrap secret for CNPG (fixed password for homelab validation)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-bootstrap
+  namespace: kagent
+type: kubernetes.io/basic-auth
+stringData:
+  username: kagent_owner_user
+  password: "kagent-owner-password-change-me"
+---
+# Password secret for readwrite user
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-readwrite-password
+  namespace: kagent
+type: kubernetes.io/basic-auth
+stringData:
+  username: kagent_readwrite_user
+  password: "kagent-rw-password-change-me"
+---
+# kagent owner connection string secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-owner
+  namespace: kagent
+type: Opaque
+stringData:
+  ownerConnectionString: "postgres://kagent_owner_user:kagent-owner-password-change-me@kagent-postgres-rw:5432/kagent?sslmode=disable"
+---
+# kagent readwrite connection string secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-readwrite
+  namespace: kagent
+type: Opaque
+stringData:
+  readWriteConnectionString: "postgres://kagent_readwrite_user:kagent-rw-password-change-me@kagent-postgres-rw:5432/kagent?sslmode=disable"

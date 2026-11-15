@@ -1,0 +1,21 @@
+# kagent values for 1.0.1
+# Database: CloudNativePG cluster (kagent-postgres)
+database:
+  postgres:
+    ownerConnectionStringSecretRef:
+      name: kagent-postgres-owner
+      key: ownerConnectionString
+    readWriteConnectionStringSecretRef:
+      name: kagent-postgres-readwrite
+      key: readWriteConnectionString
+    clientCertificate:
+      enabled: false
+
+# UI configuration
+ui:
+  externalUrl: "https://kagent.tailnet.ts.net"
+  replicas: 1
+
+# Controller configuration
+controller:
+  replicas: 1

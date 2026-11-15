@@ -1,5 +1,5 @@
 # kagent PostgreSQL (CloudNativePG Cluster)
-# Applied as a raw manifest (not via Helm) per user request.
+# Requires CloudNativePG operator (apps/platform/cloudnative-pg.yaml) installed.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -14,38 +14,20 @@ spec:
   bootstrap:
     initdb:
       database: kagent
-      owner: kagent_owner_user
+      owner: kagent
       secret:
-        name: kagent-postgres-bootstrap
-  managed:
-    roles:
-      - name: kagent_readwrite_user
-        ensure: present
-        login: true
-        passwordSecret:
-          name: kagent-postgres-readwrite-password
+        name: kagent-postgres-app
 ---
-# Bootstrap secret for CNPG (fixed password for homelab validation)
+# App user secret for CNPG bootstrap
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kagent-postgres-bootstrap
+  name: kagent-postgres-app
   namespace: kagent
 type: kubernetes.io/basic-auth
 stringData:
-  username: kagent_owner_user
-  password: "kagent-owner-password-change-me"
----
-# Password secret for readwrite user
-apiVersion: v1
-kind: Secret
-metadata:
-  name: kagent-postgres-readwrite-password
-  namespace: kagent
-type: kubernetes.io/basic-auth
-stringData:
-  username: kagent_readwrite_user
-  password: "kagent-rw-password-change-me"
+  username: kagent
+  password: "kagent-db-password"
 ---
 # kagent owner connection string secret
 apiVersion: v1
@@ -55,7 +37,7 @@ metadata:
   namespace: kagent
 type: Opaque
 stringData:
-  ownerConnectionString: "postgres://kagent_owner_user:kagent-owner-password-change-me@kagent-postgres-rw:5432/kagent?sslmode=disable"
+  ownerConnectionString: "postgres://kagent:kagent-db-password@kagent-postgres-rw:5432/kagent?sslmode=disable"
 ---
 # kagent readwrite connection string secret
 apiVersion: v1
@@ -65,4 +47,4 @@ metadata:
   namespace: kagent
 type: Opaque
 stringData:
-  readWriteConnectionString: "postgres://kagent_readwrite_user:kagent-rw-password-change-me@kagent-postgres-rw:5432/kagent?sslmode=disable"
+  readWriteConnectionString: "postgres://kagent:kagent-db-password@kagent-postgres-rw:5432/kagent?sslmode=disable"

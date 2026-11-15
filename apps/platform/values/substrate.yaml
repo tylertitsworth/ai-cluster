@@ -13,8 +13,4 @@ postgres:
   clientCertificates:
     enabled: false
 
-ateApi:
-  extraArgs:
-    - --grpc-listen-addr=[::]:443
-
-# Keep defaults for other components (atelet, rustfs, etc.)
+# Keep chart defaults for other components.

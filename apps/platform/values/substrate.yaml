@@ -1,1 +1,20 @@
-# Substrate values (defaults)
+# Substrate chart values (1.0.0)
+
+postgres:
+  readWriteConnectionStringSecretRef:
+    name: substrate-postgres-readwrite
+    key: readWriteConnectionString
+  ownerConnectionStringSecretRef:
+    name: substrate-postgres-owner
+    key: ownerConnectionString
+  readWriteRole: substrate_readwrite
+  ownerRole: substrate_owner
+  schema: substrate
+  clientCertificates:
+    enabled: false
+
+ateApi:
+  extraArgs:
+    - --grpc-listen-addr=[::]:443
+
+# Keep defaults for other components (atelet, rustfs, etc.)

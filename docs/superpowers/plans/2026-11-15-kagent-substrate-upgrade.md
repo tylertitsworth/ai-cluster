@@ -193,23 +193,36 @@ spec:
 
 ## Phase 2 — GitOps install of kagent + Agent Substrate (after 1.37 stable)
 
+**Status (in progress, PR open for review — not merged):**
+- [x] Branch created and pushed: `feature/kagent-substrate` (PR: https://github.com/tylertitsworth/ai-cluster/pull/new/feature/kagent-substrate)
+- [x] GitOps manifests/values added under `apps/platform/` and `apps/platform/values/` (CloudNativePG operator chart app, CNPG cluster manifest for kagent Postgres, kagent 1.0.1 CRDs+chart, substrate 1.0.0 CRDs+podcert+atelet+substrate charts, Tailscale ingresses for UI/API)
+  - Versions used: `kagent`/`kagent-crds` **1.0.1**, `substrate*` **1.0.0**, `cnpg/cloudnative-pg` **0.29.1**
+- [x] CloudNativePG operator deployed to `cnpg-system` and running
+  - Notes: required `ServerSideApply` for CRD size, namespace creation ordering fix, and webhook reconciliation/namespace correction during manual bootstrap (ArgoCD app shows `OutOfSync/Healthy` after manual fixes)
+- [~] kagent Postgres (CNPG manifest requested): `apps/platform/kagent-postgres.yaml` added (CNPG `Cluster` + secrets, Longhorn-backed). **In-cluster CNPG bootstrap hung** at initdb “Configuring new PostgreSQL instance” (cluster stuck `Setting up primary`); temporarily replaced in-cluster with a simple `postgres:16` Deployment (`kagent-postgres-rw`, `emptyDir`) + required owner/readwrite secrets and roles/schema for validation so kagent controller could attempt startup. **Repo remains CNPG-manifest-based as requested.**
+- [~] kagent deployed to `kagent`: UI and tools pods Running; **controller CrashLoopBackOff** (cannot dial substrate API: `substrate: dial ate-api "dns:///api.ate-system.svc:443": context deadline exceeded`)
+- [~] Tailscale ingresses created: `kagent-ui` (`https://kagent-ui.tail79a5c8.ts.net`, serving UI HTML) and `kagent-api` (`https://kagent-api.tail79a5c8.ts.net`, backend controller unhealthy)
+- [ ] Substrate fully operational (blocked): `podcertificate-controller` stuck mounting missing CA pool secrets (`service-dns-ca-pool`, `pod-identity-ca-pool`, `postgres-ca-pool`); ate-api/atelet/idp/router/controller in `ate-system` stuck pending cert issuance and missing substrate bootstrap/auth resources (e.g. `ate-api-authentication`, actor-id pools/secrets). Requires substrate bootstrap (CA generation + auth material + secrets) per substrate docs.
+- [ ] End-to-end validation: UI usable and API features functional (API blocked by controller/substrate; UI reachable)
+
 ### 2.1 PR branch: Application manifests + values
 
 **Files to create** (all under `apps/platform/` and `apps/platform/values/`):
 
 | File | Type | Notes |
 |------|------|-------|
-| `apps/platform/system-upgrade-controller.yaml` | Application | SUC manifests (from Phase 1, if not already tracked) |
-| `apps/platform/kagent-crds.yaml` | Application | `oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds`, `--version 1.0.0` |
+| `apps/platform/cloudnative-pg.yaml` | Application | `cnpg/cloudnative-pg` chart `0.29.1` (operator) — added per request |
+| `apps/platform/kagent-postgres.yaml` | Manifest (CNPG Cluster) | Longhorn-backed Postgres for kagent (manifest, not Helm) — added per request |
+| `apps/platform/kagent-crds.yaml` | Application | `oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds`, `--version 1.0.1` |
 | `apps/platform/substrate-crds.yaml` | Application | `oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds`, `--version 1.0.0` |
 | `apps/platform/substrate-podcert.yaml` | Application | `oci://ghcr.io/kagent-dev/substrate/helm/substrate-podcert`, `--version 1.0.0`, ns `podcertificate-controller-system` |
 | `apps/platform/substrate-atelet.yaml` | Application | `oci://ghcr.io/kagent-dev/substrate/helm/substrate-atelet`, `--version 1.0.0`, ns `ate-system` |
 | `apps/platform/substrate.yaml` | Application | `oci://ghcr.io/kagent-dev/substrate/helm/substrate`, `--version 1.0.0`, ns `ate-system` |
-| `apps/platform/kagent.yaml` | Application | `oci://ghcr.io/kagent-dev/kagent/helm/kagent`, `--version 1.0.0`, ns `kagent` |
-| `apps/platform/kagent-ingress.yaml` | Manifest (Ingress) | Tailscale Ingress for UI + optional API |
+| `apps/platform/kagent.yaml` | Application | `oci://ghcr.io/kagent-dev/kagent/helm/kagent`, `--version 1.0.1`, ns `kagent` |
+| `apps/platform/kagent-ingress.yaml` | Manifest (Ingress) | Tailscale Ingress for UI + API |
+| `apps/platform/values/cloudnative-pg.yaml` | Values | CNPG operator values |
 | `apps/platform/values/kagent.yaml` | Values | kagent chart values |
 | `apps/platform/values/substrate.yaml` | Values | substrate chart values |
-| `apps/platform/values/substrate-atelet.yaml` | Values | atelet values |
 
 **Application pattern** (multi-source, matching [apps/platform/longhorn.yaml](apps/platform/longhorn.yaml)):
 

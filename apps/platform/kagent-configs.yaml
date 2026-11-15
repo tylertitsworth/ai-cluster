@@ -1,0 +1,22 @@
+# kagent configs (ModelConfigs and related custom resources)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent-configs
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: feature/kagent-substrate
+    path: charts/kagent-configs
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false

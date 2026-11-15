@@ -7,7 +7,7 @@ app-template:
       containers:
         main:
           image:
-            repository: ghcr.io/tylertitsworth/ai-cluster-flaresolverr
+            repository: ghcr.io/flaresolverr/flaresolverr
             tag: latest
             pullPolicy: Always
 

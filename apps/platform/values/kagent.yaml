@@ -1,5 +1,4 @@
-# kagent values for 1.0.1
-# Database: CloudNativePG cluster (kagent-postgres)
+# kagent values (Helm, 1.0.1)
 database:
   postgres:
     ownerConnectionStringSecretRef:
@@ -11,11 +10,120 @@ database:
     clientCertificate:
       enabled: false
 
-# UI configuration
-ui:
-  externalUrl: "https://kagent.tailnet.ts.net"
-  replicas: 1
-
-# Controller configuration
 controller:
   replicas: 1
+  metrics:
+    enabled: true
+    service:
+      type: ClusterIP
+      port: 8443
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: monitoring
+
+ui:
+  externalUrl: "https://kagent-ui.tail79a5c8.ts.net"
+  replicas: 1
+
+providers:
+  default: ollama
+  ollama:
+    provider: Ollama
+    model: "swift-qwen3.8-27b:q6k-map-k4v"
+    config:
+      host: ollama.ollama.svc.cluster.local:11434
+  openAI:
+    provider: OpenAI
+    model: "gpt-4.1-mini"
+    apiKeySecretRef: kagent-openai
+    apiKeySecretKey: OPENAI_API_KEY
+
+substrateWorkerPool:
+  create: true
+  name: kagent-default
+  replicas: 1
+  workerImage: ghcr.io/kagent-dev/substrate/ateworker-gvisor:v1.0.0
+  sandboxClass: gvisor
+
+harnesses:
+  enabled: true
+  snapshotLocation: s3://ate-snapshots/kagent/
+  kagent:
+    enabled: true
+  codex:
+    enabled: true
+  claude:
+    enabled: true
+
+# Extra resources (e.g. additional ModelConfigs, postgres metrics exporter)
+extraObjects:
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: ModelConfig
+    metadata:
+      name: ollama-swift-qwen38-27b
+      namespace: kagent
+    spec:
+      provider: Ollama
+      model: swift-qwen3.8-27b:q6k-map-k4v
+      ollama:
+        host: http://ollama.ollama.svc.cluster.local:11434
+      stream: true
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: kagent-postgres-exporter
+      namespace: kagent
+      labels:
+        app: kagent-postgres-exporter
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: kagent-postgres-exporter
+      template:
+        metadata:
+          labels:
+            app: kagent-postgres-exporter
+        spec:
+          containers:
+            - name: postgres-exporter
+              image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
+              ports:
+                - name: metrics
+                  containerPort: 9187
+              env:
+                - name: DATA_SOURCE_URI
+                  value: kagent-postgres-rw:5432/kagent?sslmode=disable
+                - name: DATA_SOURCE_USER
+                  value: kagent
+                - name: DATA_SOURCE_PASS
+                  value: kagent-db-password
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: kagent-postgres-exporter
+      namespace: kagent
+      labels:
+        app: kagent-postgres-exporter
+    spec:
+      selector:
+        app: kagent-postgres-exporter
+      ports:
+        - name: metrics
+          port: 9187
+          targetPort: metrics
+  - apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      name: kagent-postgres-exporter
+      namespace: kagent
+      labels:
+        release: monitoring
+    spec:
+      selector:
+        matchLabels:
+          app: kagent-postgres-exporter
+      endpoints:
+        - port: metrics
+          interval: 30s

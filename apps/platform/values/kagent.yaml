@@ -12,6 +12,8 @@ database:
 
 controller:
   replicas: 1
+  substrateClientCertificate:
+    enabled: true
   metrics:
     enabled: true
     service:
@@ -56,7 +58,7 @@ harnesses:
   claude:
     enabled: true
 
-# Extra resources (e.g. additional ModelConfigs, postgres metrics exporter)
+# Extra resources (additional ModelConfig and postgres metrics exporter)
 extraObjects:
   - apiVersion: api.kagent.dev/v1alpha3
     kind: ModelConfig

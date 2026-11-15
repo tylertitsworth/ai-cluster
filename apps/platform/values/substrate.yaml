@@ -13,4 +13,8 @@ postgres:
   clientCertificates:
     enabled: false
 
+atenetRouter:
+  ingressAllowedSPIFFEIDs:
+    - spiffe://cluster.local/ns/kagent/sa/kagent-controller
+
 # Keep chart defaults for other components.

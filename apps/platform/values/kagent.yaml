@@ -70,7 +70,7 @@ extraObjects:
       openAI:
         baseUrl: http://ollama.ollama.svc.cluster.local:11434/v1
         apiFormat: chatCompletions
-        timeout: 3600
+        timeout: 7200
       stream: true
   - apiVersion: apps/v1
     kind: Deployment

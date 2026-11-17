@@ -1,0 +1,49 @@
+# Tailscale Ingress for kagent UI
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kagent-ui
+  namespace: kagent
+  annotations:
+    tailscale.com/expose: "true"
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: kagent-ui
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kagent-ui
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - kagent-ui
+---
+# Tailscale Ingress for kagent API (controller)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kagent-api
+  namespace: kagent
+  annotations:
+    tailscale.com/expose: "true"
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: kagent-api
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kagent-controller
+                port:
+                  number: 8083
+  tls:
+    - hosts:
+        - kagent-api

@@ -1,0 +1,37 @@
+# Substrate chart values (1.0.0)
+
+global:
+  imagePullSecrets:
+    - name: ghcr-pull
+
+postgres:
+  readWriteConnectionStringSecretRef:
+    name: substrate-postgres-readwrite
+    key: readWriteConnectionString
+  ownerConnectionStringSecretRef:
+    name: substrate-postgres-owner
+    key: ownerConnectionString
+  readWriteRole: substrate_readwrite
+  ownerRole: substrate_owner
+  schema: substrate
+  clientCertificates:
+    enabled: false
+
+preview:
+  - PerTemplateSnapshotLocation
+  - GoldenEgressPolicy
+
+atenetRouter:
+  ingressAllowedSPIFFEIDs:
+    - spiffe://cluster.local/ns/kagent/sa/kagent-controller
+
+ateApi:
+  authorization:
+    bootstrapOwners:
+      - system:serviceaccount:ate-system:ate-client
+      - spiffe://cluster.local/ns/kagent/sa/kagent-controller
+
+# Atelet managed by separate substrate-atelet application
+atelet:
+  enabled: false
+

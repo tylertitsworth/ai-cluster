@@ -1,0 +1,23 @@
+# Substrate CRDs
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: substrate-crds
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  sources:
+    - repoURL: oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
+      chart: substrate-crds
+      targetRevision: 1.0.0
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

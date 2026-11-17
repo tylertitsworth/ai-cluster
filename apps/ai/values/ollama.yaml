@@ -54,7 +54,7 @@ extraEnv:
   - name: ROCBLAS_USE_HIPBLASLT
     value: "0"
   - name: OLLAMA_LOAD_TIMEOUT
-    value: 30m
+    value: 1h
   - name: OLLAMA_KEEP_ALIVE
     value: "-1"
   - name: OLLAMA_MAX_LOADED_MODELS

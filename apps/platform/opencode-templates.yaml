@@ -92,8 +92,10 @@ metadata:
   name: ollama-local-example
   namespace: kagent
 spec:
-  provider: Ollama
+  provider: OpenAI
   model: swift-qwen3.8-27b:q6k-map-k4v
-  ollama:
-    host: http://ollama.ollama.svc.cluster.local:11434
+  openAI:
+    baseUrl: http://ollama.ollama.svc.cluster.local:11434/v1
+    apiFormat: chatCompletions
+    timeout: 3600
   stream: true

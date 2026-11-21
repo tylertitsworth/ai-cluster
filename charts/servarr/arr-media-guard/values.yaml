@@ -1,0 +1,63 @@
+app-template:
+  controllers:
+    arr-media-guard:
+      replicas: 1
+      strategy: Recreate
+      # AMG finishes an in-flight check on shutdown; the image asks for 60s.
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/samwiseg0/arr-media-guard
+            tag: latest
+            pullPolicy: Always
+
+          env:
+            TZ: America/Los_Angeles
+            PUID: "1000"
+            PGID: "1000"
+
+          envValueKeyRef:
+            - name: RADARR_API_KEY
+              secretKey:
+                name: arr-media-guard
+                key: radarr-api-key
+            - name: SONARR_API_KEY
+              secretKey:
+                name: arr-media-guard
+                key: sonarr-api-key
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+  service:
+    main:
+      controller: arr-media-guard
+      ports:
+        webhook:
+          port: 8484
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: arr-media-guard-config-v1
+      globalMounts:
+        - path: /config
+
+    state:
+      enabled: true
+      existingClaim: arr-media-guard-state-v1
+      globalMounts:
+        - path: /config/state
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /data
+          readOnly: false

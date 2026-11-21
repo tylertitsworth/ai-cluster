@@ -49,24 +49,6 @@ app-template:
         webhook:
           port: 8484
 
-  ingress:
-    main:
-      enabled: true
-      className: tailscale
-      hosts:
-        - host: arr-media-guard
-          paths:
-            - path: /
-              pathType: Prefix
-              service:
-                identifier: main
-                port: webhook
-      annotations:
-        tailscale.com/proxy-class: "pin-framework-desktop"
-      tls:
-        - hosts:
-            - arr-media-guard
-
   persistence:
     config:
       enabled: true

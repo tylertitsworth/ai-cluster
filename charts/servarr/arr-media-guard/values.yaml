@@ -21,6 +21,9 @@ app-template:
               value: "1000"
             - name: PGID
               value: "1000"
+            # The arr apps see the media at /media; AMG mounts it at /data.
+            - name: PATH_MAP
+              value: /media:/data
             - name: RADARR_API_KEY
               valueFrom:
                 secretKeyRef:

@@ -7,16 +7,6 @@ app-template:
         # AMG finishes an in-flight check on shutdown; the image asks for 60s.
         terminationGracePeriodSeconds: 60
 
-      envValueKeyRef:
-        - name: RADARR_API_KEY
-          secretKey:
-            name: arr-media-guard
-            key: radarr-api-key
-        - name: SONARR_API_KEY
-          secretKey:
-            name: arr-media-guard
-            key: sonarr-api-key
-
       containers:
         main:
           image:
@@ -25,9 +15,22 @@ app-template:
             pullPolicy: Always
 
           env:
-            TZ: America/Los_Angeles
-            PUID: "1000"
-            PGID: "1000"
+            - name: TZ
+              value: America/Los_Angeles
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: RADARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arr-media-guard
+                  key: radarr-api-key
+            - name: SONARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arr-media-guard
+                  key: sonarr-api-key
 
           resources:
             requests:

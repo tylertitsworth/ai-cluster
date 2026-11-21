@@ -3,8 +3,19 @@ app-template:
     arr-media-guard:
       replicas: 1
       strategy: Recreate
-      # AMG finishes an in-flight check on shutdown; the image asks for 60s.
-      terminationGracePeriodSeconds: 60
+      pod:
+        # AMG finishes an in-flight check on shutdown; the image asks for 60s.
+        terminationGracePeriodSeconds: 60
+
+      envValueKeyRef:
+        - name: RADARR_API_KEY
+          secretKey:
+            name: arr-media-guard
+            key: radarr-api-key
+        - name: SONARR_API_KEY
+          secretKey:
+            name: arr-media-guard
+            key: sonarr-api-key
 
       containers:
         main:
@@ -17,16 +28,6 @@ app-template:
             TZ: America/Los_Angeles
             PUID: "1000"
             PGID: "1000"
-
-          envValueKeyRef:
-            - name: RADARR_API_KEY
-              secretKey:
-                name: arr-media-guard
-                key: radarr-api-key
-            - name: SONARR_API_KEY
-              secretKey:
-                name: arr-media-guard
-                key: sonarr-api-key
 
           resources:
             requests:

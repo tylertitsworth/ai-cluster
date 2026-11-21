@@ -1,0 +1,107 @@
+# Streaming BYO harness test objects. Apply with: kubectl apply -f streaming-test-objects.yaml
+# These are isolated from the working objects and use a dedicated test image tag.
+apiVersion: api.kagent.dev/v1alpha3
+kind: Harness
+metadata:
+  name: opencode-byo-stream-local
+  namespace: kagent
+spec:
+  byo: {}
+  env:
+  - name: OPENCODE_AUTO
+    value: "true"
+  - name: OPENCODE_MODEL
+    value: ollama/swift-qwen3.8-27b:q6k-map-k4v
+  - name: OLLAMA_HOST
+    value: http://ollama.ollama.svc.cluster.local:11434
+  - name: XDG_DATA_HOME
+    value: /data
+  substrate:
+    snapshotPolicy:
+      location: s3://ate-snapshots/kagent/
+    workerPoolRef:
+      name: kagent-default
+  workload:
+    command:
+    - /entrypoint.sh
+    image: ghcr.io/tylertitsworth/ai-cluster-opencode-byo-harness@sha256:e1c292c75b8c792ac4f397ff5f5d1265e334f3143caf24e3a0cbb69905482ead
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: AgentTemplate
+metadata:
+  name: local-opencode-stream
+  namespace: kagent
+spec:
+  description: Streaming OpenCode BYO test template using in-cluster Ollama
+  modelConfig:
+    name: default-model-config
+  systemPrompt: |
+    You are a helpful coding assistant running via the streaming OpenCode BYO harness.
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: local-opencode-stream
+  namespace: kagent
+spec:
+  egressPolicyRefs:
+  - name: allow-ollama
+  harnessRef:
+    name: opencode-byo-stream-local
+  template:
+    ref:
+      name: local-opencode-stream
+---
+# Go test objects. OPENCODE_MODEL matches the existing working Go harness.
+# Validation is pending upstream model availability.
+apiVersion: api.kagent.dev/v1alpha3
+kind: Harness
+metadata:
+  name: opencode-byo-stream-go
+  namespace: kagent
+spec:
+  byo: {}
+  env:
+  - name: OPENCODE_AUTO
+    value: "true"
+  - name: OPENCODE_MODEL
+    value: openai/iceman-free
+  - name: OPENAI_BASE_URL
+    value: https://opencode.ai/zen/v1
+  - name: XDG_DATA_HOME
+    value: /data
+  substrate:
+    snapshotPolicy:
+      location: s3://ate-snapshots/kagent/
+    workerPoolRef:
+      name: kagent-default
+  workload:
+    command:
+    - /entrypoint.sh
+    image: ghcr.io/tylertitsworth/ai-cluster-opencode-byo-harness@sha256:e1c292c75b8c792ac4f397ff5f5d1265e334f3143caf24e3a0cbb69905482ead
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: AgentTemplate
+metadata:
+  name: go-opencode-stream
+  namespace: kagent
+spec:
+  description: Streaming OpenCode BYO test template using OpenCode Go
+  modelConfig:
+    name: opencode-zen-iceman-free
+  systemPrompt: |
+    You are a helpful coding assistant running via the streaming OpenCode BYO harness.
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: go-opencode-stream
+  namespace: kagent
+spec:
+  egressPolicyRefs:
+  - name: allow-opencode-go
+  harnessRef:
+    name: opencode-byo-stream-go
+  template:
+    ref:
+      name: go-opencode-stream

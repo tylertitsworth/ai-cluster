@@ -7,11 +7,6 @@ app-template:
       data:
         policy.json: |
           {
-            "kids": {
-              "genres": {"radarr": ["Family"], "sonarr": ["Children", "Family"]},
-              "profiles": ["Kids"],
-              "studios": []
-            },
             "audio": {
               "english": ["original"],
               "foreign": ["original", "english"],

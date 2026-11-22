@@ -114,6 +114,7 @@ controllers:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
+          SABNZBD__MISC__HOST_WHITELIST: "sabnzbd.tail79a5c8.ts.net"
 
         probes:
           liveness:

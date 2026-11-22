@@ -31,13 +31,28 @@ WORKDIR $HOME
 # Update SteamCMD and verify latest version
 RUN steamcmd +quit
 
-ADD --chown=tml:tml https://raw.githubusercontent.com/tModLoader/tModLoader/1.4.4/patches/tModLoader/Terraria/release_extras/DedicatedServerUtils/manage-tModLoaderServer.sh .
+ADD --chown=tml:tml https://raw.githubusercontent.com/tModLoader/tModLoader/1.4.5/patches/tModLoader/Terraria/release_extras/DedicatedServerUtils/manage-tModLoaderServer.sh .
 
 # Make management script executable
 RUN chmod +x manage-tModLoaderServer.sh
 
-RUN ./manage-tModLoaderServer.sh install-tml --github --tml-version $TML_VERSION
+# Install tModLoader at build time. Defaults to the latest published GitHub
+# release; pass --build-arg TML_VERSION=<tag> to pin an exact version.
+# Only pass the flag when a version is set: an empty --tmlversion resolves to
+# a 404 and the build would silently ship without tModLoader.
+RUN set -e \
+    && if [ -n "$TML_VERSION" ]; then \
+         ./manage-tModLoaderServer.sh install-tml --github --tmlversion "$TML_VERSION"; \
+       else \
+         ./manage-tModLoaderServer.sh install-tml --github; \
+       fi
+
+# Fail loudly if tModLoader did not actually install
+# (the script populates server/ under the install folder)
+RUN test -n "$(cat server/.ver)" && test -f server/LaunchUtils/ScriptCaller.sh
 
 EXPOSE 7777
 
-ENTRYPOINT [ "./manage-tModLoaderServer.sh", "docker", "--folder", "/home/tml/.local/share/Terraria/tModLoader" ]
+# The management script's "docker" command was removed upstream (v4.0.0.1);
+# "start" is the equivalent now that tModLoader is installed at build time.
+ENTRYPOINT [ "./manage-tModLoaderServer.sh", "start", "--folder", "/home/tml/.local/share/Terraria/tModLoader" ]

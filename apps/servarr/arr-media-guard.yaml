@@ -1,0 +1,22 @@
+# Arr Media Guard - guards media imports against bad audio/subtitle upgrades
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arr-media-guard
+  namespace: argocd
+  labels:
+    stack: servarr
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tylertitsworth/ai-cluster.git
+    targetRevision: feat/arr-media-guard
+    path: charts/servarr/arr-media-guard
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: servarr
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

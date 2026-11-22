@@ -1,4 +1,37 @@
 app-template:
+  # The audio/subtitle policy, mounted read-only at /config/policy.json.
+  # Edit here; the checksum rolls the pod on change.
+  configMaps:
+    policy:
+      includeInChecksum: true
+      data:
+        policy.json: |
+          {
+            "kids": {
+              "genres": {"radarr": ["Family"], "sonarr": ["Children", "Family"]},
+              "profiles": ["Kids"],
+              "studios": ["Studio A"]
+            },
+            "audio": {
+              "english": ["original"],
+              "foreign": ["original", "english"],
+              "foreign_kids": ["english", "original"]
+            },
+            "subtitles": {
+              "english": ["forced"],
+              "foreign": ["full", "sdh", "forced", "dub"]
+            },
+            "sparse_events": 1.5,
+            "forced_flag_events": 4.0,
+            "density_min_minutes": 15,
+            "min_confidence": 0.7,
+            "forced_clear": {
+              "events": 10.0,
+              "english_only_audio": true,
+              "reference_ratio": 0.8
+            }
+          }
+
   controllers:
     arr-media-guard:
       replicas: 1
@@ -55,6 +88,15 @@ app-template:
       existingClaim: arr-media-guard-config-v1
       globalMounts:
         - path: /config
+
+    policy:
+      type: configMap
+      name: arr-media-guard-policy
+      items:
+        - key: policy.json
+          path: policy.json
+      globalMounts:
+        - path: /config/policy.json
 
     state:
       enabled: true

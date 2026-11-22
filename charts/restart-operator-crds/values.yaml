@@ -9,6 +9,8 @@ operator:
 schedules:
   - name: qbittorrent-vpn
     schedule: "0 */3 * * *"
+  - name: sabnzbd
+    schedule: "0 */3 * * *"
   - name: plex
     kind: StatefulSet
     schedule: "0 9 * * 0"

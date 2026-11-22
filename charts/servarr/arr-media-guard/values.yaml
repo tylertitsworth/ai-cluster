@@ -1,6 +1,6 @@
 app-template:
-  # The audio/subtitle policy, mounted read-only at /config/policy.json.
-  # Edit here; the checksum rolls the pod on change.
+  # The audio/subtitle policy, mounted read-only at /policy/policy.json
+  # (POLICY_FILE). Edit here; the checksum rolls the pod on change.
   configMaps:
     policy:
       includeInChecksum: true
@@ -57,6 +57,10 @@ app-template:
             # The arr apps see the media at /media; AMG mounts it at /data.
             - name: PATH_MAP
               value: /media:/data
+            # Outside /config: the entrypoint chowns /config, which fails on a
+            # read-only configmap file.
+            - name: POLICY_FILE
+              value: /policy/policy.json
             - name: RADARR_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -96,9 +100,7 @@ app-template:
         - key: policy.json
           path: policy.json
       globalMounts:
-        # subPath: the image writes a starter policy.json to the PVC, and a
-        # plain file mount cannot land on an existing file.
-        - path: /config/policy.json
+        - path: /policy/policy.json
           subPath: policy.json
 
     state:

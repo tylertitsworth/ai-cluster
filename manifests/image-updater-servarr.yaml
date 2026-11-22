@@ -9,15 +9,6 @@ spec:
   # Each app follows the mutable tag it already runs and redeploys when that
   # tag's digest changes. The tag on imageName is the constraint digest needs.
   applicationRefs:
-    - namePattern: arr-media-guard
-      images:
-        - alias: arr-media-guard
-          imageName: ghcr.io/samwiseg0/arr-media-guard:latest
-          commonUpdateSettings: {updateStrategy: digest, forceUpdate: false}
-          manifestTargets:
-            helm:
-              name: app-template.controllers.arr-media-guard.containers.main.image.repository
-              tag: app-template.controllers.arr-media-guard.containers.main.image.tag
     - namePattern: bazarr
       images:
         - alias: bazarr

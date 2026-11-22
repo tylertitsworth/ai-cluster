@@ -96,7 +96,10 @@ app-template:
         - key: policy.json
           path: policy.json
       globalMounts:
+        # subPath: the image writes a starter policy.json to the PVC, and a
+        # plain file mount cannot land on an existing file.
         - path: /config/policy.json
+          subPath: policy.json
 
     state:
       enabled: true

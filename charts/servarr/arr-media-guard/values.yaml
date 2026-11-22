@@ -1,10 +1,21 @@
 app-template:
-  # The audio/subtitle policy, mounted read-only at /policy/policy.json
-  # (POLICY_FILE). Edit here; the checksum rolls the pod on change.
   configMaps:
     policy:
       includeInChecksum: true
       data:
+        # Policy tuning (all values are defaults, kept for reference):
+        #   sparse_events: subtitle density threshold (events/min) below which
+        #     a track is considered sparse (e.g. forced-only). Default 1.5.
+        #   forced_flag_events: density above which a track is flagged forced. Default 4.0.
+        #   density_min_minutes: min audio duration (min) before density checks apply. Default 15.
+        #   min_confidence: language-detection confidence floor (0-1). Tracks below
+        #     this are left untouched. Default 0.7.
+        #   forced_clear: when a file has only English audio, clear forced flags on
+        #     subtitles (likely mislabeled). events/duration threshold, enable flag,
+        #     subtitle-to-audio duration ratio. Default 10.0 / true / 0.8.
+        # kids: required by AMG's policy schema but set to empty matchers here
+        #   (no kids content in this library). No foreign item is ever classified
+        #   as a kids title, so foreign_kids audio/subtitle priority is unused.
         policy.json: |
           {
             "kids": {
@@ -37,7 +48,6 @@ app-template:
       replicas: 1
       strategy: Recreate
       pod:
-        # AMG finishes an in-flight check on shutdown; the image asks for 60s.
         terminationGracePeriodSeconds: 60
 
       containers:
@@ -54,11 +64,8 @@ app-template:
               value: "1000"
             - name: PGID
               value: "1000"
-            # The arr apps see the media at /media; AMG mounts it at /data.
             - name: PATH_MAP
               value: /media:/data
-            # Outside /config: the entrypoint chowns /config, which fails on a
-            # read-only configmap file.
             - name: POLICY_FILE
               value: /policy/policy.json
             - name: RADARR_API_KEY

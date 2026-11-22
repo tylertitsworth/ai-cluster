@@ -108,13 +108,14 @@ controllers:
               echo "wait-vpn: vpn not ready (${i}), retrying"
               sleep 3
             done
+            # Whitelist the tailscale hostname so the ingress can reach SABnzbd
+            sed -i 's/^host_whitelist = .*/host_whitelist = sabnzbd.tail79a5c8.ts.net,/' /config/sabnzbd.ini 2>/dev/null || true
             exec /init
 
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
-          SABNZBD__MISC__HOST_WHITELIST: "sabnzbd.tail79a5c8.ts.net"
 
         probes:
           liveness:

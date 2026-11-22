@@ -10,7 +10,7 @@ app-template:
             "kids": {
               "genres": {"radarr": ["Family"], "sonarr": ["Children", "Family"]},
               "profiles": ["Kids"],
-              "studios": ["Studio A"]
+              "studios": []
             },
             "audio": {
               "english": ["original"],

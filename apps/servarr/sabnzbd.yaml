@@ -1,4 +1,4 @@
-# SABnzbd - Usenet Downloader (for arr-media-guard subtitle hunter)
+# SABnzbd behind a Gluetun VPN sidecar
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -10,10 +10,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: main
-    path: charts/servarr/sabnzbd
+  sources:
+    - repoURL: https://bjw-s-labs.github.io/helm-charts/
+      chart: app-template
+      targetRevision: 3.5.1
+      helm:
+        valueFiles:
+          - $values/apps/servarr/values/sabnzbd-vpn.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: servarr

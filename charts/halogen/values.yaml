@@ -1,0 +1,145 @@
+# Halogen inference server — Qwen3.8-27B GGUF benchmark on framework-desktop.
+# Reuses the Swift Q6_K GGUF already on the ollama-data PVC; the head/tokenizer
+# are fetched beside it on first start by HALOGEN_DOWNLOAD.
+app-template:
+  controllers:
+    halogen:
+      type: deployment
+      replicas: 1
+      strategy: Recreate
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/peonist-ai/halogen-flash-server
+            tag: "0.21.0"
+            pullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - -c
+            - |
+              set -e
+              ulimit -l unlimited
+              exec /usr/local/bin/entrypoint.sh all
+          envFrom:
+            - configMapRef:
+                name: halogen-config
+          securityContext:
+            privileged: true
+          probes:
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /health
+                  port: 8731
+                initialDelaySeconds: 300
+                periodSeconds: 15
+                timeoutSeconds: 5
+                failureThreshold: 24
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /health
+                  port: 8731
+                # First start downloads the draft head and repacks the GGUF.
+                initialDelaySeconds: 7200
+                periodSeconds: 30
+                timeoutSeconds: 5
+                # 40 x 30 s clears the watchdog's 180 s + 900 s deferral; HTTP probes cannot see D-state stalls.
+                failureThreshold: 40
+          resources:
+            requests:
+              amd.com/gpu: "1"
+            limits:
+              amd.com/gpu: "1"
+
+      pod:
+        hostIPC: true
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: In
+                      values:
+                        - framework-desktop
+
+  service:
+    main:
+      controller: halogen
+      type: ClusterIP
+      ports:
+        http:
+          port: 8731
+
+  ingress:
+    main:
+      enabled: true
+      className: tailscale
+      annotations:
+        tailscale.com/proxy-class: pin-framework-desktop
+      hosts:
+        - host: halogen
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      tls:
+        - hosts:
+            - halogen
+
+  persistence:
+    models:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: ollama-data
+      globalMounts:
+        - path: /root/.ollama
+
+# Rendered into halogen-config and injected with envFrom.
+# Published defaults kept 1:1: CTX, prompt cache, slots.
+# Forced deviations for the 64 GB box: KV pool and host reserve.
+config:
+  # The Swift Q6_K GGUF is architecture qwen35; Halogen 0.21.0 reads qwen4exp
+  # GGUFs only. Serve the engine's own 27B ht4 checkpoint instead.
+  - key: HALOGEN_CHECKPOINT
+    value: /root/.ollama/qwen38-27b-ht4.hgn
+  - key: HALOGEN_DOWNLOAD
+    value: peonist-ai/halogen-qwen3.8-27b-ht4
+  - key: HALOGEN_API_PORT
+    value: "8731"
+  - key: HALOGEN_MODEL_ID
+    value: halogen-qwen3.8-27b
+  # HALOGEN_DOWNLOAD writes tokenizer/ beside the head in blobs/, not /models/tokenizer.
+  - key: HALOGEN_TOKENIZER
+    value: /root/.ollama/models/blobs/tokenizer
+  - key: HALOGEN_CTX
+    value: "262144"
+  - key: HALOGEN_KV_POOL_POSITIONS
+    value: "262144"
+  - key: HALOGEN_KV_SLOTS
+    value: "4"
+  - key: HALOGEN_PROMPT_CACHE
+    value: "2"
+  - key: HALOGEN_CACHE_DIR
+    value: /root/.ollama/halogen-cache
+  # shortcut: 32 GiB bounds the cache to half the free PVC; raise when the disk cache approaches that limit.
+  - key: HALOGEN_CACHE_DISK_GIB
+    value: 32
+  - key: HALOGEN_CACHE_BRANCHES
+    value: 3
+  - key: HALOGEN_CACHE_ENTRIES
+    value: 36
+  # Locked weights stay resident; do not co-schedule heavy work on this node (see design doc).
+  - key: HALOGEN_WEIGHTS_LOCK
+    value: 1
+  - key: HALOGEN_HOST_RESERVE_GIB
+    value: "8"

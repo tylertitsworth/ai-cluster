@@ -1,0 +1,4 @@
+# Override values for the halogen chart (charts/halogen).
+# Chart defaults serve the engine's 27B ht4 checkpoint: the Swift Q6_K GGUF
+# was refused (architecture qwen35, Halogen reads qwen4exp GGUFs only).
+# Leave this file empty so the chart defaults apply.

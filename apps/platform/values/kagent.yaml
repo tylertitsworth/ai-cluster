@@ -33,12 +33,15 @@ ui:
   replicas: 1
 
 providers:
-  default: ollama
-  ollama:
-    provider: Ollama
-    model: "swift-qwen3.8-27b:q6k-map-k4v"
+  default: halogen
+  halogen:
+    provider: OpenAI
+    model: "halogen-qwen3.8-27b"
     config:
-      host: http://ollama.ollama.svc.cluster.local:11434
+      baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
+      apiFormat: chatCompletions
+      timeout: 7200
+    stream: true
 
 substrateWorkerPool:
   create: true
@@ -57,21 +60,43 @@ harnesses:
   claude:
     enabled: true
 
-# Extra resources (additional ModelConfig and postgres metrics exporter)
+# Extra resources (ModelConfigs, egress policy and postgres metrics exporter)
 extraObjects:
   - apiVersion: api.kagent.dev/v1alpha3
     kind: ModelConfig
     metadata:
-      name: ollama-swift-qwen38-27b
+      name: halogen-qwen3.8-27b
       namespace: kagent
     spec:
       provider: OpenAI
-      model: swift-qwen3.8-27b:q6k-map-k4v
+      model: halogen-qwen3.8-27b
       openAI:
-        baseUrl: http://ollama.ollama.svc.cluster.local:11434/v1
+        baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
         apiFormat: chatCompletions
         timeout: 7200
       stream: true
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: ModelConfig
+    metadata:
+      name: halogen-qwen3.8-27b-responses
+      namespace: kagent
+    spec:
+      apiKeySecret: ollama-dummy-key
+      apiKeySecretKey: api-key
+      provider: OpenAI
+      model: halogen-qwen3.8-27b
+      openAI:
+        baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
+        apiFormat: responses
+      stream: true
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: EgressPolicy
+    metadata:
+      name: allow-halogen
+      namespace: kagent
+    spec:
+      destinations:
+        - origin: http://halogen.ollama.svc.cluster.local:8731
   - apiVersion: apps/v1
     kind: Deployment
     metadata:

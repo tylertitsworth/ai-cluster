@@ -14,6 +14,13 @@ app-template:
             repository: ghcr.io/peonist-ai/halogen-flash-server
             tag: "0.21.0"
             pullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - -c
+            - |
+              ulimit -l unlimited
+              exec /usr/local/bin/entrypoint.sh all
           envFrom:
             - configMapRef:
                 name: halogen-config
@@ -42,7 +49,7 @@ app-template:
                 initialDelaySeconds: 7200
                 periodSeconds: 30
                 timeoutSeconds: 5
-                failureThreshold: 6
+                failureThreshold: 30
           resources:
             requests:
               amd.com/gpu: "1"
@@ -129,5 +136,7 @@ config:
     value: 3
   - key: HALOGEN_CACHE_ENTRIES
     value: 36
+  - key: HALOGEN_WEIGHTS_LOCK
+    value: 1
   - key: HALOGEN_HOST_RESERVE_GIB
     value: "8"

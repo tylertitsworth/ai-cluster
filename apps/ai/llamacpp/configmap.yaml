@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-llama-server-config
+  namespace: ollama
+data:
+  start.sh: |
+    #!/bin/bash
+    set -e
+    /usr/bin/llama-server \
+      -m /root/.ollama/models/blobs/sha256-7f4de8abd5446c08b0f975a1b38e43d02639f4ae9ecdd2ddfd5c5b0f612bda59 \
+      -c 131072 \
+      -ngl 999 \
+      -fa 1 \
+      --load-mode none \
+      --no-mmap \
+      -b 2048 \
+      -ub 512 \
+      -ctk q8_0 \
+      -ctv q8_0 \
+      --spec-type draft-mtp,ngram-map-k4v \
+      --spec-draft-n-max 4 \
+      --spec-draft-p-min 0.75 \
+      --spec-draft-ngl all \
+      --spec-ngram-map-k4v-size-n 12 \
+      --spec-ngram-map-k4v-size-m 48 \
+      --spec-ngram-map-k4v-min-hits 1 \
+      --cache-ram 32768 \
+      --jinja \
+      --threads 16 \
+      --threads-batch 32 \
+      --fit off \
+      --host 0.0.0.0 \
+      --port 11434

@@ -1,0 +1,75 @@
+# Head-only RayCluster with no workers, started with --proxy-server-url pointing at
+# historyserver. Its dashboard frontend proxies unknown clusters/sessions to
+# historyserver's API, so this is the browsing UI for terminated RayClusters.
+# Requires Ray >= 2.55.0 for --proxy-server-url support.
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: ray-dashboard-viewer
+  namespace: kuberay
+  labels:
+    ray.io/cluster: ray-dashboard-viewer
+spec:
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: 0.0.0.0
+      num-cpus: "0"
+      proxy-server-url: http://historyserver.kuberay.svc.cluster.local:8080
+    serviceType: ClusterIP
+    template:
+      metadata:
+        labels:
+          test: ray-dashboard-viewer
+      spec:
+        containers:
+          - name: ray-head
+            image: rayproject/ray:2.55.0
+            imagePullPolicy: IfNotPresent
+            resources:
+              requests:
+                cpu: "250m"
+                memory: 1Gi
+              limits:
+                cpu: "1"
+                memory: 4Gi
+  workerGroupSpecs: []
+---
+# KubeRay's auto-generated *-head-svc is headless (clusterIP: None), which the
+# Tailscale ingress controller can't route to.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-dashboard-viewer-dashboard
+  namespace: kuberay
+spec:
+  selector:
+    ray.io/identifier: ray-dashboard-viewer-head
+  ports:
+    - name: dashboard
+      port: 8265
+      targetPort: 8265
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ray-dashboard-viewer
+  namespace: kuberay
+  annotations:
+    tailscale.com/proxy-class: "pin-framework-desktop"
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: ray-dashboard
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ray-dashboard-viewer-dashboard
+                port:
+                  number: 8265
+  tls:
+    - hosts:
+        - ray-dashboard

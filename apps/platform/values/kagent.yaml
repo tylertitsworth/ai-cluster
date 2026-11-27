@@ -33,15 +33,16 @@ ui:
   replicas: 1
 
 providers:
-  default: halogen
-  halogen:
+  default: openAI
+  openAI:
     provider: OpenAI
+    apiKeySecretRef: ollama-dummy-key
+    apiKeySecretKey: api-key
     model: "halogen-qwen3.8-27b"
     config:
       baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
       apiFormat: chatCompletions
       timeout: 7200
-    stream: true
 
 substrateWorkerPool:
   create: true

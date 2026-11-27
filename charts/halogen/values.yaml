@@ -19,6 +19,7 @@ app-template:
           args:
             - -c
             - |
+              set -e
               ulimit -l unlimited
               exec /usr/local/bin/entrypoint.sh all
           envFrom:
@@ -49,7 +50,8 @@ app-template:
                 initialDelaySeconds: 7200
                 periodSeconds: 30
                 timeoutSeconds: 5
-                failureThreshold: 30
+                # 40 x 30 s clears the watchdog's 180 s + 900 s deferral; HTTP probes cannot see D-state stalls.
+                failureThreshold: 40
           resources:
             requests:
               amd.com/gpu: "1"
@@ -136,6 +138,7 @@ config:
     value: 3
   - key: HALOGEN_CACHE_ENTRIES
     value: 36
+  # Locked weights stay resident; do not co-schedule heavy work on this node (see design doc).
   - key: HALOGEN_WEIGHTS_LOCK
     value: 1
   - key: HALOGEN_HOST_RESERVE_GIB

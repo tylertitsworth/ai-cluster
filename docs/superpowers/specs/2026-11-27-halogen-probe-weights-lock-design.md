@@ -45,10 +45,14 @@ model weights to make room for the lookup table.
 
 ## Approaches
 
-- **A — chosen: widen liveness, lock weights.** `failureThreshold: 30` at
-  `periodSeconds: 30` gives a 900 s failure window, matching the watchdog's
-  deferral cap, while keeping a last-resort restart for a hung API process.
-  Raise memlock in the container command and set `HALOGEN_WEIGHTS_LOCK=1`.
+- **A — chosen: widen liveness, lock weights.** `failureThreshold: 40` at
+  `periodSeconds: 30` gives a 1200 s failure window, clearing the watchdog's
+  180 s wait plus 900 s deferral cap, while keeping a last-resort restart for
+  a hung API process. Raise memlock in the container command and set
+  `HALOGEN_WEIGHTS_LOCK=1`. An HTTP probe cannot see a thread in uninterruptible
+  sleep, which upstream never kills; keeping a Kubernetes restart net therefore
+  leaves an unbounded D-state stall as an accepted residual risk of A, not a
+  hidden failure.
 - **B — rejected: remove liveness.** Halogen's watchdog is better informed,
   but there would be no Kubernetes restart net if the API process hung while
   the engine was fine.
@@ -62,17 +66,19 @@ model weights to make room for the lookup table.
 `charts/halogen/values.yaml`:
 
 - `controllers.halogen.containers.main.probes.liveness.spec.failureThreshold`:
-  `6` → `30` (the comment about the first-start download stays).
-- `config`: add `HALOGEN_WEIGHTS_LOCK=1`.
+  `6` → `40` (the comment about the first-start download stays).
+- `config`: add `HALOGEN_WEIGHTS_LOCK=1` with a co-tenancy warning: locked pages
+  are unavailable to other work, so do not co-schedule heavy jobs on this node.
 - `controllers.halogen.containers.main`: add a command wrapper
-  `/bin/bash -c 'ulimit -l unlimited; exec /usr/local/bin/entrypoint.sh all'`
-  so `mlock` can cover the weights.
+  `/bin/bash -c 'set -e; ulimit -l unlimited; exec /usr/local/bin/entrypoint.sh all'`
+  so `mlock` can cover the weights; `set -e` makes a failed memlock raise stop
+  the pod instead of starting unlocked.
 
 ## Verification
 
 - `helm template halogen charts/halogen` renders liveness `failureThreshold:
-  30`, readiness unchanged at 24, ConfigMap `HALOGEN_WEIGHTS_LOCK: "1"`, and
-  the command/args wrapper.
+  40`, readiness unchanged at 24, ConfigMap `HALOGEN_WEIGHTS_LOCK: "1"`, and
+  the fail-closed command/args wrapper.
 - Argo app `halogen` synced from git; automated sync restored to `false`;
   rollout 1/1.
 - ConfigMap has the exact chart key set; no legacy cache keys.

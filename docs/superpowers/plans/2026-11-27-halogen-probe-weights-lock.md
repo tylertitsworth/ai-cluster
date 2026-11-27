@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Kubernetes liveness tolerant of Halogen's 900 s compaction deferral and make `HALOGEN_WEIGHTS_LOCK=1` actually lock the weights by raising the container's memlock limit.
+**Goal:** Make Kubernetes liveness tolerant of Halogen's 180 s + 900 s watchdog window and make `HALOGEN_WEIGHTS_LOCK=1` actually lock the weights by raising the container's memlock limit.
 
-**Architecture:** Change only `charts/halogen/values.yaml`: widen the liveness threshold from 6 to 30 at 30 s intervals (900 s), add `HALOGEN_WEIGHTS_LOCK=1` to the chart config, and wrap the container command with `ulimit -l unlimited` before the existing entrypoint. Then sync via Argo, restart the Deployment when no engine thread is in D state, and verify the rendered chart, ConfigMap, pod spec, startup log, `/health` and `/cache`.
+**Architecture:** Change only `charts/halogen/values.yaml`: widen the liveness threshold from 6 to 40 at 30 s intervals (1200 s), add `HALOGEN_WEIGHTS_LOCK=1` to the chart config, and wrap the container command with `set -e; ulimit -l unlimited` before the existing entrypoint. Then sync via Argo, restart the Deployment when no engine thread is in D state, and verify the rendered chart, ConfigMap, pod spec, startup log, `/health` and `/cache`.
 
 **Tech Stack:** Helm 4 / app-template 3.5.1, Argo CD, k3s, kubectl, Halogen 0.21.0.
 
@@ -21,8 +21,13 @@
 
 ## Review Focus
 
+Execution note: the embedded test snippets below were hardened during execution
+(`grep -Fc` instead of `grep -Fq` under `pipefail`, a narrowed lock-failure regex,
+and bounded retries for transient `/health` 503s). The executable copies in
+`.superpowers/sdd/2026-11-27-halogen-probe-weights-lock/` are authoritative.
+
 - **memlock too low:** if the command wrapper does not raise both soft and hard limits, the server starts unlocked despite the flag. Test in Task 2 asserts a `checkpoint: locked` startup line and no lock-failure line.
-- **Liveness preempting the watchdog:** if `failureThreshold` is not 30 in the rendered chart and the live pod, Kubernetes still restarts at 180 s. Tests in Tasks 1 and 2 pin both.
+- **Liveness preempting the watchdog:** if `failureThreshold` is not 40 in the rendered chart and the live pod, Kubernetes can restart at ~875 s, inside the watchdog's 180 s + 900 s = 1080 s budget. Tests in Tasks 1 and 2 pin both. An unbounded D-state stall remains an accepted residual risk of keeping HTTP liveness (the user rejected removing liveness); it is documented in the spec, not silently ignored.
 - **Readiness accidentally widened:** a person expects readiness to keep signalling unavailability; Task 2 asserts live readiness is still 24.
 - **Entry point broken by the wrapper:** a person expects the server to start; Task 2 asserts rollout 1/1 and `/health` mode 2 after restart.
 - **Cache tuning lost in the restart:** Task 2 asserts `/cache` `disk.on: true` and `max_entries: 36`.
@@ -38,7 +43,7 @@
 
 **Interfaces:**
 - Consumes: existing chart structure from the cache-tuning plan.
-- Produces: rendered Deployment liveness `failureThreshold: 30`, readiness `failureThreshold: 24`, command/args wrapper raising memlock, ConfigMap `HALOGEN_WEIGHTS_LOCK: "1"`; consumed by Task 2.
+- Produces: rendered Deployment liveness `failureThreshold: 40`, readiness `failureThreshold: 24`, fail-closed command/args wrapper raising memlock, ConfigMap `HALOGEN_WEIGHTS_LOCK: "1"`; consumed by Task 2.
 
 - [ ] **Step 1: Write the failing test** at `.superpowers/sdd/2026-11-27-halogen-probe-weights-lock/task1-test.sh`:
 
@@ -49,8 +54,8 @@ cd /home/titsw/.local/share/opencode/worktree/fc6729/silent-eagle
 V=charts/halogen/values.yaml
 R=$(helm template halogen charts/halogen)
 fail() { echo "MISSING: $1"; exit 1; }
-echo "$R" | grep -Fq 'failureThreshold: 30' || fail 'liveness threshold 30 rendered'
-echo "$R" | grep -Fq 'failureThreshold: 24' || fail 'readiness threshold 24 rendered'
+echo "$R" | grep -Fc 'failureThreshold: 40' >/dev/null || fail 'liveness threshold 40 rendered'
+echo "$R" | grep -Fc 'failureThreshold: 24' >/dev/null || fail 'readiness threshold 24 rendered'
 echo "$R" | grep -Fq 'HALOGEN_WEIGHTS_LOCK: "1"' || fail 'weights lock config rendered'
 echo "$R" | grep -Fq '/bin/bash' || fail 'command wrapper rendered'
 echo "$R" | grep -Fq 'ulimit -l unlimited' || fail 'memlock raise rendered'
@@ -62,11 +67,12 @@ echo "$R" | grep -Fq 'host: "halogen"' || fail 'ingress host'
 echo 'TASK1 PASS'
 ```
 
-- [ ] **Step 2: Run it to verify RED** — `bash .superpowers/sdd/2026-11-27-halogen-probe-weights-lock/task1-test.sh` → expected `MISSING: liveness threshold 30 rendered`.
+- [ ] **Step 2: Run it to verify RED** — `bash .superpowers/sdd/2026-11-27-halogen-probe-weights-lock/task1-test.sh` → expected `MISSING: liveness threshold 40 rendered`.
 
 - [ ] **Step 3: Edit `charts/halogen/values.yaml`**:
   - Under `containers.main`, before `envFrom`, add `command: [/bin/bash]` and `args: [-c, "ulimit -l unlimited\nexec /usr/local/bin/entrypoint.sh all"]` in the block YAML style already used by this chart.
-  - Change liveness `failureThreshold: 6` to `30`; keep the first-start comment and all other probe numbers.
+  - Change liveness `failureThreshold: 6` to `40`; keep the first-start comment and all other probe numbers.
+  - Add `set -e` before `ulimit -l unlimited` so a failed memlock raise stops the pod.
   - Append `HALOGEN_WEIGHTS_LOCK` with bare value `1` to the `config` list, after the four cache keys.
 
 - [ ] **Step 4: Run it to verify GREEN** — `bash .superpowers/sdd/2026-11-27-halogen-probe-weights-lock/task1-test.sh` → expected `TASK1 PASS`.
@@ -83,7 +89,7 @@ echo 'TASK1 PASS'
 
 **Interfaces:**
 - Consumes: the Deployment/ConfigMap rendered by Task 1.
-- Produces: live Halogen pod with 900 s liveness window, unlocked→locked weights, unchanged readiness/cache; PR #106 still open.
+- Produces: live Halogen pod with 1200 s liveness window, unlocked→locked weights, unchanged readiness/cache; PR #106 still open.
 
 - [ ] **Step 1: Write the failing test** at `.superpowers/sdd/2026-11-27-halogen-probe-weights-lock/task2-test.sh`:
 
@@ -95,7 +101,7 @@ fail() { echo "MISSING: $1"; exit 1; }
 CM=$(kubectl -n ollama get cm halogen-config -o json 2>/dev/null || echo '{}')
 echo "$CM" | jq -e '.data.HALOGEN_WEIGHTS_LOCK == "1"' >/dev/null || fail 'weights lock in ConfigMap'
 P=$(kubectl -n ollama get deploy halogen -o json 2>/dev/null || echo '{}')
-echo "$P" | jq -e '.spec.template.spec.containers[0].livenessProbe.failureThreshold == 30' >/dev/null || fail 'live liveness 30'
+echo "$P" | jq -e '.spec.template.spec.containers[0].livenessProbe.failureThreshold == 40' >/dev/null || fail 'live liveness 40'
 echo "$P" | jq -e '.spec.template.spec.containers[0].readinessProbe.failureThreshold == 24' >/dev/null || fail 'live readiness 24'
 echo "$P" | jq -e '[.spec.template.spec.containers[0].command[], .spec.template.spec.containers[0].args[]] | join(" ") | contains("ulimit -l unlimited")' >/dev/null || fail 'live memlock wrapper'
 [[ "$(kubectl -n ollama get deploy halogen -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true)" == 1 ]] || fail 'halogen ready replica'

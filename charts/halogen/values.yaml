@@ -100,7 +100,7 @@ app-template:
 # Forced deviations for the 64 GB box: KV pool and host reserve.
 config:
   - key: HALOGEN_CHECKPOINT
-    value: /root/.ollama/models/blobs/sha256-7f4de8abd5446c08b0f975a1b38e43d02639f4ae9ecdd2ddfd5c5b0f612bda59
+    value: /root/.ollama/models/blobs/qwen38-27b-swift-q6k.gguf
   - key: HALOGEN_DOWNLOAD
     value: peonist-ai/halogen-qwen3.8-27b-ht4
   - key: HALOGEN_API_PORT

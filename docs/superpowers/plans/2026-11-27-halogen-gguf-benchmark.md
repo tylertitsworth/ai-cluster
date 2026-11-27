@@ -14,7 +14,7 @@
 
 - Branch: `add/halogen-gguf`, cut from `origin/main` (`3566581`). PR base `main`. **Never merge.**
 - Image: `ghcr.io/peonist-ai/halogen-flash-server:0.21.0` (pinned; `halogen:0.1.4` cannot load 0.21.0 files).
-- Checkpoint phase 1: `/root/.ollama/models/blobs/sha256-7f4de8abd5446c08b0f975a1b38e43d02639f4ae9ecdd2ddfd5c5b0f612bda59`.
+- Checkpoint phase 1: `/root/.ollama/models/blobs/qwen38-27b-swift-q6k.gguf` — a hardlink (same inode, no extra disk) to the Ollama blob `sha256-7f4de8abd5446c08b0f975a1b38e43d02639f4ae9ecdd2ddfd5c5b0f612bda59`; Halogen detects GGUF by the `.gguf` suffix.
 - `HALOGEN_CTX=262144`, `HALOGEN_PROMPT_CACHE=2`, `HALOGEN_KV_SLOTS=4` — 1:1 with published defaults.
 - Deviations: `HALOGEN_KV_POOL_POSITIONS=262144`, `HALOGEN_HOST_RESERVE_GIB=8`.
 - `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4`; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`.

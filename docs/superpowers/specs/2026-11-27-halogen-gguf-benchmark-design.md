@@ -7,7 +7,7 @@ Find out whether Halogen's published Qwen3.8-27B speed (37.9 drafted / 15.1 seri
 ## Goals
 
 - New `charts/halogen` chart and `apps/ai/halogen.yaml` Application on a branch cut from `origin/main` (`3566581`), PR into `main`, never merged.
-- Serve the same blob llama.cpp currently serves: `hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K` (GGUF `qwen35`, 22.87 GB, at `/root/.ollama/models/blobs/sha256-7f4de8...` on the `ollama-data` PVC).
+- Serve the same weights llama.cpp currently serves: `hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K` (GGUF `qwen35`, 22.87 GB). On the `ollama-data` PVC the Ollama blob has no extension; a hardlink `qwen38-27b-swift-q6k.gguf` (same inode, no extra disk) gives Halogen the `.gguf` suffix it requires.
 - Match the published setup 1:1 wherever the 64 GB box allows: image `halogen-flash-server:0.21.0`, `HALOGEN_CTX=262144`, `HALOGEN_PROMPT_CACHE=2`, `HALOGEN_KV_SLOTS=4`, default `HALOGEN_MAX_TOK`, no vision tower, no LoRA, no RoPE scaling.
 - Tailscale ingress named `halogen` (same class/proxy pattern as `vllm`).
 - Scale the llama.cpp server to zero through GitOps on the same branch, so the APU is free for the benchmark.
@@ -70,7 +70,7 @@ If startup logs `LOWERING THE POOL TO N`, record the actual `pool N/<positions>`
 - `apps/ai/llama-cpp.yaml` — `targetRevision: add/halogen-gguf`; `apps/ai/llamacpp/deployment.yaml` — `replicas: 0`.
 - One documented value switch for phase 2: `HALOGEN_CHECKPOINT=/root/.ollama/qwen38-27b-ht4.hgn`; the same `HALOGEN_DOWNLOAD` repo fetches the checkpoint if needed.
 
-**Environment (phase 1):** `HALOGEN_CHECKPOINT` = the existing GGUF blob path; `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4` so the draft head and tokenizer land beside the GGUF; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; plus the five table entries above. Keep `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, and `HALOGEN_GGUF_CACHE` unset.
+**Environment (phase 1):** `HALOGEN_CHECKPOINT` = the `.gguf` hardlink to the existing GGUF blob; `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4` so the draft head and tokenizer land beside the GGUF; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; plus the five table entries above. Keep `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, and `HALOGEN_GGUF_CACHE` unset.
 
 **Persistence:** mount the existing `ollama-data` PVC read-write at `/root/.ollama`. It holds the GGUF, and is writable so `HALOGEN_DOWNLOAD` can place the head/tokenizer (and, in phase 2, the ht4 file) there. No new PVC.
 

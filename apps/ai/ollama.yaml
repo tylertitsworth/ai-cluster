@@ -10,6 +10,13 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
   sources:
     - repoURL: https://helm.otwld.com/
       chart: ollama
@@ -23,6 +30,3 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ollama
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true

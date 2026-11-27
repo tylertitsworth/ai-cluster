@@ -1,5 +1,6 @@
 # ollama chart values for AMD ROCm + Tailscale ingress
 fullnameOverride: ollama
+replicaCount: 0  # vulkan deployment (apps/ai/vulkan) takes over
 
 image:
   repository: ghcr.io/tylertitsworth/ai-cluster-ollama-swift

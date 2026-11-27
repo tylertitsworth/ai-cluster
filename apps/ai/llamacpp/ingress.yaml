@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ollama
+  namespace: ollama
+  annotations:
+    tailscale.com/proxy-class: "pin-framework-desktop"
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: ollama
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ollama
+                port:
+                  number: 11434
+  tls:
+    - hosts:
+        - ollama

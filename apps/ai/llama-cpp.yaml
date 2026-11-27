@@ -1,8 +1,8 @@
-# Ollama (llama.cpp/Vulkan) - LLM server (standalone llama-server, vulkan-radv)
+# llama.cpp (Vulkan) - LLM server (standalone llama-server, vulkan-radv)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ollama-llamacpp
+  name: llama-cpp
   namespace: argocd
   labels:
     stack: ai
@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: main
+    targetRevision: consolidate/vulkan-gitops
     path: apps/ai/llamacpp
   destination:
     server: https://kubernetes.default.svc

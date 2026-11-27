@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ollama
+  name: llama-cpp
   namespace: ollama
   labels:
-    app.kubernetes.io/instance: ollama
-    app.kubernetes.io/name: ollama
+    app.kubernetes.io/instance: llama-cpp
+    app.kubernetes.io/name: llama-cpp
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/instance: ollama
-      app.kubernetes.io/name: ollama
+      app.kubernetes.io/instance: llama-cpp
+      app.kubernetes.io/name: llama-cpp
   template:
     metadata:
       labels:
-        app.kubernetes.io/instance: ollama
-        app.kubernetes.io/name: ollama
+        app.kubernetes.io/instance: llama-cpp
+        app.kubernetes.io/name: llama-cpp
     spec:
       nodeSelector:
         kubernetes.io/hostname: framework-desktop
       containers:
-        - name: ollama
+        - name: llama-cpp
           image: docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv
           imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "/config/start.sh"]
@@ -45,14 +45,14 @@ spec:
           volumeMounts:
             - name: ollama-data
               mountPath: /root/.ollama
-            - name: ollama-config
+            - name: llama-cpp-config
               mountPath: /config
               readOnly: true
       volumes:
         - name: ollama-data
           persistentVolumeClaim:
             claimName: ollama-data
-        - name: ollama-config
+        - name: llama-cpp-config
           configMap:
-            name: ollama-llama-server-config
+            name: llama-cpp-config
             defaultMode: 0755

@@ -99,13 +99,12 @@ app-template:
 # Published defaults kept 1:1: CTX, prompt cache, slots.
 # Forced deviations for the 64 GB box: KV pool and host reserve.
 config:
+  # The Swift Q6_K GGUF is architecture qwen35; Halogen 0.21.0 reads qwen4exp
+  # GGUFs only. Serve the engine's own 27B ht4 checkpoint instead.
   - key: HALOGEN_CHECKPOINT
-    value: /root/.ollama/models/blobs/qwen38-27b-swift-q6k.gguf
-  # The 27B repo has no standalone MTP head; the engine's GGUF path expects
-  # qwen38-flash-next-mtp.hgn, which lives in the flash-next repo. Its tokenizer
-  # is the same one 27B uses. No ht4 weights are fetched while GGUF is served.
+    value: /root/.ollama/qwen38-27b-ht4.hgn
   - key: HALOGEN_DOWNLOAD
-    value: peonist-ai/halogen-qwen3.8-flash-next
+    value: peonist-ai/halogen-qwen3.8-27b-ht4
   - key: HALOGEN_API_PORT
     value: "8731"
   - key: HALOGEN_MODEL_ID

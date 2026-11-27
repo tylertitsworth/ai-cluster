@@ -2,12 +2,12 @@
 
 ## Intent
 
-Find out whether Halogen's published Qwen3.8-27B speed (37.9 drafted / 15.1 serial decode, 578 / 605 / 530 tok/s prefill) comes from its engine rather than its 4-bit checkpoint, by serving **our existing GGUF weights** on Halogen's own image and running **Halogen's own benchmark**. The result is a filled comparison table, not a permanent service change. Everything lands on a branch and an open, unmerged PR.
+Find out whether Halogen's published Qwen3.8-27B speed (37.9 drafted / 15.1 serial decode, 578 / 605 / 530 tok/s prefill) comes from its engine rather than its 4-bit checkpoint, by first attempting **our existing GGUF weights** on Halogen's own image and running **Halogen's own benchmark**, then falling back to its 27B ht4 checkpoint if the GGUF is refused. The result is a filled comparison table, not a permanent service change. Everything lands on a branch and an open, unmerged PR.
 
 ## Goals
 
 - New `charts/halogen` chart and `apps/ai/halogen.yaml` Application on a branch cut from `origin/main` (`3566581`), PR into `main`, never merged.
-- Serve the same weights llama.cpp currently serves: `hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K` (GGUF `qwen35`, 22.87 GB). On the `ollama-data` PVC the Ollama blob has no extension; a hardlink `qwen38-27b-swift-q6k.gguf` (same inode, no extra disk) gives Halogen the `.gguf` suffix it requires.
+- Attempt to serve the same weights llama.cpp currently serves: `hf.co/ukisai/Swift-Qwen3.8-27B-GGUF:Q6_K` (GGUF `qwen35`, 22.87 GB). On the `ollama-data` PVC the Ollama blob has no extension; a hardlink `qwen38-27b-swift-q6k.gguf` (same inode, no extra disk) gives Halogen the `.gguf` suffix it requires. This start was refused (architecture `qwen35` vs `qwen4exp`), so the measured arm uses the 27B ht4 checkpoint.
 - Match the published setup 1:1 wherever the 64 GB box allows: image `halogen-flash-server:0.21.0`, `HALOGEN_CTX=262144`, `HALOGEN_PROMPT_CACHE=2`, `HALOGEN_KV_SLOTS=4`, default `HALOGEN_MAX_TOK`, no vision tower, no LoRA, no RoPE scaling.
 - Tailscale ingress named `halogen` (same class/proxy pattern as `vllm`).
 - Scale the llama.cpp server to zero through GitOps on the same branch, so the APU is free for the benchmark.
@@ -82,4 +82,5 @@ If startup logs `LOWERING THE POOL TO N`, record the actual `pool N/<positions>`
 - The checkpoint path needs a `.gguf` suffix: a hardlink to the extensionless Ollama blob was added on the PVC (same inode, no extra disk).
 - `amd.com/gpu` plus `privileged`/`hostIPC` starts the container; the initial `FailedScheduling` was a terminating llama.cpp pod still holding the single GPU, not a device-injection problem.
 - `helm dependency update` and `helm template` pass; the lock file is committed.
+- The Swift GGUF start was refused: `gguf: architecture 'qwen35': this engine reads qwen4exp (Qwen3.8-Flash-Next) only`. Phase 2 (the engine's 27B ht4 checkpoint) is therefore the measured arm; the failed GGUF attempt is recorded in the results doc.
 - Cold `sweep` invocation is pinned in Task 5 of the implementation plan and remains to be run.

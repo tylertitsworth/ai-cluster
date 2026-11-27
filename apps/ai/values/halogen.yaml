@@ -1,5 +1,4 @@
 # Override values for the halogen chart (charts/halogen).
-# Phase 2 fallback: in charts/halogen/values.yaml set HALOGEN_CHECKPOINT to
-# /root/.ollama/qwen38-27b-ht4.hgn and HALOGEN_DOWNLOAD to
-# peonist-ai/halogen-qwen3.8-27b-ht4 so the ht4 file is fetched.
-# Leave this file empty so phase 1 serves the existing GGUF by default.
+# Chart defaults serve the engine's 27B ht4 checkpoint: the Swift Q6_K GGUF
+# was refused (architecture qwen35, Halogen reads qwen4exp GGUFs only).
+# Leave this file empty so the chart defaults apply.

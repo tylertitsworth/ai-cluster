@@ -70,7 +70,7 @@ If startup logs `LOWERING THE POOL TO N`, record the actual `pool N/<positions>`
 - `apps/ai/llama-cpp.yaml` — `targetRevision: add/halogen-gguf`; `apps/ai/llamacpp/deployment.yaml` — `replicas: 0`.
 - One documented phase-2 switch: `HALOGEN_CHECKPOINT=/root/.ollama/qwen38-27b-ht4.hgn` and `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4` (the latter is only needed if the ht4 file is not already on the PVC).
 
-**Environment (phase 1):** `HALOGEN_CHECKPOINT` = the `.gguf` hardlink to the existing GGUF blob; `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next` so the draft head and tokenizer land beside the GGUF; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; plus the five table entries above. Keep `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, and `HALOGEN_GGUF_CACHE` unset.
+**Environment (phase 1):** `HALOGEN_CHECKPOINT` = the `.gguf` hardlink to the existing GGUF blob; `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next` so the draft head and tokenizer land beside the GGUF; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; `HALOGEN_TOKENIZER=/root/.ollama/models/blobs/tokenizer` (the download writes it beside the head, not under `/models`); plus the five table entries above. Keep `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, and `HALOGEN_GGUF_CACHE` unset.
 
 **Persistence:** mount the existing `ollama-data` PVC read-write at `/root/.ollama`. It holds the GGUF, and is writable so `HALOGEN_DOWNLOAD` can place the head/tokenizer (and, in phase 2, the ht4 file) there. No new PVC.
 
@@ -78,7 +78,7 @@ If startup logs `LOWERING THE POOL TO N`, record the actual `pool N/<positions>`
 
 ## Resolved during the build
 
-- The MTP head is `qwen38-flash-next-mtp.hgn`, fetched from `peonist-ai/halogen-qwen3.8-flash-next`; the 27B repo has no standalone head. Tokenizer files are the same for both models.
+- The MTP head is `qwen38-flash-next-mtp.hgn`, fetched from `peonist-ai/halogen-qwen3.8-flash-next`; the 27B repo has no standalone head. Tokenizer files are the same for both models; `HALOGEN_TOKENIZER` must point at the `tokenizer/` folder written beside the head.
 - The checkpoint path needs a `.gguf` suffix: a hardlink to the extensionless Ollama blob was added on the PVC (same inode, no extra disk).
 - `amd.com/gpu` plus `privileged`/`hostIPC` starts the container; the initial `FailedScheduling` was a terminating llama.cpp pod still holding the single GPU, not a device-injection problem.
 - `helm dependency update` and `helm template` pass; the lock file is committed.

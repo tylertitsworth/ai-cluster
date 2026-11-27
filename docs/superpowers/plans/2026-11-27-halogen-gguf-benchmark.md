@@ -17,7 +17,7 @@
 - Checkpoint phase 1: `/root/.ollama/models/blobs/qwen38-27b-swift-q6k.gguf` — a hardlink (same inode, no extra disk) to the Ollama blob `sha256-7f4de8abd5446c08b0f975a1b38e43d02639f4ae9ecdd2ddfd5c5b0f612bda59`; Halogen detects GGUF by the `.gguf` suffix.
 - `HALOGEN_CTX=262144`, `HALOGEN_PROMPT_CACHE=2`, `HALOGEN_KV_SLOTS=4` — 1:1 with published defaults.
 - Deviations: `HALOGEN_KV_POOL_POSITIONS=262144`, `HALOGEN_HOST_RESERVE_GIB=8`.
-- `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next` (only the MTP head + tokenizer are fetched; the 27B repo has no standalone head); `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`.
+- `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next` (only the MTP head + tokenizer are fetched; the 27B repo has no standalone head); `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; `HALOGEN_TOKENIZER=/root/.ollama/models/blobs/tokenizer` (where the download lands it).
 - Leave unset: `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, `HALOGEN_GGUF_CACHE`.
 - Node `framework-desktop`; PVC `ollama-data` mounted read-write at `/root/.ollama`; ingress className `tailscale`, host `halogen`, proxy-class `pin-framework-desktop`, TLS.
 - Benchmark: `bench serial,mtp 256 low 3`; cold `sweep -p 8192,32768 -n 128` with `HALOGEN_PROMPT_CACHE=0`.

@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/tylertitsworth/ai-cluster.git
-    targetRevision: add/halogen-gguf
+    targetRevision: main
     path: apps/ai/llamacpp
   destination:
     server: https://kubernetes.default.svc

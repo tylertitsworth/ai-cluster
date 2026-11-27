@@ -12,13 +12,13 @@ spec:
   project: default
   sources:
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: add/halogen-gguf
+      targetRevision: main
       path: charts/halogen
       helm:
         valueFiles:
           - $values/apps/ai/values/halogen.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: add/halogen-gguf
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

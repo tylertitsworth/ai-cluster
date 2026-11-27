@@ -1,0 +1,124 @@
+app-template:
+  configMaps:
+    policy:
+      includeInChecksum: true
+      data:
+        # Policy tuning (all values are defaults, kept for reference):
+        #   sparse_events: subtitle density threshold (events/min) below which
+        #     a track is considered sparse (e.g. forced-only). Default 1.5.
+        #   forced_flag_events: density above which a track is flagged forced. Default 4.0.
+        #   density_min_minutes: min audio duration (min) before density checks apply. Default 15.
+        #   min_confidence: language-detection confidence floor (0-1). Tracks below
+        #     this are left untouched. Default 0.7.
+        #   forced_clear: when a file has only English audio, clear forced flags on
+        #     subtitles (likely mislabeled). events/duration threshold, enable flag,
+        #     subtitle-to-audio duration ratio. Default 10.0 / true / 0.8.
+        # kids: required by AMG's policy schema but set to empty matchers here
+        #   (no kids content in this library). No foreign item is ever classified
+        #   as a kids title, so foreign_kids audio/subtitle priority is unused.
+        policy.json: |
+          {
+            "kids": {
+              "genres": {"radarr": [], "sonarr": []},
+              "profiles": [],
+              "studios": []
+            },
+            "audio": {
+              "english": ["original"],
+              "foreign": ["original", "english"],
+              "foreign_kids": ["english", "original"]
+            },
+            "subtitles": {
+              "english": ["forced"],
+              "foreign": ["full", "sdh", "forced", "dub"]
+            },
+            "sparse_events": 1.5,
+            "forced_flag_events": 4.0,
+            "density_min_minutes": 15,
+            "min_confidence": 0.7,
+            "forced_clear": {
+              "events": 10.0,
+              "english_only_audio": true,
+              "reference_ratio": 0.8
+            }
+          }
+
+  controllers:
+    arr-media-guard:
+      replicas: 1
+      strategy: Recreate
+      pod:
+        terminationGracePeriodSeconds: 60
+
+      containers:
+        main:
+          image:
+            repository: ghcr.io/samwiseg0/arr-media-guard
+            tag: latest
+            pullPolicy: Always
+
+          env:
+            - name: TZ
+              value: America/Los_Angeles
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: PATH_MAP
+              value: /media:/data
+            - name: POLICY_FILE
+              value: /policy/policy.json
+            - name: RADARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arr-media-guard
+                  key: radarr-api-key
+            - name: SONARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arr-media-guard
+                  key: sonarr-api-key
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+
+  service:
+    main:
+      controller: arr-media-guard
+      ports:
+        webhook:
+          port: 8484
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: arr-media-guard-config-v1
+      globalMounts:
+        - path: /config
+
+    policy:
+      type: configMap
+      name: arr-media-guard-policy
+      items:
+        - key: policy.json
+          path: policy.json
+      globalMounts:
+        - path: /policy/policy.json
+          subPath: policy.json
+
+    state:
+      enabled: true
+      existingClaim: arr-media-guard-state-v1
+      globalMounts:
+        - path: /config/state
+
+    media:
+      enabled: true
+      existingClaim: media-library
+      globalMounts:
+        - path: /data
+          readOnly: false

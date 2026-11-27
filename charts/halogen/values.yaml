@@ -124,10 +124,10 @@ config:
     value: /root/.ollama/halogen-cache
   # shortcut: 32 GiB bounds the cache to half the free PVC; raise when the disk cache approaches that limit.
   - key: HALOGEN_CACHE_DISK_GIB
-    value: "32"
+    value: 32
   - key: HALOGEN_CACHE_BRANCHES
-    value: "3"
+    value: 3
   - key: HALOGEN_CACHE_ENTRIES
-    value: "36"
+    value: 36
   - key: HALOGEN_HOST_RESERVE_GIB
     value: "8"

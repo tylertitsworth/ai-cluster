@@ -1,4 +1,5 @@
 # Override values for the halogen chart (charts/halogen).
-# Phase 2 fallback is a one-line edit to the HALOGEN_CHECKPOINT entry in
-# charts/halogen/values.yaml: /root/.ollama/qwen38-27b-ht4.hgn
+# Phase 2 fallback: in charts/halogen/values.yaml set HALOGEN_CHECKPOINT to
+# /root/.ollama/qwen38-27b-ht4.hgn and HALOGEN_DOWNLOAD to
+# peonist-ai/halogen-qwen3.8-27b-ht4 so the ht4 file is fetched.
 # Leave this file empty so phase 1 serves the existing GGUF by default.

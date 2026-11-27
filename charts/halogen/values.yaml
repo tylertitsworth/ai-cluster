@@ -101,8 +101,11 @@ app-template:
 config:
   - key: HALOGEN_CHECKPOINT
     value: /root/.ollama/models/blobs/qwen38-27b-swift-q6k.gguf
+  # The 27B repo has no standalone MTP head; the engine's GGUF path expects
+  # qwen38-flash-next-mtp.hgn, which lives in the flash-next repo. Its tokenizer
+  # is the same one 27B uses. No ht4 weights are fetched while GGUF is served.
   - key: HALOGEN_DOWNLOAD
-    value: peonist-ai/halogen-qwen3.8-27b-ht4
+    value: peonist-ai/halogen-qwen3.8-flash-next
   - key: HALOGEN_API_PORT
     value: "8731"
   - key: HALOGEN_MODEL_ID

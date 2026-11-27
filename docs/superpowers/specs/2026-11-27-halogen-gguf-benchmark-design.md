@@ -45,7 +45,7 @@ Find out whether Halogen's published Qwen3.8-27B speed (37.9 drafted / 15.1 seri
 **Calls made after the builder check (check these while reading):**
 
 - **One container, not the split compose topology.** The README quickstart and the BYO-GGUF recipe both use a single container serving `:8731`; the `engine`/`api` compose split is an optional topology, not a requirement. The chart uses one container with one `/health` probe and one service.
-- **`HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4` may pull the 12.8 GiB ht4 file.** The 27B weights repo contains no standalone `.hgn` draft head — only `qwen38-27b-ht4.hgn` (head baked in), the vision tower, and the tokenizer. The separate `qwen38-flash-next-mtp.hgn` belongs to a different (MoE) model and is not usable here. Fetching the 27B repo is therefore the only way to supply a head; the served weights still come from the GGUF. If the engine refuses the GGUF or its head, flip the checkpoint to phase 2 and report that as the result.
+- **`HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next` supplies the head, not the weights.** The 27B repo contains no standalone `.hgn` draft head — only `qwen38-27b-ht4.hgn` (head baked in), the vision tower, and the tokenizer. Halogen's GGUF path insists on `qwen38-flash-next-mtp.hgn`; that file lives in the flash-next repo, whose tokenizer is documented as identical to 27B's. No ht4 checkpoint is fetched at phase 1: `HALOGEN_CHECKPOINT` names the GGUF explicitly. If the engine refuses the GGUF or its head, flip both the checkpoint and download repo to phase 2 and report that as the result.
 - **Delete the leftover Helm `halogen` Deployment/Service before the first Argo sync**, so Argo creates fresh objects instead of colliding with a Helm-owned release. This is a one-time cleanup, after which Argo is authoritative.
 - **Results go in `docs/benchmarks/halogen-vs-llamacpp-2026-11-27.md` on the branch**, committed, and are summarised in the PR body.
 
@@ -68,17 +68,18 @@ If startup logs `LOWERING THE POOL TO N`, record the actual `pool N/<positions>`
 - `charts/halogen/templates/configmap.yaml` — renders `.Values.config` into `halogen-config`, same shape as the old chart.
 - `apps/ai/halogen.yaml` — Application, both sources `targetRevision: add/halogen-gguf`, destination `ollama`, automated sync **disabled** so the cutover is deliberate.
 - `apps/ai/llama-cpp.yaml` — `targetRevision: add/halogen-gguf`; `apps/ai/llamacpp/deployment.yaml` — `replicas: 0`.
-- One documented value switch for phase 2: `HALOGEN_CHECKPOINT=/root/.ollama/qwen38-27b-ht4.hgn`; the same `HALOGEN_DOWNLOAD` repo fetches the checkpoint if needed.
+- One documented phase-2 switch: `HALOGEN_CHECKPOINT=/root/.ollama/qwen38-27b-ht4.hgn` and `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4` (the latter is only needed if the ht4 file is not already on the PVC).
 
-**Environment (phase 1):** `HALOGEN_CHECKPOINT` = the `.gguf` hardlink to the existing GGUF blob; `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-27b-ht4` so the draft head and tokenizer land beside the GGUF; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; plus the five table entries above. Keep `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, and `HALOGEN_GGUF_CACHE` unset.
+**Environment (phase 1):** `HALOGEN_CHECKPOINT` = the `.gguf` hardlink to the existing GGUF blob; `HALOGEN_DOWNLOAD=peonist-ai/halogen-qwen3.8-flash-next` so the draft head and tokenizer land beside the GGUF; `HALOGEN_API_PORT=8731`; `HALOGEN_MODEL_ID=halogen-qwen3.8-27b`; plus the five table entries above. Keep `HALOGEN_KV8`, `HALOGEN_VISION_TOWER`, `HALOGEN_ROPE_YARN`, and `HALOGEN_GGUF_CACHE` unset.
 
 **Persistence:** mount the existing `ollama-data` PVC read-write at `/root/.ollama`. It holds the GGUF, and is writable so `HALOGEN_DOWNLOAD` can place the head/tokenizer (and, in phase 2, the ht4 file) there. No new PVC.
 
 **Benchmark:** use the image's own CLI inside the pod. Decode from `bench serial,mtp 256 low 3`; cold prefill from `sweep -p 8192,32768 -n 128` with prompt cache off. Record `bench` output, any `LOWERING THE POOL` line, and `/health` `checkpoint_format`. Put the measured rows into the comparison table alongside the published Halogen and measured llama.cpp rows, with the deviations listed.
 
-## What is left to the builder
+## Resolved during the build
 
-- Exact in-pod CLI invocation for the cold prefill `sweep` when `HALOGEN_PROMPT_CACHE=0` is a server env var (run a short second pod with the override, or pass the CLI equivalent, whichever the image supports).
-- Exact 27B draft-head/tokenizer filenames produced by `HALOGEN_DOWNLOAD`; read them from startup logs rather than guessing.
-- Whether `amd.com/gpu` alone injects `/dev/kfd` + `/dev/dri` for this image, and whether `privileged`/`hostIPC` are needed; confirm from the first pod start.
-- Helm dependency lock generation (`helm dependency update`) and a `helm template` sanity check before pushing.
+- The MTP head is `qwen38-flash-next-mtp.hgn`, fetched from `peonist-ai/halogen-qwen3.8-flash-next`; the 27B repo has no standalone head. Tokenizer files are the same for both models.
+- The checkpoint path needs a `.gguf` suffix: a hardlink to the extensionless Ollama blob was added on the PVC (same inode, no extra disk).
+- `amd.com/gpu` plus `privileged`/`hostIPC` starts the container; the initial `FailedScheduling` was a terminating llama.cpp pod still holding the single GPU, not a device-injection problem.
+- `helm dependency update` and `helm template` pass; the lock file is committed.
+- Cold `sweep` invocation is pinned in Task 5 of the implementation plan and remains to be run.

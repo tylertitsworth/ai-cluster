@@ -120,6 +120,10 @@ config:
     value: peonist-ai/halogen-qwen3.8-27b-ht4
   - key: HALOGEN_API_PORT
     value: "8731"
+  - key: HALOGEN_MAX_TOKENS_DEFAULT
+    value: "16384"
+  - key: HALOGEN_QUEUE_TIMEOUT
+    value: "7200"
   - key: HALOGEN_MODEL_ID
     value: halogen-qwen3.8-27b
   # HALOGEN_DOWNLOAD writes tokenizer/ beside the head in blobs/, not /models/tokenizer.
@@ -132,20 +136,26 @@ config:
   - key: HALOGEN_KV_POOL_POSITIONS
     value: "262144"
   - key: HALOGEN_KV_SLOTS
-    value: "16"
+    value: "4"
   - key: HALOGEN_PROMPT_CACHE
     value: "2"
   - key: HALOGEN_CACHE_DIR
     value: /root/.ollama/halogen-cache
-  # shortcut: 32 GiB bounds the cache to half the free PVC; raise when the disk cache approaches that limit.
+  # 64 GiB cache on the expanded 150 GiB ollama-data PVC (stale build subtrees pruned at start).
   - key: HALOGEN_CACHE_DISK_GIB
-    value: 32
+    value: 64
+  - key: HALOGEN_CACHE_PRUNE_OLD
+    value: 1
   - key: HALOGEN_CACHE_BRANCHES
     value: 3
   - key: HALOGEN_CACHE_ENTRIES
     value: 36
+  - key: HALOGEN_RECORD_DIR
+    value: /root/.ollama/halogen-records
   # Locked weights stay resident; do not co-schedule heavy work on this node (see design doc).
   - key: HALOGEN_WEIGHTS_LOCK
     value: 1
   - key: HALOGEN_HOST_RESERVE_GIB
     value: "8"
+  - key: HALOGEN_ACCESS_LOG
+    value: all

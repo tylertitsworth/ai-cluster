@@ -26,3 +26,17 @@ spec:
     baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
     apiFormat: responses
   stream: true
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: ModelConfig
+metadata:
+  name: halogen-qwen3.8-27b-terse
+  namespace: kagent
+spec:
+  provider: OpenAI
+  model: halogen-qwen3.8-27b:terse
+  openAI:
+    baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
+    apiFormat: chatCompletions
+    timeout: 7200
+  stream: true

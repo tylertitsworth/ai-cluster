@@ -6,8 +6,13 @@ metadata:
 spec:
   description: Local kagent-default harness using in-cluster Halogen
   modelConfig:
-    name: halogen-qwen3.8-27b
+    name: halogen-qwen3.8-27b-terse
   systemPrompt: You are a helpful coding assistant running via the kagent-default harness with an in-cluster Halogen model.
+  tools:
+    - mcp:
+        server:
+          kind: RemoteMCPServer
+          name: github-mcp
 ---
 apiVersion: api.kagent.dev/v1alpha3
 kind: Agent
@@ -17,6 +22,7 @@ metadata:
 spec:
   egressPolicyRefs:
     - name: allow-halogen
+    - name: allow-github-mcp
   harnessRef:
     name: kagent-default
   template:
@@ -31,7 +37,7 @@ metadata:
 spec:
   description: Admin assistant using kagent-default harness with in-cluster Halogen
   modelConfig:
-    name: halogen-qwen3.8-27b
+    name: halogen-qwen3.8-27b-terse
   systemPrompt: You are a cluster administrator assistant running via the kagent-default harness with an in-cluster Halogen model. Use your Kubernetes, Argo CD, GitHub and Context7 tools to inspect cluster state and library docs before making recommendations.
   tools:
     - mcp:

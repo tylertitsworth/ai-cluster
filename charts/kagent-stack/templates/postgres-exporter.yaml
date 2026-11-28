@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kagent-postgres-exporter
+  namespace: kagent
+  labels:
+    app: kagent-postgres-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kagent-postgres-exporter
+  template:
+    metadata:
+      labels:
+        app: kagent-postgres-exporter
+    spec:
+      containers:
+        - name: postgres-exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: DATA_SOURCE_URI
+              value: kagent-postgres-rw:5432/kagent?sslmode=disable
+            - name: DATA_SOURCE_USER
+              value: kagent
+            - name: DATA_SOURCE_PASS
+              value: kagent-db-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kagent-postgres-exporter
+  namespace: kagent
+  labels:
+    app: kagent-postgres-exporter
+spec:
+  selector:
+    app: kagent-postgres-exporter
+  ports:
+    - name: metrics
+      port: 9187
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kagent-postgres-exporter
+  namespace: kagent
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: kagent-postgres-exporter
+  endpoints:
+    - port: metrics
+      interval: 30s

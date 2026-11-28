@@ -1,307 +1,63 @@
-# kagent values (Helm, 1.0.1)
+# kagent-stack chart values (kagent subchart 1.0.1)
 global:
   imagePullSecrets:
     - name: ghcr-pull
 
-database:
-  postgres:
-    ownerConnectionStringSecretRef:
-      name: kagent-postgres-owner
-      key: ownerConnectionString
-    readWriteConnectionStringSecretRef:
-      name: kagent-postgres-readwrite
-      key: readWriteConnectionString
-    clientCertificate:
-      enabled: false
+kagent:
+  database:
+    postgres:
+      ownerConnectionStringSecretRef:
+        name: kagent-postgres-owner
+        key: ownerConnectionString
+      readWriteConnectionStringSecretRef:
+        name: kagent-postgres-readwrite
+        key: readWriteConnectionString
+      clientCertificate:
+        enabled: false
 
-controller:
-  replicas: 1
-  substrateClientCertificate:
-    enabled: true
-  metrics:
-    enabled: true
-    service:
-      type: ClusterIP
-      port: 8443
-    serviceMonitor:
+  controller:
+    replicas: 1
+    substrateClientCertificate:
       enabled: true
-      labels:
-        release: monitoring
+    metrics:
+      enabled: true
+      service:
+        type: ClusterIP
+        port: 8443
+      serviceMonitor:
+        enabled: true
+        labels:
+          release: monitoring
 
-ui:
-  externalUrl: "https://kagent-ui.tail79a5c8.ts.net"
-  replicas: 1
+  ui:
+    externalUrl: "https://kagent-ui.tail79a5c8.ts.net"
+    replicas: 1
 
-providers:
-  default: openAI
-  openAI:
-    provider: OpenAI
-    apiKeySecretRef: ollama-dummy-key
-    apiKeySecretKey: api-key
-    model: "halogen-qwen3.8-27b"
-    config:
-      baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
-      apiFormat: chatCompletions
-      timeout: 7200
-
-substrateWorkerPool:
-  create: true
-  name: kagent-default
-  replicas: 1
-  workerImage: ghcr.io/kagent-dev/substrate/ateworker-gvisor:v1.0.0
-  sandboxClass: gvisor
-
-harnesses:
-  enabled: true
-  snapshotLocation: s3://ate-snapshots/kagent/
-  kagent:
-    enabled: true
-  codex:
-    enabled: true
-  claude:
-    enabled: true
-
-# Extra resources (ModelConfigs, egress policy and postgres metrics exporter)
-extraObjects:
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: ModelConfig
-    metadata:
-      name: halogen-qwen3.8-27b
-      namespace: kagent
-    spec:
+  providers:
+    default: openAI
+    openAI:
       provider: OpenAI
-      model: halogen-qwen3.8-27b
-      openAI:
+      apiKeySecretRef: ollama-dummy-key
+      apiKeySecretKey: api-key
+      model: "halogen-qwen3.8-27b"
+      config:
         baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
         apiFormat: chatCompletions
         timeout: 7200
-      stream: true
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: ModelConfig
-    metadata:
-      name: halogen-qwen3.8-27b-responses
-      namespace: kagent
-    spec:
-      apiKeySecret: ollama-dummy-key
-      apiKeySecretKey: api-key
-      provider: OpenAI
-      model: halogen-qwen3.8-27b
-      openAI:
-        baseUrl: http://halogen.ollama.svc.cluster.local:8731/v1
-        apiFormat: responses
-      stream: true
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: EgressPolicy
-    metadata:
-      name: allow-halogen
-      namespace: kagent
-    spec:
-      destinations:
-        - origin: http://halogen.ollama.svc.cluster.local:8731
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: EgressPolicy
-    metadata:
-      name: allow-context7-mcp
-      namespace: kagent
-    spec:
-      destinations:
-        - origin: https://mcp.context7.com
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: EgressPolicy
-    metadata:
-      name: allow-github-mcp
-      namespace: kagent
-    spec:
-      destinations:
-        - origin: https://api.githubcopilot.com
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: EgressPolicy
-    metadata:
-      name: allow-kubernetes-mcp
-      namespace: kagent
-    spec:
-      destinations:
-        - origin: http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: EgressPolicy
-    metadata:
-      name: allow-argocd-mcp
-      namespace: kagent
-    spec:
-      destinations:
-        - origin: http://argocd-mcp-server.kagent.svc.cluster.local:3000
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: AgentTemplate
-    metadata:
-      name: local-halogen-admin
-      namespace: kagent
-    spec:
-      description: Admin assistant using kagent-default harness with in-cluster Halogen
-      modelConfig:
-        name: halogen-qwen3.8-27b
-      systemPrompt: You are a cluster administrator assistant running via the kagent-default harness with an in-cluster Halogen model. Use your Kubernetes, Argo CD, GitHub and Context7 tools to inspect cluster state and library docs before making recommendations.
-      tools:
-        - mcp:
-            server:
-              kind: RemoteMCPServer
-              name: context7-mcp
-        - mcp:
-            server:
-              kind: RemoteMCPServer
-              name: github-mcp
-        - mcp:
-            server:
-              kind: RemoteMCPServer
-              name: kubernetes-ro-mcp
-        - mcp:
-            server:
-              kind: RemoteMCPServer
-              name: argocd-mcp
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: Agent
-    metadata:
-      name: local-halogen-admin
-      namespace: kagent
-    spec:
-      egressPolicyRefs:
-        - name: allow-halogen
-        - name: allow-context7-mcp
-        - name: allow-github-mcp
-        - name: allow-kubernetes-mcp
-        - name: allow-argocd-mcp
-      harnessRef:
-        name: kagent-default
-      template:
-        ref:
-          name: local-halogen-admin
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: AgentTemplate
-    metadata:
-      name: local-halogen
-      namespace: kagent
-    spec:
-      description: Local kagent-default harness using in-cluster Halogen
-      modelConfig:
-        name: halogen-qwen3.8-27b
-      systemPrompt: You are a helpful coding assistant running via the kagent-default harness with an in-cluster Halogen model.
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: Agent
-    metadata:
-      name: local-halogen
-      namespace: kagent
-    spec:
-      egressPolicyRefs:
-        - name: allow-halogen
-      harnessRef:
-        name: kagent-default
-      template:
-        ref:
-          name: local-halogen
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: RemoteMCPServer
-    metadata:
-      name: argocd-mcp
-      namespace: kagent
-    spec:
-      description: Argo CD MCP server (in-cluster)
-      protocol: STREAMABLE_HTTP
-      terminateOnClose: true
-      timeout: 30s
-      url: http://argocd-mcp-server.kagent.svc.cluster.local:3000/mcp
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: RemoteMCPServer
-    metadata:
-      name: context7-mcp
-      namespace: kagent
-    spec:
-      description: Context7 MCP server for up-to-date library documentation and code examples
-      protocol: STREAMABLE_HTTP
-      terminateOnClose: true
-      timeout: 30s
-      url: https://mcp.context7.com/mcp
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: RemoteMCPServer
-    metadata:
-      name: github-mcp
-      namespace: kagent
-    spec:
-      description: GitHub MCP server (Copilot API)
-      headersFrom:
-        - name: Authorization
-          valueFrom:
-            key: Authorization
-            name: github-mcp-pat
-            type: Secret
-      protocol: STREAMABLE_HTTP
-      terminateOnClose: true
-      timeout: 30s
-      url: https://api.githubcopilot.com/mcp/
-  - apiVersion: api.kagent.dev/v1alpha3
-    kind: RemoteMCPServer
-    metadata:
-      name: kubernetes-ro-mcp
-      namespace: kagent
-    spec:
-      description: Kubernetes read-only MCP server (in-cluster)
-      protocol: STREAMABLE_HTTP
-      terminateOnClose: true
-      timeout: 30s
-      url: http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp
-  - apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: kagent-postgres-exporter
-      namespace: kagent
-      labels:
-        app: kagent-postgres-exporter
-    spec:
-      replicas: 1
-      selector:
-        matchLabels:
-          app: kagent-postgres-exporter
-      template:
-        metadata:
-          labels:
-            app: kagent-postgres-exporter
-        spec:
-          containers:
-            - name: postgres-exporter
-              image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
-              ports:
-                - name: metrics
-                  containerPort: 9187
-              env:
-                - name: DATA_SOURCE_URI
-                  value: kagent-postgres-rw:5432/kagent?sslmode=disable
-                - name: DATA_SOURCE_USER
-                  value: kagent
-                - name: DATA_SOURCE_PASS
-                  value: kagent-db-password
-  - apiVersion: v1
-    kind: Service
-    metadata:
-      name: kagent-postgres-exporter
-      namespace: kagent
-      labels:
-        app: kagent-postgres-exporter
-    spec:
-      selector:
-        app: kagent-postgres-exporter
-      ports:
-        - name: metrics
-          port: 9187
-          targetPort: metrics
-  - apiVersion: monitoring.coreos.com/v1
-    kind: ServiceMonitor
-    metadata:
-      name: kagent-postgres-exporter
-      namespace: kagent
-      labels:
-        release: monitoring
-    spec:
-      selector:
-        matchLabels:
-          app: kagent-postgres-exporter
-      endpoints:
-        - port: metrics
-          interval: 30s
+
+  substrateWorkerPool:
+    create: true
+    name: kagent-default
+    replicas: 1
+    workerImage: ghcr.io/kagent-dev/substrate/ateworker-gvisor:v1.0.0
+    sandboxClass: gvisor
+
+  harnesses:
+    enabled: true
+    snapshotLocation: s3://ate-snapshots/kagent/
+    kagent:
+      enabled: true
+    codex:
+      enabled: true
+    claude:
+      enabled: true

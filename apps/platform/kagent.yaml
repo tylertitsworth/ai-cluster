@@ -14,10 +14,11 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kagent
   sources:
-    - repoURL: oci://ghcr.io/kagent-dev/kagent/helm/kagent
-      chart: kagent
-      targetRevision: 1.0.1
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: feature/kagent-substrate
+      path: charts/kagent-stack
       helm:
+        releaseName: kagent
         valueFiles:
           - $values/apps/platform/values/kagent.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git

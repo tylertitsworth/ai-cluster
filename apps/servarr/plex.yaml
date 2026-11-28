@@ -99,3 +99,4 @@ spec:
       jqPathExpressions:
         - .spec.template.metadata.annotations."kubectl.kubernetes.io/restartedAt"
         - .spec.template.metadata.annotations."restart-operator.k8s/restartedAt"
+        - .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration"

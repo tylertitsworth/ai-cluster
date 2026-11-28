@@ -35,7 +35,7 @@ app-template:
                 httpGet:
                   path: /health
                   port: 8731
-                initialDelaySeconds: 300
+                initialDelaySeconds: 15
                 periodSeconds: 15
                 timeoutSeconds: 5
                 failureThreshold: 24
@@ -46,8 +46,7 @@ app-template:
                 httpGet:
                   path: /health
                   port: 8731
-                # First start downloads the draft head and repacks the GGUF.
-                initialDelaySeconds: 7200
+                initialDelaySeconds: 30
                 periodSeconds: 30
                 timeoutSeconds: 5
                 # 40 x 30 s clears the watchdog's 180 s + 900 s deferral; HTTP probes cannot see D-state stalls.
@@ -139,8 +138,6 @@ config:
     value: 3
   - key: HALOGEN_CACHE_ENTRIES
     value: 36
-  - key: HALOGEN_COMPOSABLE_CONTEXT
-    value: 1
   # Locked weights stay resident; do not co-schedule heavy work on this node (see design doc).
   - key: HALOGEN_WEIGHTS_LOCK
     value: 1

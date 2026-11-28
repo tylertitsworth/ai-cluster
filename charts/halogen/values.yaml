@@ -60,6 +60,7 @@ app-template:
 
       pod:
         hostIPC: true
+        terminationGracePeriodSeconds: 60
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -138,6 +139,8 @@ config:
     value: 3
   - key: HALOGEN_CACHE_ENTRIES
     value: 36
+  - key: HALOGEN_COMPOSABLE_CONTEXT
+    value: 1
   # Locked weights stay resident; do not co-schedule heavy work on this node (see design doc).
   - key: HALOGEN_WEIGHTS_LOCK
     value: 1

@@ -61,8 +61,6 @@ spec:
           enabled: true
           ingressClassName: tailscale
           url: plex
-          annotations:
-            tailscale.com/proxy-class: "pin-framework-desktop"
           tls:
             - hosts:
                 - plex

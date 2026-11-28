@@ -54,8 +54,10 @@ app-template:
           resources:
             requests:
               amd.com/gpu: "1"
+              memory: "48Gi"
             limits:
               amd.com/gpu: "1"
+              memory: "56Gi"
 
       pod:
         hostIPC: true
@@ -122,7 +124,7 @@ config:
   - key: HALOGEN_TOKENIZER
     value: /root/.ollama/models/blobs/tokenizer
   - key: HALOGEN_VISION_TOWER
-    value: "1"
+    value: /root/.ollama/qwen38-27b-vision.hgn
   - key: HALOGEN_CTX
     value: "262144"
   - key: HALOGEN_KV_POOL_POSITIONS

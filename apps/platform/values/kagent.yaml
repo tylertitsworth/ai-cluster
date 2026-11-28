@@ -174,6 +174,79 @@ extraObjects:
       template:
         ref:
           name: local-halogen-admin
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: AgentTemplate
+    metadata:
+      name: local-halogen
+      namespace: kagent
+    spec:
+      description: Local kagent-default harness using in-cluster Halogen
+      modelConfig:
+        name: halogen-qwen3.8-27b
+      systemPrompt: You are a helpful coding assistant running via the kagent-default harness with an in-cluster Halogen model.
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: Agent
+    metadata:
+      name: local-halogen
+      namespace: kagent
+    spec:
+      egressPolicyRefs:
+        - name: allow-halogen
+      harnessRef:
+        name: kagent-default
+      template:
+        ref:
+          name: local-halogen
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: RemoteMCPServer
+    metadata:
+      name: argocd-mcp
+      namespace: kagent
+    spec:
+      description: Argo CD MCP server (in-cluster)
+      protocol: STREAMABLE_HTTP
+      terminateOnClose: true
+      timeout: 30s
+      url: http://argocd-mcp-server.kagent.svc.cluster.local:3000/mcp
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: RemoteMCPServer
+    metadata:
+      name: context7-mcp
+      namespace: kagent
+    spec:
+      description: Context7 MCP server for up-to-date library documentation and code examples
+      protocol: STREAMABLE_HTTP
+      terminateOnClose: true
+      timeout: 30s
+      url: https://mcp.context7.com/mcp
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: RemoteMCPServer
+    metadata:
+      name: github-mcp
+      namespace: kagent
+    spec:
+      description: GitHub MCP server (Copilot API)
+      headersFrom:
+        - name: Authorization
+          valueFrom:
+            key: Authorization
+            name: github-mcp-pat
+            type: Secret
+      protocol: STREAMABLE_HTTP
+      terminateOnClose: true
+      timeout: 30s
+      url: https://api.githubcopilot.com/mcp/
+  - apiVersion: api.kagent.dev/v1alpha3
+    kind: RemoteMCPServer
+    metadata:
+      name: kubernetes-ro-mcp
+      namespace: kagent
+    spec:
+      description: Kubernetes read-only MCP server (in-cluster)
+      protocol: STREAMABLE_HTTP
+      terminateOnClose: true
+      timeout: 30s
+      url: http://kubernetes-mcp-server.kubernetes-mcp.svc.cluster.local:8080/mcp
   - apiVersion: apps/v1
     kind: Deployment
     metadata:

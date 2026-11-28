@@ -132,7 +132,7 @@ config:
   - key: HALOGEN_KV_POOL_POSITIONS
     value: "262144"
   - key: HALOGEN_KV_SLOTS
-    value: "4"
+    value: "16"
   - key: HALOGEN_PROMPT_CACHE
     value: "2"
   - key: HALOGEN_CACHE_DIR

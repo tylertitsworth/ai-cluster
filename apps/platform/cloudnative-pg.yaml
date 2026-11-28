@@ -21,7 +21,7 @@ spec:
         valueFiles:
           - $values/apps/platform/values/cloudnative-pg.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: feature/kagent-substrate
+      targetRevision: main
       ref: values
   syncPolicy:
     syncOptions:

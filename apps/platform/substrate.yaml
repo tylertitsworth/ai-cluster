@@ -28,7 +28,7 @@ spec:
         valueFiles:
           - $values/apps/platform/values/substrate.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: feature/kagent-substrate
+      targetRevision: main
       ref: values
   syncPolicy:
     syncOptions:

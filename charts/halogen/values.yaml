@@ -108,6 +108,20 @@ app-template:
       globalMounts:
         - path: /root/.ollama
 
+  serviceMonitor:
+    main:
+      enabled: true
+      labels:
+        release: monitoring
+        prometheus: monitoring-kube-prometheus-prometheus
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: halogen
+      endpoints:
+        - port: http
+          path: /metrics
+          interval: 5s
+
 # Rendered into halogen-config and injected with envFrom.
 # Published defaults kept 1:1: CTX, prompt cache, slots.
 # Forced deviations for the 64 GB box: KV pool and host reserve.

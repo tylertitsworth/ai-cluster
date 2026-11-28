@@ -313,9 +313,26 @@ Open WebUI is a great place to store data for RAG usage and test out new tools/f
 
 ### vLLM
 
-[vLLM](https://docs.vllm.ai/) is the alternative option to Ollama for serving LLMs. The important tradeoff with using vLLM is that it's harder to configure right and doesn't get to take advantage of q_k quantizations. Meaning that it has to use more VRAM to serve models. However, vLLM's upside is that it properly loads weights into VRAM and does prefix caching. Meaning the entire opencode prompt is stored in VRAM after the first message and each subsequent prompt is now trivial to decode. Serving a version of Qwen3.6-35B called `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit` gets around the limitations of lacking the q_k quantization support as AWQ is very memory efficient. The most important addition for compatibility is using community patches into vLLM to enable ROCM_AITER attention, which unlocks 40-50 t/s on vLLM. Unfortunately it took a lot of patches and tuning to get vLLM working as upstream vLLM doesn't support the gfx1151 at all. The [image](https://hub.docker.com/r/kyuz0/vllm-therock-gfx1151) is the Rocksmith community's ROCm fork, which `LD_PRELOAD`s a hip-memory override and forces a handful of flags (`VLLM_ROCM_USE_AITER`, `VLLM_USE_TRITON_AWQ`) to get the driver to behave. The 64GB version of the framework desktop can allow for the full 256k context length of this model.
+[vLLM](https://docs.vllm.ai/) was the alternative option to Ollama for serving LLMs. The important tradeoff with using vLLM is that it's harder to configure right and doesn't get to take advantage of q_k quantizations. Meaning that it has to use more VRAM to serve models. However, vLLM's upside is that it properly loads weights into VRAM and does prefix caching. Meaning the entire opencode prompt is stored in VRAM after the first message and each subsequent prompt is now trivial to decode. Serving a version of Qwen3.6-35B called `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit` gets around the limitations of lacking the q_k quantization support as AWQ is very memory efficient. The most important addition for compatibility is using community patches into vLLM to enable ROCM_AITER attention, which unlocks 40-50 t/s on vLLM. Unfortunately it took a lot of patches and tuning to get vLLM working as upstream vLLM doesn't support the gfx1151 at all. The [image](https://hub.docker.com/r/kyuz0/vllm-therock-gfx1151) is the Rocksmith community's ROCm fork, which `LD_PRELOAD`s a hip-memory override and forces a handful of flags (`VLLM_ROCM_USE_AITER`, `VLLM_USE_TRITON_AWQ`) to get the driver to behave. The 64GB version of the framework desktop can allow for the full 256k context length of this model.
 
 The chart uses vllm with the `--config` parameter so we can just put all of the vllm kwargs into a configmap.
+
+vLLM is retired now: automated sync is disabled on its Argo app and the chart stays in the repo for reference. Halogen took over as the inference engine (below).
+
+### Halogen
+
+Halogen is the cluster's current LLM inference engine. It replaced the ollama, vLLM, and llama.cpp setups, and the switch came down to performance: I benchmarked the self-hosted server against the llama.cpp daily driver on framework-desktop, and it won on every axis that mattered for agent work. (The results doc was pulled from the benchmark PR before merge, so the numbers live here.)
+
+| | Drafted decode | Prefill @ 8K | Prefill @ 32K |
+|---|---:|---:|---:|
+| llama.cpp Swift Q6_K / Vulkan | 23.9 t/s | 330 t/s | 280 t/s |
+| Halogen 27B ht4 (measured) | 39.1 t/s | 666 t/s | 588 t/s |
+
+Roughly 2x the prefill speed and 1.6x the decode speed, on top of a 256k context (double the 131k the ollama and llama.cpp builds ran), 16 concurrent requests admitted (4 active KV slots) where the llama.cpp server ran 4 slots, a prompt cache plus a 64 GiB disk cache so repeated agent prompts are cheap to re-serve, and a vision tower. The model is the engine's own 27B ht4 checkpoint (`halogen-qwen3.8-27b`, 12.8 GiB) — the Swift Q6_K GGUF already on the box was refused outright (Halogen 0.21.0 reads qwen4exp GGUFs only), which turned out to be a non-issue since the ht4 checkpoint is what the benchmarks were run against anyway.
+
+The deployment is a Helm chart under `charts/halogen` driven by an ArgoCD app (`apps/ai/halogen.yaml`), pinned to `framework-desktop` with 56Gi of Guaranteed QoS, 8 CPUs, and the AMD GPU. Everything is configured through `HALOGEN_*` environment variables rendered into a configmap — no patched Dockerfiles, no community forks, no `LD_PRELOAD` tricks. It serves an OpenAI-compatible `/v1` API on port 8731 behind the `halogen` Tailscale ingress, and the kagent agents point straight at it.
+
+The cutover went in as a series of small PRs — the benchmark and chart first, then the QoS bump, concurrency, and agent-tuned defaults. The old engines are all still in the repo but scaled to zero (ollama, llama-cpp) or sync-disabled (vLLM), so a rollback is a one-line change.
 
 ### OpenCode
 

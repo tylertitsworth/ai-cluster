@@ -20,7 +20,7 @@ Prometheus is the only reader of Halogen `/metrics`. Do not run the dashboard Co
 | `prefill_speed` | `llamacpp:prompt_tokens_seconds` | Prefill tokens/s since the last scrape. |
 | `prefill_throughput` | `rate(llamacpp:prompt_tokens_total[1m])` | Wall-clock prompt tokens/s. |
 | `requests_per_min` | `rate(halogen:requests_total[1m]) * 60` | Completed requests/min. |
-| `mean_service_time` | `(rate(llamacpp:prompt_seconds_total[1m]) + rate(llamacpp:tokens_predicted_seconds_total[1m])) / rate(halogen:requests_total[1m])` | Seconds of engine work per request. The seconds counters carry only 6 significant digits; the dashboard recovers precision from the two windowed gauges. Equivalent variant: `(rate(llamacpp:prompt_tokens_total[1m]) / clamp_min(llamacpp:prompt_tokens_seconds, 0.001) + rate(llamacpp:tokens_predicted_total[1m]) / clamp_min(llamacpp:predicted_tokens_seconds, 0.001)) / rate(halogen:requests_total[1m])`. |
+| `mean_service_time` | `(rate(llamacpp:prompt_seconds_total[1m]) + rate(llamacpp:tokens_predicted_seconds_total[1m])) / rate(halogen:requests_total[1m])` | Seconds of engine work per request. The seconds counters carry only 6 significant digits; the dashboard recovers precision from the two windowed gauges. Steady-load approximation (not equivalent when idle or bursty): `(rate(llamacpp:prompt_tokens_total[1m]) / clamp_min(llamacpp:prompt_tokens_seconds, 0.001) + rate(llamacpp:tokens_predicted_total[1m]) / clamp_min(llamacpp:predicted_tokens_seconds, 0.001)) / rate(halogen:requests_total[1m])`. |
 | `prompt_cache_hit_rate` | `rate(halogen:prompt_tokens_cached_total[1m]) / (rate(halogen:prompt_tokens_cached_total[1m]) + rate(llamacpp:prompt_tokens_total[1m]))` | Cached prompt tokens over all prompt tokens. |
 | `draft_acceptance` | `rate(halogen:draft_tokens_accepted_total[1m]) / rate(halogen:draft_tokens_total[1m])` | MTP head plus prompt lookup; Halogen does not split them. |
 | `busy_for` | `halogen:busy_for_seconds` | Age of the oldest running request. |
@@ -64,7 +64,7 @@ Related counters the dashboard does not tile but that are useful for the same pa
 The dashboard's Up / Degraded / Down status comes from scrape failures and `/health`. A close Prometheus equivalent:
 
 ```promql
-min(halogen:engine_up) == 0 or absent(halogen:engine_up)
+min(halogen:engine_up) == 0 or absent(halogen:engine_up) or min(up{job=~".*halogen.*"}) == 0
 ```
 
 Degraded, while the engine is still up, can be keyed off stale cache numbers, pool pressure, or long queue waits:

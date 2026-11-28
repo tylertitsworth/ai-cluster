@@ -328,9 +328,14 @@ Halogen is the cluster's current LLM inference engine. It replaced the ollama, v
 | llama.cpp Swift Q6_K / Vulkan | 23.9 t/s | 330 t/s | 280 t/s |
 | Halogen 27B ht4 (measured) | 39.1 t/s | 666 t/s | 588 t/s |
 
-Roughly 2x the prefill speed and 1.6x the decode speed, on top of a 256k context (double the 131k the ollama and llama.cpp builds ran), 16 concurrent requests admitted (4 active KV slots) where the llama.cpp server ran 4 slots, a prompt cache plus a 64 GiB disk cache so repeated agent prompts are cheap to re-serve, and a vision tower. The model is the engine's own 27B ht4 checkpoint (`halogen-qwen3.8-27b`, 12.8 GiB) — the Swift Q6_K GGUF already on the box was refused outright (Halogen 0.21.0 reads qwen4exp GGUFs only), which turned out to be a non-issue since the ht4 checkpoint is what the benchmarks were run against anyway.
+- Roughly 2x the prefill speed
+- 1.6x the decode speed
+- full context
+- 16 concurrent requests admitted (4 active KV slots)
+- a prompt cache plus a 64 GiB disk cache so repeated agent prompts are cheap to re-serve
+- vision capabilities
 
-A LoRA adapter is loaded on top of the base model — it costs about 2.5% of throughput but makes the output more concise, which is worth it since qwen3.8-27b likes to yap. It was fetched to the PVC by a one-time pod.
+The model is Halogen's ht4 checkpoint (`halogen-qwen3.8-27b`, 12.8 GiB). A LoRA adapter is loaded on top of the base model and it costs about 2.5% of throughput but makes the output more concise, which is worth it since qwen3.8-27b likes to yap.
 
 ### OpenCode
 

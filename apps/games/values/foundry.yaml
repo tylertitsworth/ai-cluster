@@ -30,7 +30,7 @@ ingress:
   enabled: true
   className: tailscale
   host: foundry
-  proxyClass: control-plane
+  proxyClass: pin-framework-desktop
   service:
     name: foundry
     port: 80

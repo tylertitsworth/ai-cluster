@@ -25,7 +25,7 @@ grafana:
       - grafana
     ingressClassName: tailscale
     labels:
-      tailscale.com/proxy-class: "pin-npu01"
+      tailscale.com/proxy-class: "pin-orinnx01"
     tls:
       - hosts:
           - grafana
@@ -46,7 +46,7 @@ prometheus:
       - prometheus
     ingressClassName: tailscale
     labels:
-      tailscale.com/proxy-class: "control-plane"
+      tailscale.com/proxy-class: "pin-framework-13-laptop"
     paths: ["/"]
     tls:
       - hosts:

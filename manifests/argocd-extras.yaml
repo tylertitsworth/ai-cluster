@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   labels:
-    tailscale.com/proxy-class: control-plane
+    tailscale.com/proxy-class: pin-npu01
   name: argocd
   namespace: argocd
 spec:

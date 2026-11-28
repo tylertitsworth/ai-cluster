@@ -6,6 +6,8 @@ metadata:
   namespace: kagent
   annotations:
     tailscale.com/expose: "true"
+  labels:
+    tailscale.com/proxy-class: pin-framework-desktop
 spec:
   ingressClassName: tailscale
   rules:
@@ -31,6 +33,8 @@ metadata:
   namespace: kagent
   annotations:
     tailscale.com/expose: "true"
+  labels:
+    tailscale.com/proxy-class: pin-framework-desktop
 spec:
   ingressClassName: tailscale
   rules:

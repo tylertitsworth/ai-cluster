@@ -141,6 +141,16 @@ spec:
         kubernetes.io/hostname: framework-13-laptop
 ---
 apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: pin-orinnx01
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: orinnx01.local
+---
+apiVersion: tailscale.com/v1alpha1
 kind: Connector
 metadata:
   name: control-plane

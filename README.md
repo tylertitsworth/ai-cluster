@@ -330,10 +330,6 @@ Halogen is the cluster's current LLM inference engine. It replaced the ollama, v
 
 Roughly 2x the prefill speed and 1.6x the decode speed, on top of a 256k context (double the 131k the ollama and llama.cpp builds ran), 16 concurrent requests admitted (4 active KV slots) where the llama.cpp server ran 4 slots, a prompt cache plus a 64 GiB disk cache so repeated agent prompts are cheap to re-serve, and a vision tower. The model is the engine's own 27B ht4 checkpoint (`halogen-qwen3.8-27b`, 12.8 GiB) — the Swift Q6_K GGUF already on the box was refused outright (Halogen 0.21.0 reads qwen4exp GGUFs only), which turned out to be a non-issue since the ht4 checkpoint is what the benchmarks were run against anyway.
 
-The deployment is a Helm chart under `charts/halogen` driven by an ArgoCD app (`apps/ai/halogen.yaml`), pinned to `framework-desktop` with 56Gi of Guaranteed QoS, 8 CPUs, and the AMD GPU. Everything is configured through `HALOGEN_*` environment variables rendered into a configmap — no patched Dockerfiles, no community forks, no `LD_PRELOAD` tricks. It serves an OpenAI-compatible `/v1` API on port 8731 behind the `halogen` Tailscale ingress, and the kagent agents point straight at it.
-
-The cutover went in as a series of small PRs — the benchmark and chart first, then the QoS bump, concurrency, and agent-tuned defaults. The old engines are all still in the repo but scaled to zero (ollama, llama-cpp) or sync-disabled (vLLM), so a rollback is a one-line change.
-
 ### OpenCode
 
 [OpenCode](https://opencode.ai/) is the headless AI coding agent that runs *in* this repo's workspace — it's the dogfooding loop that makes this whole cluster self-maintaining. The pod is deployed in its own `opencode` namespace on `framework-desktop`, and its init container `git clone`s `ai-cluster` into a `workspace` PVC, drops in a `.gitconfig` that authenticates with `GITHUB_TOKEN`, then the agent edits a working tree of this very repository — like the commit that added these charts.

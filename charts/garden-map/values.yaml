@@ -68,7 +68,7 @@ app-template:
       enabled: true
       className: tailscale
       annotations:
-        tailscale.com/proxy-class: pin-framework-desktop
+        tailscale.com/proxy-class: pin-orinnx01
       hosts:
         - host: garden
           paths:

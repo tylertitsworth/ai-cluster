@@ -25,7 +25,7 @@ spec:
           tls:
             secretName: ""
           annotations:
-            tailscale.com/proxy-class: pin-npu01
+            tailscale.com/proxy-class: pin-orinnx01
         config:
           port: "8080"
           cluster_provider: in-cluster

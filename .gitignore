@@ -12,7 +12,6 @@ npu-device-plugin/bin/
 npu-device-plugin/pkg/
 .cursor/
 files/
-AGENTS.md
 CLAUDE.md
 *.tgz
 .worktrees/

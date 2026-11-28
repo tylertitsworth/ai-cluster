@@ -330,6 +330,8 @@ Halogen is the cluster's current LLM inference engine. It replaced the ollama, v
 
 Roughly 2x the prefill speed and 1.6x the decode speed, on top of a 256k context (double the 131k the ollama and llama.cpp builds ran), 16 concurrent requests admitted (4 active KV slots) where the llama.cpp server ran 4 slots, a prompt cache plus a 64 GiB disk cache so repeated agent prompts are cheap to re-serve, and a vision tower. The model is the engine's own 27B ht4 checkpoint (`halogen-qwen3.8-27b`, 12.8 GiB) — the Swift Q6_K GGUF already on the box was refused outright (Halogen 0.21.0 reads qwen4exp GGUFs only), which turned out to be a non-issue since the ht4 checkpoint is what the benchmarks were run against anyway.
 
+A LoRA adapter is loaded on top of the base model — it costs about 2.5% of throughput but makes the output more concise, which is worth it since qwen3.8-27b likes to yap. It was fetched to the PVC by a one-time pod.
+
 ### OpenCode
 
 [OpenCode](https://opencode.ai/) is the headless AI coding agent that runs *in* this repo's workspace — it's the dogfooding loop that makes this whole cluster self-maintaining. The pod is deployed in its own `opencode` namespace on `framework-desktop`, and its init container `git clone`s `ai-cluster` into a `workspace` PVC, drops in a `.gitconfig` that authenticates with `GITHUB_TOKEN`, then the agent edits a working tree of this very repository — like the commit that added these charts.

@@ -36,7 +36,7 @@ spec:
           # GPU configuration for hardware acceleration
           gpu:
             nvidia:
-              enabled: false  # Using AMD GPU via extraVolumes instead
+              enabled: false
 
           # Resource limits and requests
           resources:
@@ -67,15 +67,11 @@ spec:
             - hosts:
                 - plex
 
-        # Node selection for Framework Desktop (AMD GPU)
         nodeSelector:
-          kubernetes.io/hostname: framework-desktop
+          kubernetes.io/hostname: framework-13-laptop
 
-        # Extra volumes for GPU and media storage
+        # Extra volumes for media storage
         extraVolumes:
-          - name: dri
-            hostPath:
-              path: /dev/dri
           - name: media-library
             persistentVolumeClaim:
               claimName: media-library
@@ -85,8 +81,6 @@ spec:
 
         # Extra volume mounts
         extraVolumeMounts:
-          - name: dri
-            mountPath: /dev/dri
           - name: media-library
             mountPath: /media
           - name: downloads

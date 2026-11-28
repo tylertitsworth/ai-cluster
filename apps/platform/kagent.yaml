@@ -15,14 +15,14 @@ spec:
     namespace: kagent
   sources:
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: feature/kagent-substrate
+      targetRevision: main
       path: charts/kagent-stack
       helm:
         releaseName: kagent
         valueFiles:
           - $values/apps/platform/values/kagent.yaml
     - repoURL: https://github.com/tylertitsworth/ai-cluster.git
-      targetRevision: feature/kagent-substrate
+      targetRevision: main
       ref: values
   syncPolicy:
     syncOptions:

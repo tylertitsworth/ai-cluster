@@ -131,6 +131,16 @@ spec:
         kubernetes.io/hostname: framework-desktop
 ---
 apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: pin-framework-13-laptop
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: framework-13-laptop
+---
+apiVersion: tailscale.com/v1alpha1
 kind: Connector
 metadata:
   name: control-plane

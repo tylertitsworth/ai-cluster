@@ -71,7 +71,7 @@ app-template:
                 identifier: main
                 port: http
       annotations:
-        tailscale.com/proxy-class: "pin-framework-desktop"
+        tailscale.com/proxy-class: "pin-framework-13-laptop"
       tls:
         - hosts:
             - maintainerr

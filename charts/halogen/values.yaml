@@ -54,9 +54,11 @@ app-template:
           resources:
             requests:
               amd.com/gpu: "1"
-              memory: "48Gi"
+              cpu: "8"
+              memory: "56Gi"
             limits:
               amd.com/gpu: "1"
+              cpu: "8"
               memory: "56Gi"
 
       pod:

@@ -121,6 +121,8 @@ config:
   # HALOGEN_DOWNLOAD writes tokenizer/ beside the head in blobs/, not /models/tokenizer.
   - key: HALOGEN_TOKENIZER
     value: /root/.ollama/models/blobs/tokenizer
+  - key: HALOGEN_VISION_TOWER
+    value: "1"
   - key: HALOGEN_CTX
     value: "262144"
   - key: HALOGEN_KV_POOL_POSITIONS

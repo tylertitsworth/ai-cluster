@@ -1,0 +1,2 @@
+# CloudNativePG Operator values
+replicaCount: 1

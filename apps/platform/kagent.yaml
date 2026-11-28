@@ -1,0 +1,29 @@
+# kagent
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent
+  namespace: argocd
+  labels:
+    stack: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  sources:
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: feature/kagent-substrate
+      path: charts/kagent-stack
+      helm:
+        releaseName: kagent
+        valueFiles:
+          - $values/apps/platform/values/kagent.yaml
+    - repoURL: https://github.com/tylertitsworth/ai-cluster.git
+      targetRevision: feature/kagent-substrate
+      ref: values
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

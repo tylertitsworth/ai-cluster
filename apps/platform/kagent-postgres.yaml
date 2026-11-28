@@ -1,0 +1,50 @@
+# kagent PostgreSQL (CloudNativePG Cluster)
+# Requires CloudNativePG operator (apps/platform/cloudnative-pg.yaml) installed.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: kagent-postgres
+  namespace: kagent
+spec:
+  instances: 1
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  enableSuperuserAccess: true
+  bootstrap:
+    initdb:
+      database: kagent
+      owner: kagent
+      secret:
+        name: kagent-postgres-app
+---
+# App user secret for CNPG bootstrap
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-app
+  namespace: kagent
+type: kubernetes.io/basic-auth
+stringData:
+  username: kagent
+  password: "kagent-db-password"
+---
+# kagent owner connection string secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-owner
+  namespace: kagent
+type: Opaque
+stringData:
+  ownerConnectionString: "postgres://kagent:kagent-db-password@kagent-postgres-rw:5432/kagent?sslmode=disable"
+---
+# kagent readwrite connection string secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-postgres-readwrite
+  namespace: kagent
+type: Opaque
+stringData:
+  readWriteConnectionString: "postgres://kagent:kagent-db-password@kagent-postgres-rw:5432/kagent?sslmode=disable"
